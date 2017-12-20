@@ -13,12 +13,28 @@
 
 class PortMapper {
 public:
-    PortMapper(std::vector<IUINT16 > &sourcePorts, std::vector<IUINT16> destPorts);
+    PortMapper() = default;
+
+    virtual  void SetDstPorts(const std::vector<IUINT16> &ports);
+
+    virtual  void SetSrcPorts(const std::vector<IUINT16> &ports);
+
+    virtual  void AddDstPort(IUINT16 port);
+
+    virtual  void RemoveDstPort(IUINT16 port);
+
+    virtual  IUINT16 NextDstPort() ;
+
+    virtual  IUINT16 NextSrcPort() ;
+
+//    virtual bool AddOriginPort(const struct sockaddr *addr);
+
 private:
-    std::map<std::string, std::vector<IUINT16 >> mPortMap;
-    std::vector<IUINT16> mSourcePorts;
-    std::vector<IUINT16> mDestPorts;
+    bool addFn(std::vector<IUINT16> &vec, IUINT16 port);
+    bool removeFn(std::vector<IUINT16> &vec, IUINT16 port);
+    IUINT16 nextFn(const std::vector<IUINT16> &vec);
+
+    std::vector<IUINT16> mSrcPorts;
+    std::vector<IUINT16> mDstPorts;
 };
-
-
 #endif //RSOCK_PORTMAPPER_H

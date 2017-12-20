@@ -15,7 +15,10 @@
 /* source: www.tcpdump.org/pcap.htm */
 
 /* Ethernet addresses are 6 bytes */
+#ifndef ETHER_ADDR_LEN
 #define ETHER_ADDR_LEN 6
+#endif
+
 #define UDP_HDR_LEN 8
 
 /* Ethernet header */

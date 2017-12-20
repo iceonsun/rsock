@@ -5,17 +5,6 @@
 #include "SRawConn.h"
 #include "SConn.h"
 
-void SRawConn::capInput(struct omhead_t *head, struct sockaddr_in *addr, char *data, int len) {
-    auto group = conn->ConnOfOrigin(reinterpret_cast<const sockaddr *>(addr));
-    if (!group) {
-        IGroupConn *newGroup = new ServerGroupConn(head->conn_id, nullptr);
-        group = newGroup;
-        IConn *newConn = new SConn(0, nullptr, nullptr);
-        newGroup->AddConn(newConn, reinterpret_cast<const sockaddr *>(addr));
-    }
-    rbuf_t rbuf;
-    rbuf.base = data;
-    rbuf.len = len;
-    rbuf.data = head;
-    group->Input(len, rbuf);
-}
+SRawConn::SRawConn(libnet_t *libnet, IUINT32 src, uv_loop_t *loop, const std::string &key, int type,
+                   int datalinkType, int injectionType, const IUINT8 *srcMac, const IUINT8 *dstMac, IUINT32 dst)
+        : IRawConn(libnet, src, loop, key, true, type, datalinkType, injectionType, srcMac, dstMac, dst) {}

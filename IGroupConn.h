@@ -11,25 +11,19 @@
 #include "IConn.h"
 #include "IRawConn.h"
 
-// group may contain many conns or single one
-// 1 to many
+// each group has a groupId. each subconn in group shares same groupId. ip:port,
+// each subconn has a key. ip:port:conv,  or sockpath:conv
 class IGroupConn : public IConn {
 public:
 
-    explicit IGroupConn(const char *groupId, IConn *btm = nullptr);
+    explicit IGroupConn(const std::string &groupId, IConn *btm = nullptr);
 
-    // server/client
-    virtual IConn *ConnOfOrigin(const struct sockaddr *addr);
+    virtual IConn* ConnOfKey(const std::string &key) ;
 
-    // client
-    virtual IConn *ConnOfConv(IUINT32 conv) { return nullptr; }
+    virtual void AddConn(IConn *conn, bool bindOutput = true);
 
-    // server
-    virtual IConn *ConnOfTarget(const struct sockaddr *addr) { return nullptr; };
-
-    virtual void AddConn(IConn *conn, const struct sockaddr *addr);
-
-    virtual void RemoveConn(IConn *conn);
+    // will not close conn or delete conn
+    virtual void RemoveConn(IConn *conn) ;
 
     virtual const std::string &GroupId() { return mGroupId; }
 
@@ -37,16 +31,16 @@ public:
 
     void Close() override;
 
+    const std::string &Key() override;
+
+    virtual IConn *BtmConn() { return mBtm;}
+
 //    virtual void SetRawConn(IRawConn *rawConn);
-
 private:
-//    void setupRawConn(IRawConn *rawConn);
-
-private:
-    std::map<std::string, IConn *> mOriginMap;
     const std::string mGroupId;   // represents each machine
-//    IRawConn *mRawConn = nullptr;   // cannot be deleted
     IConn *mBtm = nullptr;
+    std::map<std::string, IConn*> mConns;
+
 };
 
 

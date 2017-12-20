@@ -3,22 +3,14 @@
 //
 
 #include <syslog.h>
+#include <cassert>
 #include "IGroupConn.h"
 #include "rsutil.h"
 #include "debug.h"
+using namespace std::placeholders;
 
-IConn *IGroupConn::ConnOfOrigin(const struct sockaddr *addr) {
-    auto key = BuildKey(addr);
-    auto p = mOriginMap.find(key);
-    return (p != mOriginMap.end()) ? p->second : nullptr;
-}
 
-void IGroupConn::AddConn(IConn *conn, const struct sockaddr *addr) {
-    auto key = BuildKey(addr);
-    mOriginMap.insert({key, conn});
-}
-
-IGroupConn::IGroupConn(const char *groupId, IConn *btm) : IConn(0), mGroupId(groupId), mBtm(btm) {
+IGroupConn::IGroupConn(const std::string &groupId, IConn *btm) : IConn(groupId), mGroupId(groupId), mBtm(btm) {
 }
 
 int IGroupConn::Init() {
@@ -27,6 +19,7 @@ int IGroupConn::Init() {
         debug(LOG_ERR, "IConn::Init failed: %d", nret);
         return nret;
     }
+
     if (mBtm) {
         nret = mBtm->Init();
         if (nret) {
@@ -40,6 +33,7 @@ int IGroupConn::Init() {
         auto in = std::bind(&IConn::Input, this, std::placeholders::_1, std::placeholders::_2);
         mBtm->SetOnRecvCb(in);
     }
+    return 0;
 }
 
 void IGroupConn::Close() {
@@ -48,16 +42,37 @@ void IGroupConn::Close() {
         delete mBtm;
         mBtm = nullptr;
     }
+#ifndef NNDEBUG
+    assert(mConns.empty());
+#else
+    debug(LOG_ERR, "mConns not empty");
+    for (auto e: mConns) {
+        e.second->Close();
+        delete e.second;
+    }
+    mConns.clear();
+#endif
 }
-//void IGroupConn::SetRawConn(IRawConn *rawConn) {
-//    if (!mRawConn && rawConn) {
-//        mRawConn = rawConn;
-//        setupRawConn(rawConn);
-//    } else {
-//        debug(LOG_ERR, "rawconn null or already set");
-//    }
-//}
 
-//void IGroupConn::setupRawConn(IRawConn *rawConn) {
-//    auto fn = rawConn;
-//}
+const std::string &IGroupConn::Key() {
+    return mGroupId;
+}
+
+void IGroupConn::AddConn(IConn *conn, bool bindOutput) {
+//    mConns.insert({conn->Key(), conn});
+    mConns.insert({conn->Key(), conn});
+
+    if (bindOutput) {
+        auto fn = std::bind(&IConn::Send, this, _1, _2);
+        conn->SetOutputCb(fn);
+    }
+}
+
+void IGroupConn::RemoveConn(IConn *conn) {
+    mConns.erase(conn->Key());
+}
+
+IConn *IGroupConn::ConnOfKey(const std::string &key) {
+    auto it = mConns.find(key);
+    return (it != mConns.end()) ? it->second : nullptr;
+}

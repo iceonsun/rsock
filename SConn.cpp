@@ -8,16 +8,34 @@
 #include "rsutil.h"
 #include "debug.h"
 
-SConn::SConn(IUINT32 conv, uv_loop_t *loop, const struct sockaddr *addr) : IConn(conv) {
-    assert(addr != nullptr);
-    assert(addr->sa_family != AF_INET);
+SConn::SConn(uv_loop_t *loop, const struct sockaddr *origin, const struct sockaddr *target, IUINT32 conv) : IConn(
+        OHead::BuildKey(origin, conv)) {
 
-    mTarget = reinterpret_cast<sockaddr_in *>(new_addr(addr));
+    assert(target->sa_family != AF_INET);
+
+    mTarget = reinterpret_cast<sockaddr_in *>(new_addr(target));
     mUdp = om_new_udp(loop, this, udpRecvCb);
+
+    mHead.UpdateConv(conv);
 }
 
 void SConn::Close() {
     IConn::Close();
+
+    if (mTarget) {
+        free(mTarget);
+        mTarget = nullptr;
+    }
+
+    if (mSelfAddr) {
+        free(mSelfAddr);
+        mSelfAddr = nullptr;
+    }
+
+    if (mUdp) {
+        uv_close(reinterpret_cast<uv_handle_t *>(mUdp), close_cb);
+        mUdp = nullptr;
+    }
 }
 
 void
@@ -32,20 +50,14 @@ SConn::udpRecvCb(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf, const str
                 debug(LOG_ERR, "getsockname failed, err: %s", err, strerror(errno));
                 assert(0);
             }
-            conn->notifyAddrChange();
         }
-    }
-}
-
-void SConn::notifyAddrChange() {
-    for (auto e: mAddrObservers) {
-        e->OnAddrUpdated(reinterpret_cast<const sockaddr *>(mTarget), reinterpret_cast<const sockaddr *>(mSelfAddr));
-    }
-}
-
-int SConn::Send(ssize_t nread, const rbuf_t &rbuf) {
-    if (nread > 0) {
-
+        rbuf_t rbuf = {0};
+        rbuf.len = nread;
+        rbuf.base = buf->base;
+        rbuf.data = &conn->mHead;
+        conn->Send(nread, rbuf);
+    } else if (nread < 0) {
+//        todo
     }
 }
 
@@ -66,6 +78,7 @@ void SConn::sendCb(uv_udp_send_t *req, int status) {
     rudp_send_t *udp = reinterpret_cast<rudp_send_t *>(req);
     SConn *conn = static_cast<SConn *>(udp->udp_send.data);
     if (status) {
+//        todo: add err processing
         debug(LOG_ERR, "udp send error, err %d: %s", status, uv_strerror(status));
 #ifndef NNDEBUG
         assert(0);
@@ -78,6 +91,5 @@ void SConn::sendCb(uv_udp_send_t *req, int status) {
 }
 
 SConn::~SConn() {
-    assert(mAddrObservers.empty());
 }
 

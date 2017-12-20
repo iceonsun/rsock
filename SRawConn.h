@@ -10,13 +10,9 @@
 #include "ServerGroupConn.h"
 
 class SRawConn : public IRawConn {
-protected:
-//    SRawConn() {}
-
-    void capInput(struct omhead_t *head, struct sockaddr_in *addr, char *data, int len) override;
-
-private:
-    ServerGroupConn *conn;
+public:
+    SRawConn(libnet_t *libnet, IUINT32 src, uv_loop_t *loop, const std::string &key, int type, int datalinkType,
+             int injectionType, const IUINT8 *srcMac, const IUINT8 *dstMac, IUINT32 dst);
 };
 
 

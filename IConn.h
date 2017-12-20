@@ -21,18 +21,19 @@ public:
     typedef std::function<int(ssize_t nread, const rbuf_t &rbuf)> IConnCb;
     //    typedef std::shared_ptr<IConn *> SPConn;
 
-    explicit IConn(IUINT32 conv);
+    explicit IConn(const std::string &key);
+    virtual ~IConn() = default;
 
     virtual void Close();
 
     virtual int Init();
-    // ToTarget
-    virtual int Send(ssize_t nread, const rbuf_t &rbuf) = 0;
 
-    virtual int Output(ssize_t nread, const rbuf_t &rbuf) = 0;
+    virtual int Send(ssize_t nread, const rbuf_t &rbuf);
+
+    virtual int Output(ssize_t nread, const rbuf_t &rbuf);
 
     // ToOrignin
-    virtual int Input(ssize_t nread, const rbuf_t &rbuf) = 0;
+    virtual int Input(ssize_t nread, const rbuf_t &rbuf);
 
 //    virtual int OnRecv(ssize_t nread, const rbuf_t &rbuf) = 0;
 
@@ -40,33 +41,15 @@ public:
 
     virtual void SetOnRecvCb(const IConnCb &cb) { mOnRecvCb = cb; };
 
-//    virtual struct sockaddr *GetOrigin();
-
-//    virtual struct sockaddr *GetTarget();
-
-//    virtual struct sockaddr *
-
-    int Conv() { return mConv; };
-
-    virtual const std::string &Key() { return mKey;}
-
-    virtual const std::string &GroupId() {return mGroupId;}
-
-//    const std::string &OriginKey() { return nullptr; };
-//    const std::string &TargetKey() { return nullptr;}
-
-    static std::string BuildKey(const struct sockaddr *addr);
-
+    virtual const std::string &Key() { return mKey; }
+    
+    IConn&operator=(const IConn &) = delete;
 private:
+
     IConnCb mOutputCb = nullptr;
     IConnCb mOnRecvCb = nullptr;
 
     std::string mKey = nullptr;
-    std::string mGroupId = nullptr;
-//    std::string mTargetKey = "";
-//    std::string mOriginKey = "";
-    struct sockaddr *mOrig = nullptr;
-    IUINT32 mConv = 0;
 };
 
 

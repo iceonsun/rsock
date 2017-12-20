@@ -3,12 +3,11 @@ project(rSock)
 
 set(CMAKE_CXX_STANDARD 11)
 
-set(SOURCE_FILES ktype.h rstype.h md5.c debug.c enc.c  rcommon.c  rsutil.c rscomm.h cap_headers.h om_util.h om_util.c
-IUnit.cpp IUnit.cpp IConn.cpp IGroupConn.cpp SConn.cpp ServerGroupConn.cpp ClientGroupConn.cpp PortMapper.cpp
-IRawConn.cpp CRawConn.cpp SRawConn.cpp)
+set(SOURCE_FILES ktype.h md5.c dlist.c debug.c enc.c  rcommon.c  rsutil.c rscomm.h cap_headers.h
+IUnit.cpp IUnit.cpp IConn.cpp IGroupConn.cpp SConn.cpp ServerGroupConn.cpp ClientConn.cpp PortMapper.cpp
+IRawConn.cpp CRawConn.cpp SRawConn.cpp GroupConn.cpp OHead.cpp cap/RCap.cpp)
 
 add_executable(rSock ${SOURCE_FILES} main.cpp)
-
 
 # change /usr/local/lib to the folder of your libnet.so/.a
 find_library(NET_PATH net /usr/local/lib NO_DEFAULT_PATH)

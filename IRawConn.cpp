@@ -8,11 +8,14 @@
 #include "debug.h"
 #include "cap_headers.h"
 #include "rsutil.h"
+#include "OHead.h"
+#include "enc.h"
 
 
+// RawConn has key of nullptr to expose errors as fast as it can if any.
 IRawConn::IRawConn(libnet_t *libnet, IUINT32 src, uv_loop_t *loop, const std::string &key, bool is_server, int type,
                    int datalinkType, int injectionType, MacBufType const srcMac, MacBufType const dstMac, IUINT32 dst)
-        : IConn(0), mNet(libnet), mSrc(src), mLoop(loop), mHashKey(key),
+        : IConn(nullptr), mNet(libnet), mSrc(src), mLoop(loop), mHashKey(key),
           mIsServer(is_server), mConnType(type), mDatalink(datalinkType),
           mInjectionType(injectionType), mDst(dst) {
     if (!is_server) {
@@ -45,20 +48,53 @@ int IRawConn::Init() {
 
 int IRawConn::Send(ssize_t nread, const rbuf_t &rbuf) {
     if (nread > 0) {
-        struct omhead_t *head = static_cast<struct omhead_t *>(rbuf.data);
-        assert(head);
-        IUINT8 buf[sizeof(struct omhead_t) + nread] = {0};
-        IUINT8 *p = reinterpret_cast<IUINT8 *>(encode_omhead(head, reinterpret_cast<char *>(buf)));
+        OHead *oh = static_cast<OHead *>(rbuf.data);
+#ifndef NNDEBUG
+        assert(oh != nullptr);
+#else
+        if (!oh) {
+            return 0;
+        }
+#endif
+        const int ENC_SIZE = oh->GetEncBufSize();
+
+#ifndef NNDEBUG
+        assert(HASH_BUF_SIZE + ENC_SIZE + nread <= OM_MAX_PKT_SIZE);
+        debug(LOG_ERR, "packet exceeds MTU. redefine MTU. MTU: %d, HASH_BUF_SIZE: %d, ENC_SIZE: %d, nread: %d",
+              OM_MAX_PKT_SIZE, HASH_BUF_SIZE, ENC_SIZE, nread);
+#else
+        // todo: make OM_MAX_PKT_SIZE configurable, rather than macro
+#endif
+        IUINT8 buf[OM_MAX_PKT_SIZE] = {0};
+        compute_hash(reinterpret_cast<const u_char *>(mHashKey.c_str()), mHashKey.size(), rbuf.base, nread, buf);
+        IUINT8 *p = buf + HASH_BUF_SIZE;
+        p = oh->Enc2Buf(p, sizeof(buf) - HASH_BUF_SIZE);
+        if (!p) {
+#ifndef NNDEBUG
+            assert(0);
+#else
+            debug(LOG_ERR, "OHead failed to encode buf.");
+            return 0;
+#endif
+        }
+
         memcpy(p, rbuf.base, nread);
         p += nread;
 
-        // todo: replace send type with head.sndtype
-        if (mConnType & OM_PIPE_TCP_SEND) {
-            return SendRawTcp(mNet, mSrc, head->sp, head->dst, head->dp, mSeq++, buf, (p - buf), mIpId++,
-                              mInjectionType, mSrcMac, mDstMac);
+        IUINT16 sp = oh->SourcePort();
+        IUINT16 dp = oh->DstPort();
+        IUINT32 seq = oh->IncSeq();
+        IUINT16 ipid = oh->IncIpId();
+        IUINT32 dst = oh->Dst();
+        int conn_type = mIsServer ? oh->ConnType() : mConnType;
+        if (!conn_type) {
+            conn_type = OM_PIPE_TCP_SEND;
+        }
+
+        if (conn_type & OM_PIPE_TCP_SEND) {
+            return SendRawTcp(mNet, mSrc, sp, dst, dp, seq, buf, (p - buf), ipid, mInjectionType, mSrcMac, mDstMac);
         } else {
-            return SendRawUdp(mNet, mSrc, head->sp, head->dst, head->dp, buf, (p - buf), mIpId++,
-                              mInjectionType, mSrcMac, mDstMac);
+            return SendRawUdp(mNet, mSrc, sp, dst, dp, buf, (p - buf), ipid, mInjectionType, mSrcMac, mDstMac);
         }
     }
 
@@ -99,12 +135,12 @@ int IRawConn::RawInput(u_char *args, struct pcap_pkthdr *hdr, const u_char *pack
 #endif
     }
 
-
     if (ip->ip_dst.s_addr != mSrc) {
         debug(LOG_INFO, "dst is not this machine");
         return 0;
     }
 
+    // todo: libpcap outbound
     if (!mIsServer) {    // meanless to check src for server
         if (ip->ip_src.s_addr != mDst) {
             debug(LOG_INFO, "client: src is not target.");
@@ -125,27 +161,27 @@ int IRawConn::RawInput(u_char *args, struct pcap_pkthdr *hdr, const u_char *pack
 
     char *p = (char *) (ip + LIBNET_IPV4_H);
     in_port_t src_port = 0;  // network endian
-    u_char *hashbuf = NULL;
-    char *head = NULL;
+    char *head = ip->ip_proto == IPPROTO_TCP ? (p + LIBNET_TCP_H) : (p + LIBNET_UDP_H);
+    u_char *hashbuf = reinterpret_cast<u_char *>(head);
+    p = reinterpret_cast<char *>(hashbuf + HASH_BUF_SIZE);
+
+    // this check is necessary.
+    // because we may receive rst with length zero. if we don't check, we may cause illegal memory access error
+    if (hdr->len - ((u_char *) head - packet) < HASH_BUF_SIZE) {
+        return 0;
+    }
+
     if (ip->ip_proto == IPPROTO_TCP) {
         if (!(mConnType & OM_PIPE_TCP_RECV)) {  // check incomming packets
             debug(LOG_INFO, "conn type %d. but receive tcp packet", mConnType);
             return 0;
         }
 
-        struct otcphdr *tcp = (struct otcphdr *) p;
+        struct otcphdr *tcp = (struct otcphdr *) (ip + LIBNET_IPV4_H);
         if (tcp->th_hdrlen != (LIBNET_TCP_H >> 2)) {
             debug(LOG_INFO, "tcp header len doesn't equal to %d", LIBNET_TCP_H);
             return 0;
         }
-
-        head = (char *) tcp + LIBNET_TCP_H;
-        // this check is necessary. because we may receive rst with length zero. if we don't check, we may visit illegal memory
-        if (((const u_char*)head - packet) < sizeof(omhead_t)) {
-            return 0;
-        }
-
-        hashbuf = (u_char *) head + OFFSETOF(struct omhead_t, hash_buf);
         src_port = ntohs(tcp->th_sport);
     } else if (ip->ip_proto == IPPROTO_UDP) {
         if (!(mConnType & OM_PIPE_UDP_RECV)) {  // check incomming packets
@@ -153,25 +189,31 @@ int IRawConn::RawInput(u_char *args, struct pcap_pkthdr *hdr, const u_char *pack
             return 0;
         }
 
-        struct oudphdr *udp = (struct oudphdr *) p;
-        head = (char *) udp + LIBNET_UDP_H;
-
-        if (((const u_char*)head - packet) < sizeof(omhead_t)) {    // necessary
-            return 0;
-        }
-
-        hashbuf = (u_char *) head + OFFSETOF(struct omhead_t, hash_buf);
+        struct oudphdr *udp = (struct oudphdr *) (ip + LIBNET_IPV4_H);
         src_port = ntohs(udp->uh_sport);
     }
 
-    char *data = p + sizeof(struct omhead_t);
+    IUINT8 headLen = 0;
+    decode_uint8(&headLen, p);
+    if (headLen != OHead::GetEncBufSize()) {
+#ifndef NNDEBUG
+        assert(0);
+#else
+        debug(LOG_ERR, "failed to decode len. decoded len: %d, fixed EncBufSize: %d", headLen, OHead::GetEncBufSize());
+        return 0;
+#endif
+    }
+
+    char *data = p + headLen;
     int data_len = (int) (hdr->len - ((const u_char *) data - packet));
     if (data_len <= 0) {
         debug(LOG_ERR, "data_len <= 0! data_len: %d, hdr.len: %d", data_len, hdr->len);
         return 0;
     }
 
-    if (0 == hash_equal(reinterpret_cast<const u_char *>(mHashKey.c_str()), mHashKey.size(), hashbuf, HASH_BUF_SIZE, data, data_len)) {
+    if (0 ==
+        hash_equal(reinterpret_cast<const u_char *>(mHashKey.c_str()), mHashKey.size(), hashbuf, HASH_BUF_SIZE, data,
+                   data_len)) {
         debug(LOG_INFO, "hash not match");
         return 0;
     }
@@ -180,36 +222,18 @@ int IRawConn::RawInput(u_char *args, struct pcap_pkthdr *hdr, const u_char *pack
     src.sin_family = AF_INET;
     src.sin_port = src_port;
     src.sin_addr.s_addr = ip->ip_src.s_addr;
-    return cap2uv(head, sizeof(struct omhead_t), &src, data, data_len);
+    return cap2uv(head, headLen, &src, data, data_len);
 }
-
-//void IRawConn::unixSockRecvCb(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf, const struct sockaddr *null_addr,
-//                             unsigned flags) {
-//    if (nread > 0) {
-//        IRawConn *conn = static_cast<IRawConn *>(handle->data);
-//        struct omhead_t head = {0};
-//        struct sockaddr_in addr = {0};
-//        char *p = decode_omhead(&head, buf->base);
-//        p = decode_sockaddr4(p, &addr);
-//        int len = nread - (p - buf->base);
-//        if (len > 0) {
-//            conn->capInput(&head, &addr, p, len);
-//        } else {
-//            debug(LOG_INFO, "len <= 0");
-//        }
-//    } else if (nread < 0) {
-//        debug(LOG_ERR, "socketpair error: %s", uv_strerror(nread));
-//#ifndef NNDEBUG
-//        assert(0);
-//#endif
-//    }
-//    free(buf->base);
-//}
-
 
 void IRawConn::Close() {
     IConn::Close();
 
+    if (mUnixDgramPoll) {
+        uv_poll_stop(mUnixDgramPoll);
+        close(unixSock);
+        free(mUnixDgramPoll);
+        mUnixDgramPoll = nullptr;
+    }
 }
 
 void IRawConn::pollCb(uv_poll_t *handle, int status, int events) {
@@ -220,26 +244,40 @@ void IRawConn::pollCb(uv_poll_t *handle, int status, int events) {
     if (events & UV_READABLE) {
         IRawConn *conn = static_cast<IRawConn *>(handle->data);
         char buf[OM_MAX_PKT_SIZE] = {0};
-        int nread = read(conn->unixSock, buf, OM_MAX_PKT_SIZE);
-        if (nread <= sizeof(struct omhead_t)) {
-            debug(LOG_ERR, "read broken msg, len: %d", nread);
+        ssize_t nread = read(conn->unixSock, buf, OM_MAX_PKT_SIZE);
+        if (nread <= OHead::GetEncBufSize()) {
+#ifndef NNDEBUG
+            assert(0);
+#else
+            debug(LOG_ERR, "read broken msg. nread: %d, minumum required: %d", nread, OHead::GetEncBufSize());
             return;
+#endif
         }
 
-        struct omhead_t head = {0};
+        OHead head;
+        const char *p = OHead::DecodeBuf(head, buf, nread);
+        if (!p) {
+#ifndef NNDEBUG
+            assert(0);
+#else
+            debug(LOG_ERR, "failed to decode buf.");
+            return;
+#endif
+        }
+
+        // todo: how to update omhead field using addr
         struct sockaddr_in addr = {0};
-        char *p = decode_omhead(&head, buf);
         p = decode_sockaddr4(p, &addr);
+        head.UpdateSourcePort(ntohs(addr.sin_port));
+
         int len = nread - (p - buf);
         if (len > 0) {
             head.srcAddr = reinterpret_cast<sockaddr *>(&addr);
             rbuf_t rbuf = {0};
-            rbuf.base = p;
+            rbuf.base = const_cast<char *>(p);
             rbuf.len = len;
             rbuf.data = &head;
             conn->Input(nread, rbuf);
-//            conn->Input(nread, )
-//            conn->capInput(&head, &addr, p, len);
         } else {
             debug(LOG_INFO, "len <= 0");
         }
@@ -247,9 +285,9 @@ void IRawConn::pollCb(uv_poll_t *handle, int status, int events) {
 }
 
 int IRawConn::cap2uv(char *head_beg, size_t head_len, const struct sockaddr_in *target, const char *data, size_t len) {
-    assert(len + sizeof(struct sockaddr_storage) + sizeof(struct omhead_t) <= OM_MAX_PKT_SIZE);
+    assert(len + sizeof(struct sockaddr_in) + head_len <= OM_MAX_PKT_SIZE);
+
     char buf[OM_MAX_PKT_SIZE] = {0};
-//    char *buf = static_cast<char *>(malloc(OM_MAX_PKT_SIZE));
     memcpy(buf, head_beg, head_len);
     char *p = buf + head_len;
     p = encode_sockaddr4(p, target);
@@ -261,7 +299,7 @@ int IRawConn::cap2uv(char *head_beg, size_t head_len, const struct sockaddr_in *
 
 int
 IRawConn::SendRawTcp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT16 dp, IUINT32 seq, const IUINT8 *payload,
-                    IUINT16 payload_len, IUINT16 ip_id, int injection_type, MacBufType srcMac, MacBufType dstMac) {
+                     IUINT16 payload_len, IUINT16 ip_id, int injection_type, MacBufType srcMac, MacBufType dstMac) {
     const int DUMY_WIN_SIZE = 1000;
     libnet_ptag_t ip = 0, tcp = 0, eth = 0;
 
@@ -333,7 +371,7 @@ IRawConn::SendRawTcp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT16 
 }
 
 int IRawConn::SendRawUdp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT16 dp, const IUINT8 *payload,
-                        IUINT16 payload_len, IUINT16 ip_id, int injection_type, MacBufType srcMac, MacBufType dstMac) {
+                         IUINT16 payload_len, IUINT16 ip_id, int injection_type, MacBufType srcMac, MacBufType dstMac) {
     libnet_ptag_t udp = 0, ip = 0, eth = 0;
     udp = libnet_build_udp(
             sp,         // sp source port
