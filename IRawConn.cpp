@@ -6,7 +6,7 @@
 #include <syslog.h>
 #include "IRawConn.h"
 #include "debug.h"
-#include "cap_headers.h"
+#include "cap/cap_headers.h"
 #include "rsutil.h"
 #include "OHead.h"
 #include "enc.h"
@@ -107,27 +107,27 @@ int IRawConn::CapInputCb(u_char *args, struct pcap_pkthdr *hdr, const u_char *pa
 }
 
 int IRawConn::RawInput(u_char *args, struct pcap_pkthdr *hdr, const u_char *packet) {
-//    struct om_pcap_t *cap = (struct om_pcap_t *) args;
-    struct oetherhdr *eth = (struct oetherhdr *) packet;
-    const int datalink = mDatalink;
-    // todo: not checked here.
-//    if (datalink != DLT_NULL && datalink != DLT_EN10MB) {
-//        debug(LOG_INFO, "unsupported datalink type: %d", datalink);
-//        return 0;
-//    }
+    struct ip *ip = NULL;
+    if (mDatalink == DLT_EN10MB) {    // ethernet
+        struct oetherhdr *eth = (struct oetherhdr *) packet;
+        if (eth->ether_type != OM_PROTO_IP) {
+            debug(LOG_INFO, "ethernet. only ipv4 protocol is supported. proto: %d", eth->ether_type);
+            return 0;
+        }
 
-    if (eth->ether_type != OM_PROTO_IP) {
-        debug(LOG_INFO, "only ipv4 protocol is supported. proto: %d", eth->ether_type);
-        return 0;
-    }
-
-    struct oiphdr *ip = NULL;
-    if (datalink == DLT_EN10MB) {    // ethernet
-        ip = (struct oiphdr *) (packet + LIBNET_ETH_H);
-    } else if (datalink == DLT_NULL) {   // loopback
-        ip = (struct oiphdr *) (packet + 4);
+        ip = (struct ip *) (packet + LIBNET_ETH_H);
+    } else if (mDatalink == DLT_NULL) {   // loopback
+        IUINT32 type = 0;
+        decode_uint32(&type, reinterpret_cast<const char *>(packet));
+        // the link layer header is a 4-byte field, in host byte order, containing a value of 2 for IPv4 packets
+        // https://www.tcpdump.org/linktypes.html
+        if (2 != type) {
+            debug(LOG_INFO, "loopback. only ipv4 protocol is supported. proto: %d", type);
+            return 0;
+        }
+        ip = (struct ip *) (packet + 4);
     } else {
-        debug(LOG_INFO, "unsupported datalink type: %d", datalink);
+        debug(LOG_INFO, "unsupported datalink type: %d", mDatalink);
 #ifndef NNDEBUG
         assert(0);
 #else
@@ -148,54 +148,55 @@ int IRawConn::RawInput(u_char *args, struct pcap_pkthdr *hdr, const u_char *pack
         }
     }
 
-    if (ip->ip_hdrlen != (LIBNET_IPV4_H >> 2)) {    // header len must be 20
+    const int proto = ip->ip_p;
+
+    if (ip->ip_hl != (LIBNET_IPV4_H >> 2)) {    // header len must be 20
         debug(LOG_INFO, "ip header len doesn't equal to %d", LIBNET_IPV4_H);
         return 0;
     }
 
-    if (ip->ip_proto != IPPROTO_TCP && ip->ip_proto != IPPROTO_UDP) {
-        debug(LOG_INFO, "only tcp/udp are supported. proto: %d", ip->ip_proto);
+    if (proto != IPPROTO_TCP && proto != IPPROTO_UDP) {
+        debug(LOG_INFO, "only tcp/udp are supported. proto: %d", proto);
         return 0;
     }
 
 
-    char *p = (char *) (ip + LIBNET_IPV4_H);
     in_port_t src_port = 0;  // network endian
-    char *head = ip->ip_proto == IPPROTO_TCP ? (p + LIBNET_TCP_H) : (p + LIBNET_UDP_H);
-    u_char *hashbuf = reinterpret_cast<u_char *>(head);
-    p = reinterpret_cast<char *>(hashbuf + HASH_BUF_SIZE);
+    const char *hashhead = nullptr;
 
-    // this check is necessary.
-    // because we may receive rst with length zero. if we don't check, we may cause illegal memory access error
-    if (hdr->len - ((u_char *) head - packet) < HASH_BUF_SIZE) {
-        return 0;
-    }
-
-    if (ip->ip_proto == IPPROTO_TCP) {
+    if (proto == IPPROTO_TCP) {
         if (!(mConnType & OM_PIPE_TCP_RECV)) {  // check incomming packets
             debug(LOG_INFO, "conn type %d. but receive tcp packet", mConnType);
             return 0;
         }
 
-        struct otcphdr *tcp = (struct otcphdr *) (ip + LIBNET_IPV4_H);
-        if (tcp->th_hdrlen != (LIBNET_TCP_H >> 2)) {
-            debug(LOG_INFO, "tcp header len doesn't equal to %d", LIBNET_TCP_H);
-            return 0;
-        }
+        struct tcphdr *tcp = (struct tcphdr *) ((const char *) ip + LIBNET_IPV4_H);
         src_port = ntohs(tcp->th_sport);
-    } else if (ip->ip_proto == IPPROTO_UDP) {
+
+        hashhead = (const char *) tcp + (tcp->th_off << 2);
+    } else if (proto == IPPROTO_UDP) {
         if (!(mConnType & OM_PIPE_UDP_RECV)) {  // check incomming packets
             debug(LOG_INFO, "conn type %d. but receive udp packet", mConnType);
             return 0;
         }
 
-        struct oudphdr *udp = (struct oudphdr *) (ip + LIBNET_IPV4_H);
+        struct udphdr *udp = (struct udphdr *) ((const char *) ip + LIBNET_IPV4_H);
         src_port = ntohs(udp->uh_sport);
+
+        hashhead = (const char *) udp + LIBNET_UDP_H;
     }
 
-    IUINT8 headLen = 0;
-    decode_uint8(&headLen, p);
-    if (headLen != OHead::GetEncBufSize()) {
+    // this check is necessary.
+    // because we may receive rst with length zero. if we don't check, we may cause illegal memory access error
+    if (hdr->len - ((const u_char *) hashhead - packet) < HASH_BUF_SIZE) {
+        debug(LOG_ERR, "incomplete message.");
+        return 0;
+    }
+
+    const char *ohead = hashhead + HASH_BUF_SIZE;
+    IUINT8 oheadLen = 0;
+    decode_uint8(&oheadLen, ohead);
+    if (oheadLen != OHead::GetEncBufSize()) {
 #ifndef NNDEBUG
         assert(0);
 #else
@@ -204,7 +205,7 @@ int IRawConn::RawInput(u_char *args, struct pcap_pkthdr *hdr, const u_char *pack
 #endif
     }
 
-    char *data = p + headLen;
+    const char *data = ohead + oheadLen;
     int data_len = (int) (hdr->len - ((const u_char *) data - packet));
     if (data_len <= 0) {
         debug(LOG_ERR, "data_len <= 0! data_len: %d, hdr.len: %d", data_len, hdr->len);
@@ -212,7 +213,8 @@ int IRawConn::RawInput(u_char *args, struct pcap_pkthdr *hdr, const u_char *pack
     }
 
     if (0 ==
-        hash_equal(reinterpret_cast<const u_char *>(mHashKey.c_str()), mHashKey.size(), hashbuf, HASH_BUF_SIZE, data,
+        hash_equal(reinterpret_cast<const u_char *>(mHashKey.c_str()), mHashKey.size(),
+                   reinterpret_cast<const u_char *>(hashhead), HASH_BUF_SIZE, data,
                    data_len)) {
         debug(LOG_INFO, "hash not match");
         return 0;
@@ -222,7 +224,7 @@ int IRawConn::RawInput(u_char *args, struct pcap_pkthdr *hdr, const u_char *pack
     src.sin_family = AF_INET;
     src.sin_port = src_port;
     src.sin_addr.s_addr = ip->ip_src.s_addr;
-    return cap2uv(head, headLen, &src, data, data_len);
+    return cap2uv(ohead, oheadLen, &src, data, data_len);
 }
 
 void IRawConn::Close() {
@@ -284,7 +286,8 @@ void IRawConn::pollCb(uv_poll_t *handle, int status, int events) {
     }
 }
 
-int IRawConn::cap2uv(char *head_beg, size_t head_len, const struct sockaddr_in *target, const char *data, size_t len) {
+int IRawConn::cap2uv(const char *head_beg, size_t head_len, const struct sockaddr_in *target, const char *data,
+                     size_t len) {
     assert(len + sizeof(struct sockaddr_in) + head_len <= OM_MAX_PKT_SIZE);
 
     char buf[OM_MAX_PKT_SIZE] = {0};

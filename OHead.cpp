@@ -153,5 +153,5 @@ IUINT32 OHead::Dst() {
 }
 
 const char * OHead::GroupId() {
-    enc.id_buf;
+    return enc.id_buf;
 }

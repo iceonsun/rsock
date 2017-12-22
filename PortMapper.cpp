@@ -58,6 +58,7 @@ IUINT16 PortMapper::nextFn(const std::vector<IUINT16> &vec) {
     if (!vec.empty()) {
         return vec[now % vec.size()];
     } else {
+        // if not specified. use random port
         auto p = static_cast<IUINT16>(now % 65536);
         if (p < 20) {
             p = OM_DEF_PORT;

@@ -13,6 +13,8 @@
 
 class PortMapper {
 public:
+    using PortLists = std::vector<IUINT16 >;
+
     PortMapper() = default;
 
     virtual  void SetDstPorts(const std::vector<IUINT16> &ports);
@@ -26,6 +28,10 @@ public:
     virtual  IUINT16 NextDstPort() ;
 
     virtual  IUINT16 NextSrcPort() ;
+
+//    virtual PortLists &GetSrcPortLists();
+
+//    virtual PortLists &GetDstPortLists();
 
 //    virtual bool AddOriginPort(const struct sockaddr *addr);
 

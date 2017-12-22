@@ -7,6 +7,7 @@
 
 
 #include <vector>
+#include <sys/socket.h>
 #include <libnet.h>
 #include "ktype.h"
 #include "rcommon.h"
@@ -38,15 +39,17 @@ public:
     int Send(ssize_t nread, const rbuf_t &rbuf) override;
 
     int Init() override;
+
 protected:
     static void pollCb(uv_poll_t *handle, int status, int events);;
 
     virtual int
-    cap2uv(char *head_beg, size_t head_len, const struct sockaddr_in *target, const char *data, size_t len);
+    cap2uv(const char *head_beg, size_t head_len, const struct sockaddr_in *target, const char *data, size_t len);
+
 private:
     // mulithread. const var
-    const IUINT32 mSrc;    // little endian
-    const IUINT32 mDst;    // little endian
+    in_addr_t mSrc;    // little endian
+    in_addr_t mDst;    // little endian
     const int mDatalink = DLT_EN10MB;   // default ethernet
     const bool mIsServer;    // const for multithread
 
