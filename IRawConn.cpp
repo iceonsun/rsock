@@ -12,15 +12,17 @@
 #include "enc.h"
 
 
+// todo: change src and dst to network endian
 // RawConn has key of nullptr to expose errors as fast as it can if any.
-IRawConn::IRawConn(libnet_t *libnet, IUINT32 src, uv_loop_t *loop, const std::string &key, bool is_server, int type,
-                   int datalinkType, int injectionType, MacBufType const srcMac, MacBufType const dstMac, IUINT32 dst)
-        : IConn(nullptr), mNet(libnet), mSrc(src), mLoop(loop), mHashKey(key),
+IRawConn::IRawConn(libnet_t *libnet, IUINT32 src, uv_loop_t *loop, const std::string &hashKey,
+                   const std::string &connKey, bool is_server, int type, int datalinkType,
+                   int injectionType, MacBufType const srcMac, MacBufType const dstMac, IUINT32 dst)
+        : IConn(connKey), mNet(libnet), mSrc(src), mLoop(loop), mHashKey(hashKey),
           mIsServer(is_server), mConnType(type), mDatalink(datalinkType),
           mInjectionType(injectionType), mDst(dst) {
-    if (!is_server) {
-        assert(dstMac != nullptr);
-    }
+//    if (!is_server) {
+//        assert(dst != nullptr);
+//    }
 
     if (injectionType == LIBNET_LINK) {
         assert(srcMac != nullptr);
@@ -33,12 +35,18 @@ IRawConn::IRawConn(libnet_t *libnet, IUINT32 src, uv_loop_t *loop, const std::st
     if (dstMac) {
         memcpy(mDstMac, dstMac, MAC_LEN);
     }
+
+    socketpair(AF_UNIX, SOCK_DGRAM, 0, mSockPair);
+    mReadFd = mSockPair[0];
+    mWriteFd = mSockPair[1];
+    mSrcNetEndian = htonl(mSrc);
+    mDstNetEndian = htonl(mDst);
 }
 
 int IRawConn::Init() {
     IConn::Init();
     int nret = 0;
-    mUnixDgramPoll = poll_dgram_fd(unixSock, mLoop, pollCb, this, &nret);
+    mUnixDgramPoll = poll_dgram_fd(mReadFd, mLoop, pollCb, this, &nret);
     if (!mUnixDgramPoll) {
         debug(LOG_ERR, "poll failed: %s", uv_strerror(nret));
         return nret;
@@ -101,17 +109,17 @@ int IRawConn::Send(ssize_t nread, const rbuf_t &rbuf) {
     return nread;
 }
 
-int IRawConn::CapInputCb(u_char *args, struct pcap_pkthdr *hdr, const u_char *packet) {
+void IRawConn::CapInputCb(u_char *args, const pcap_pkthdr *hdr, const u_char *packet) {
     IRawConn *conn = reinterpret_cast<IRawConn *>(args);
-    return conn->RawInput(args, hdr, packet);
+    conn->RawInput(args, hdr, packet);
 }
 
-int IRawConn::RawInput(u_char *args, struct pcap_pkthdr *hdr, const u_char *packet) {
+int IRawConn::RawInput(u_char *args, const pcap_pkthdr *hdr, const u_char *packet) {
     struct ip *ip = NULL;
     if (mDatalink == DLT_EN10MB) {    // ethernet
         struct oetherhdr *eth = (struct oetherhdr *) packet;
         if (eth->ether_type != OM_PROTO_IP) {
-            debug(LOG_INFO, "ethernet. only ipv4 protocol is supported. proto: %d", eth->ether_type);
+            debug(LOG_ERR, "ethernet. only ipv4 protocol is supported. proto: %d", eth->ether_type);
             return 0;
         }
 
@@ -122,12 +130,12 @@ int IRawConn::RawInput(u_char *args, struct pcap_pkthdr *hdr, const u_char *pack
         // the link layer header is a 4-byte field, in host byte order, containing a value of 2 for IPv4 packets
         // https://www.tcpdump.org/linktypes.html
         if (2 != type) {
-            debug(LOG_INFO, "loopback. only ipv4 protocol is supported. proto: %d", type);
+            debug(LOG_ERR, "loopback. only ipv4 protocol is supported. proto: %d", type);
             return 0;
         }
         ip = (struct ip *) (packet + 4);
     } else {
-        debug(LOG_INFO, "unsupported datalink type: %d", mDatalink);
+        debug(LOG_ERR, "unsupported datalink type: %d", mDatalink);
 #ifndef NNDEBUG
         assert(0);
 #else
@@ -135,15 +143,15 @@ int IRawConn::RawInput(u_char *args, struct pcap_pkthdr *hdr, const u_char *pack
 #endif
     }
 
-    if (ip->ip_dst.s_addr != mSrc) {
-        debug(LOG_INFO, "dst is not this machine");
+    if (ip->ip_dst.s_addr != mSrcNetEndian) {
+        debug(LOG_ERR, "dst is not this machine");
         return 0;
     }
 
     // todo: libpcap outbound
     if (!mIsServer) {    // meanless to check src for server
-        if (ip->ip_src.s_addr != mDst) {
-            debug(LOG_INFO, "client: src is not target.");
+        if (ip->ip_src.s_addr != mDstNetEndian) {
+            debug(LOG_ERR, "client: src is not target.");
             return 0;
         }
     }
@@ -151,45 +159,54 @@ int IRawConn::RawInput(u_char *args, struct pcap_pkthdr *hdr, const u_char *pack
     const int proto = ip->ip_p;
 
     if (ip->ip_hl != (LIBNET_IPV4_H >> 2)) {    // header len must be 20
-        debug(LOG_INFO, "ip header len doesn't equal to %d", LIBNET_IPV4_H);
+        debug(LOG_ERR, "ip header len doesn't equal to %d", LIBNET_IPV4_H);
         return 0;
     }
 
     if (proto != IPPROTO_TCP && proto != IPPROTO_UDP) {
-        debug(LOG_INFO, "only tcp/udp are supported. proto: %d", proto);
+        debug(LOG_ERR, "only tcp/udp are supported. proto: %d", proto);
         return 0;
     }
 
 
     in_port_t src_port = 0;  // network endian
+    in_port_t dst_port = 0;
     const char *hashhead = nullptr;
 
     if (proto == IPPROTO_TCP) {
         // todo: remove check. pcap filter it??
         if (!(mConnType & OM_PIPE_TCP_RECV)) {  // check incomming packets
-            debug(LOG_INFO, "conn type %d. but receive tcp packet", mConnType);
+            debug(LOG_ERR, "conn type %d. but receive tcp packet", mConnType);
             return 0;
         }
 
         struct tcphdr *tcp = (struct tcphdr *) ((const char *) ip + LIBNET_IPV4_H);
         src_port = (tcp->th_sport);
-
+        dst_port = tcp->th_dport;
         hashhead = (const char *) tcp + (tcp->th_off << 2);
     } else if (proto == IPPROTO_UDP) {
         if (!(mConnType & OM_PIPE_UDP_RECV)) {  // check incomming packets
-            debug(LOG_INFO, "conn type %d. but receive udp packet", mConnType);
+            debug(LOG_ERR, "conn type %d. but receive udp packet", mConnType);
             return 0;
         }
 
         struct udphdr *udp = (struct udphdr *) ((const char *) ip + LIBNET_IPV4_H);
         src_port = (udp->uh_sport);
-
+        dst_port = udp->uh_dport;
         hashhead = (const char *) udp + LIBNET_UDP_H;
     }
 
     // this check is necessary.
     // because we may receive rst with length zero. if we don't check, we may cause illegal memory access error
     if (hdr->len - ((const u_char *) hashhead - packet) < HASH_BUF_SIZE + 1) {  // data len must >= 1
+#ifndef NNDEBUG
+        const int len = hdr->len - ((const u_char *) hashhead - packet);
+        fprintf(stderr, "receive %d bytes from %s:%d -> %s:%d\n", len, inet_ntoa(ip->ip_src), ntohs(src_port), inet_ntoa(ip->ip_dst), ntohs(dst_port));
+        for (int i = 0; i < len; i++) {
+            fprintf(stderr, "%c", hashhead[i]);
+        }
+        fprintf(stderr, "\n");
+#endif
         debug(LOG_ERR, "incomplete message.");
         return 0;
     }
@@ -217,7 +234,7 @@ int IRawConn::RawInput(u_char *args, struct pcap_pkthdr *hdr, const u_char *pack
         hash_equal(reinterpret_cast<const u_char *>(mHashKey.c_str()), mHashKey.size(),
                    reinterpret_cast<const u_char *>(hashhead), HASH_BUF_SIZE, data,
                    data_len)) {
-        debug(LOG_INFO, "hash not match");
+        debug(LOG_ERR, "hash not match");
         return 0;
     }
 
@@ -233,7 +250,8 @@ void IRawConn::Close() {
 
     if (mUnixDgramPoll) {
         uv_poll_stop(mUnixDgramPoll);
-        close(unixSock);
+        close(mWriteFd);
+        close(mReadFd);
         free(mUnixDgramPoll);
         mUnixDgramPoll = nullptr;
     }
@@ -247,7 +265,7 @@ void IRawConn::pollCb(uv_poll_t *handle, int status, int events) {
     if (events & UV_READABLE) {
         IRawConn *conn = static_cast<IRawConn *>(handle->data);
         char buf[OM_MAX_PKT_SIZE] = {0};
-        ssize_t nread = read(conn->unixSock, buf, OM_MAX_PKT_SIZE);
+        ssize_t nread = read(conn->mReadFd, buf, OM_MAX_PKT_SIZE);
         if (nread <= OHead::GetEncBufSize()) {
 #ifndef NNDEBUG
             assert(0);
@@ -282,7 +300,7 @@ void IRawConn::pollCb(uv_poll_t *handle, int status, int events) {
             rbuf.data = &head;
             conn->Input(nread, rbuf);
         } else {
-            debug(LOG_INFO, "len <= 0");
+            debug(LOG_ERR, "len <= 0");
         }
     }
 }
@@ -297,7 +315,7 @@ int IRawConn::cap2uv(const char *head_beg, size_t head_len, const struct sockadd
     p = encode_sockaddr4(p, target);
     memcpy(p, data, len);
     p += len;
-    ssize_t n = write(unixSock, buf, p - buf);
+    ssize_t n = write(mWriteFd, buf, p - buf);
     return n;
 }
 
@@ -369,7 +387,7 @@ IRawConn::SendRawTcp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT16 
     if (-1 == n) {
         debug(LOG_ERR, "libnet_write failed: %s", libnet_geterror(l));
     } else {
-        debug(LOG_INFO, "libnet_write %d bytes.", n);
+        debug(LOG_ERR, "libnet_write %d bytes.", n);
     }
     return n;
 }
@@ -435,7 +453,7 @@ int IRawConn::SendRawUdp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUIN
     if (-1 == n) {
         debug(LOG_ERR, "libnet_write failed: %s", libnet_geterror(l));
     } else {
-        debug(LOG_INFO, "libnet_write %d bytes.", n);
+        debug(LOG_ERR, "libnet_write %d bytes.", n);
     }
     return n;
 }

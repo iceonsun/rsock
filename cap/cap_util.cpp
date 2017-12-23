@@ -86,19 +86,25 @@ const std::string BuildFilterStr(const std::string &srcIp, const std::string &ds
     const auto portFn = [&ok, &out](const PortLists &ports, bool src) {
         if (!ports.empty()) {
             if (ok) {
-                out << " and ";
+                out << " and (";
             }
+
             if (src) {
-                out << " (src port ";
+                out << " src port ";
             } else {
-                out << " (dst port ";
+                out << " dst port ";
             }
+
             out << std::to_string(ports[0]);
 
             for (int i = 1; i < ports.size(); i++) {
-                out << " or port " << ports[i];
+                if (src) {
+                    out << " or src port " << ports[i];
+                } else {
+                    out << " or dst port " << ports[i];
+                }
             }
-            out << ")";
+            out << " )";
             ok = true;
         }
     };
@@ -133,4 +139,14 @@ int devWithIpv4(std::string &devName, const std::string &ip) {
     }
     pcap_freealldevs(dev_list);
     return nret;
+}
+
+u_int32_t hostIntOfIp(const std::string &ip) {
+    in_addr addr = {0};
+    int nret = inet_aton(ip.c_str(), &addr);
+    if (!nret) {
+        debug(LOG_ERR, "inet_aton failed, nret %d:%s", nret, strerror(errno));
+        return 0;
+    }
+    return ntohl(addr.s_addr);
 }

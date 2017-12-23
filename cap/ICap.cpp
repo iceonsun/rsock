@@ -11,12 +11,11 @@
 
 
 ICap::ICap(const std::string &dev, const std::string &srcIp, const PortLists &srcPorts, const PortLists &dstPorts,
-           u_char *args, int timeout_ms) : TIMEOUT(timeout_ms) {
+           int timeout_ms) : TIMEOUT(timeout_ms) {
     mDev = dev;
     mSrcIp = srcIp;
     mPorter.SetSrcPorts(srcPorts);
     mPorter.SetDstPorts(dstPorts);
-    mArgs = args;
 }
 
 int ICap::initDevAndIp() {
@@ -85,14 +84,17 @@ int ICap::Init() {
     return 0;
 }
 
-void ICap::Run() {
+void ICap::Run(pcap_handler handler, u_char *args) {
     assert(mInited);
+    assert(handler != nullptr);
+    mHandler = handler;
+    mArgs = args;
     pcap_loop(mCap, -1, capHandler, reinterpret_cast<u_char *>(this));
 }
 
 // todo:
-uv_thread_t ICap::Start() {
-    Run();
+uv_thread_t ICap::Start(pcap_handler handler, u_char *args) {
+    Run(handler, args);
     return 0;
 }
 
@@ -117,6 +119,23 @@ int ICap::Close() {
 }
 
 
-int ICap::datalink()  {
+int ICap::Datalink()  {
     return pcap_datalink(mCap);
+}
+
+void ICap::SetCapHandler(pcap_handler handler, u_char *args) {
+    mHandler = handler;
+    mArgs = args;
+}
+
+void ICap::HandlePkt(u_char *args, const struct pcap_pkthdr *hdr, const u_char *pkt) {
+#ifndef NNDEBUG
+    assert(mHandler != nullptr);
+#else
+    if (!mHandler) {
+        debug(LOG_ERR, "handler cannot be null");
+        return;
+    }
+#endif
+    mHandler(args, hdr, pkt);
 }

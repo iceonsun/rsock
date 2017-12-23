@@ -49,7 +49,7 @@ private:
     IConnCb mOutputCb = nullptr;
     IConnCb mOnRecvCb = nullptr;
 
-    std::string mKey = nullptr;
+    std::string mKey;
 };
 
 

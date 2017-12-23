@@ -205,12 +205,12 @@ void ClientConn::Close() {
         mUnAddr = nullptr;
     }
 
-    debug(LOG_INFO, "mConv2Origin.size: %d", mConv2Origin.size());
+    debug(LOG_ERR, "mConv2Origin.size: %d", mConv2Origin.size());
     for (auto e: mConv2Origin) {
         free(e.second);
     }
     mConv2Origin.clear();
 
-    debug(LOG_INFO, "mAddr2Conv.size: %d", mAddr2Conv.size());
+    debug(LOG_ERR, "mAddr2Conv.size: %d", mAddr2Conv.size());
     mAddr2Conv.clear();
 }

@@ -9,6 +9,7 @@
 #include <vector>
 #include <sys/socket.h>
 #include <libnet.h>
+#include <pcap.h>
 #include "ktype.h"
 #include "rcommon.h"
 #include "IConn.h"
@@ -19,7 +20,8 @@ public:
     typedef IUINT8 MacBufType[MAC_LEN];
     const static int TTL_OUT = OM_TTL_OUT;
 
-    IRawConn(libnet_t *libnet, IUINT32 src, uv_loop_t *loop, const std::string &key, bool is_server = false,
+    // todo change default argument value
+    IRawConn(libnet_t *libnet, IUINT32 src, uv_loop_t *loop, const std::string &hashKey, const std::string &connKey, bool is_server = false,
              int type = OM_PIPE_DEF, int datalinkType = DLT_EN10MB, int injectionType = LIBNET_RAW4,
              MacBufType const srcMac = nullptr, MacBufType const dstMac = nullptr, IUINT32 dst = 0);
 
@@ -32,9 +34,9 @@ public:
     static int SendRawUdp(libnet_t *libnet, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT16 dp, const IUINT8 *payload,
                           IUINT16 payload_len, IUINT16 ip_id, int injection_type, MacBufType srcMac, MacBufType dstMac);
 
-    static int CapInputCb(u_char *args, struct pcap_pkthdr *hdr, const u_char *packet);
+    static void CapInputCb(u_char *args, const pcap_pkthdr *hdr, const u_char *packet);
 
-    int RawInput(u_char *args, struct pcap_pkthdr *hdr, const u_char *packet);
+    int RawInput(u_char *args, const pcap_pkthdr *hdr, const u_char *packet);
 
     int Send(ssize_t nread, const rbuf_t &rbuf) override;
 
@@ -48,8 +50,10 @@ protected:
 
 private:
     // mulithread. const var
-    in_addr_t mSrc;    // little endian
-    in_addr_t mDst;    // little endian
+    IUINT32 mSrc;    // little endian
+    in_addr_t mSrcNetEndian;    // network endian
+    IUINT32 mDst;    // little endian
+    in_addr_t mDstNetEndian;    // network endian
     const int mDatalink = DLT_EN10MB;   // default ethernet
     const bool mIsServer;    // const for multithread
 
@@ -60,7 +64,10 @@ private:
     MacBufType mDstMac;
     int mConnType = OM_PIPE_DEF;
 
-    int unixSock = 0;   // for thread synchronization
+    int mSockPair[2];
+    int mReadFd;
+    int mWriteFd;
+//    int unixSock = 0;   // for thread synchronization
     uv_loop_t *mLoop = nullptr;
     uv_poll_t *mUnixDgramPoll = nullptr;
     std::string mHashKey;

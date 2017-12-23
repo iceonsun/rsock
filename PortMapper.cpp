@@ -34,7 +34,7 @@ void PortMapper::SetSrcPorts(const PortLists &ports) {
 bool PortMapper::addFn(PortLists &vec, IUINT16 port) {
     for (auto e: vec) {
         if (e == port) {
-            debug(LOG_INFO, "port %d already in container");
+            debug(LOG_ERR, "port %d already in container");
             return false;
         }
     }
@@ -49,7 +49,7 @@ bool PortMapper::removeFn(PortLists &vec, IUINT16 port) {
         return true;
     }
 
-    debug(LOG_INFO, "port %d not in container");
+    debug(LOG_ERR, "port %d not in container");
     return false;
 }
 

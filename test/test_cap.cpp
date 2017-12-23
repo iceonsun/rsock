@@ -102,7 +102,7 @@ int main(int argc, char **argv) {
         delete cap;
         exit(1);
     }
-    datalink = cap->datalink();
-    cap->Run();
+    datalink = cap->Datalink();
+    cap->Run(nullptr, nullptr);
     return 0;
 }

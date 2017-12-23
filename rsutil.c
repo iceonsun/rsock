@@ -32,11 +32,14 @@ struct sockaddr *new_addr(const struct sockaddr *addr) {
 
 int checkFdType(int fd, int type) {
     assert(fd >= 0);
-    int currType;
+    int currType = 0;
     socklen_t len = sizeof(socklen_t);
-    getsockopt(fd, SOL_SOCKET, SO_TYPE, &currType, &len);
+    int nret = getsockopt(fd, SOL_SOCKET, SO_TYPE, &currType, &len);
+    if (nret) {
+        debug(LOG_ERR, "getsockopt, nret %d: %s", nret, strerror(errno));
+    }
     assert(currType == type);
-    return 0;
+    return nret;
 }
 
 uv_poll_t *poll_dgram_fd(int fd, uv_loop_t *loop, uv_poll_cb cb, void *arg, int *err) {

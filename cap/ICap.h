@@ -15,7 +15,7 @@
 class ICap {
 public:
     ICap(const std::string &dev, const std::string &srcIp, const PortLists &srcPorts, const PortLists &dstPorts,
-             u_char *args, int timeout_ms = 20);
+             int timeout_ms = 20);
 
 //    ICap(const std::string &dev, const std::string &srcIp,  const std::string &dstIp, const PortLists& hostPorts, const PortLists &targetPorts,
 //         int timeout_ms);
@@ -25,14 +25,16 @@ public:
     virtual int Close();
 
     // run in a seperate thread.
-    uv_thread_t Start();
+    uv_thread_t Start(pcap_handler handler, u_char *args);
 
     // run in the calling thread.
-    void Run();
+    void Run(pcap_handler handler, u_char *args);
 
-    int datalink();
+    int Datalink();
 
-    virtual void HandlePkt(u_char *args, const struct pcap_pkthdr *hdr, const u_char *pkt) = 0;
+    virtual void SetCapHandler(pcap_handler handler, u_char *args);
+
+    virtual void HandlePkt(u_char *args, const struct pcap_pkthdr *hdr, const u_char *pkt);
 
 protected:
     static void capHandler(u_char *, const struct pcap_pkthdr *, const u_char *);
@@ -51,6 +53,7 @@ private:
 
     bool mInited = false;
     u_char *mArgs = nullptr;
+    pcap_handler mHandler = nullptr;
 };
 
 
