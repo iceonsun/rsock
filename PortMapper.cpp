@@ -27,11 +27,11 @@ IUINT16 PortMapper::NextSrcPort() {
     return nextFn(mSrcPorts);
 }
 
-void PortMapper::SetSrcPorts(const std::vector<IUINT16> &ports) {
+void PortMapper::SetSrcPorts(const PortLists &ports) {
     mSrcPorts = ports;
 }
 
-bool PortMapper::addFn(std::vector<IUINT16> &vec, IUINT16 port) {
+bool PortMapper::addFn(PortLists &vec, IUINT16 port) {
     for (auto e: vec) {
         if (e == port) {
             debug(LOG_INFO, "port %d already in container");
@@ -42,7 +42,7 @@ bool PortMapper::addFn(std::vector<IUINT16> &vec, IUINT16 port) {
     return true;
 }
 
-bool PortMapper::removeFn(std::vector<IUINT16> &vec, IUINT16 port) {
+bool PortMapper::removeFn(PortLists &vec, IUINT16 port) {
     auto it = std::find(std::begin(vec), std::end(vec), port);
     if (it != std::end(vec)) {
         vec.erase(it);
@@ -53,8 +53,9 @@ bool PortMapper::removeFn(std::vector<IUINT16> &vec, IUINT16 port) {
     return false;
 }
 
-IUINT16 PortMapper::nextFn(const std::vector<IUINT16> &vec) {
-    long now = time(NULL);
+IUINT16 PortMapper::nextFn(const PortLists &vec) {
+    // todo: add srand in main
+    int now = rand();
     if (!vec.empty()) {
         return vec[now % vec.size()];
     } else {
@@ -67,6 +68,14 @@ IUINT16 PortMapper::nextFn(const std::vector<IUINT16> &vec) {
     }
 }
 
-void PortMapper::SetDstPorts(const std::vector<IUINT16> &ports) {
+void PortMapper::SetDstPorts(const PortLists &ports) {
     mDstPorts = ports;
+}
+
+PortMapper::PortLists &PortMapper::GetSrcPortLists() {
+    return mSrcPorts;
+}
+
+PortMapper::PortLists &PortMapper::GetDstPortLists() {
+    return mDstPorts;
 }

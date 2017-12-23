@@ -165,13 +165,14 @@ int IRawConn::RawInput(u_char *args, struct pcap_pkthdr *hdr, const u_char *pack
     const char *hashhead = nullptr;
 
     if (proto == IPPROTO_TCP) {
+        // todo: remove check. pcap filter it??
         if (!(mConnType & OM_PIPE_TCP_RECV)) {  // check incomming packets
             debug(LOG_INFO, "conn type %d. but receive tcp packet", mConnType);
             return 0;
         }
 
         struct tcphdr *tcp = (struct tcphdr *) ((const char *) ip + LIBNET_IPV4_H);
-        src_port = ntohs(tcp->th_sport);
+        src_port = (tcp->th_sport);
 
         hashhead = (const char *) tcp + (tcp->th_off << 2);
     } else if (proto == IPPROTO_UDP) {
@@ -181,14 +182,14 @@ int IRawConn::RawInput(u_char *args, struct pcap_pkthdr *hdr, const u_char *pack
         }
 
         struct udphdr *udp = (struct udphdr *) ((const char *) ip + LIBNET_IPV4_H);
-        src_port = ntohs(udp->uh_sport);
+        src_port = (udp->uh_sport);
 
         hashhead = (const char *) udp + LIBNET_UDP_H;
     }
 
     // this check is necessary.
     // because we may receive rst with length zero. if we don't check, we may cause illegal memory access error
-    if (hdr->len - ((const u_char *) hashhead - packet) < HASH_BUF_SIZE) {
+    if (hdr->len - ((const u_char *) hashhead - packet) < HASH_BUF_SIZE + 1) {  // data len must >= 1
         debug(LOG_ERR, "incomplete message.");
         return 0;
     }

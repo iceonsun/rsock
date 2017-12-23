@@ -6,9 +6,9 @@
 #define RSOCK_CRAWCONN_H
 
 
-#include "IRawConn.h"
-#include "IGroupConn.h"
-#include "ClientConn.h"
+#include "../IRawConn.h"
+#include "../IGroupConn.h"
+#include "../ClientConn.h"
 
 class CRawConn : public IRawConn {
 public:
