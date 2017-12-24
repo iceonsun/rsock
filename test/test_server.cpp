@@ -3,10 +3,10 @@
 #include <getopt.h>
 #include <syslog.h>
 #include "../cap/cap_util.h"
-#include "../cap/RCap.h"
 #include "../debug.h"
 #include "../SRawConn.h"
 #include "../rhash.h"
+#include "../cap/RCap.h"
 
 int OnRecvCb(ssize_t nread, const rbuf_t &rbuf) {
     debug(LOG_ERR, "nread: %d", nread);
@@ -33,7 +33,7 @@ int main(int argc, char **argv) {
 
     uv_loop_t *LOOP = uv_default_loop();
 
-    auto scap = new ICap(dev,"", selfIp,  srcPorts, selfPorts);
+    auto scap = new RCap(dev, selfIp, srcPorts, selfPorts);
     scap->Init();
 
     int datalink = scap->Datalink();

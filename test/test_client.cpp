@@ -4,14 +4,12 @@
 
 
 #include <string>
-#include <getopt.h>
 #include <syslog.h>
 #include "../cap/cap_util.h"
-#include "../cap/RCap.h"
 #include "../client/CRawConn.h"
 #include "../debug.h"
-#include "../SRawConn.h"
 #include "../rhash.h"
+#include "../cap/RCap.h"
 
 int OnRecvCb(ssize_t nread, const rbuf_t &rbuf) {
     debug(LOG_ERR, "nread: %d", nread);
@@ -21,7 +19,7 @@ int OnRecvCb(ssize_t nread, const rbuf_t &rbuf) {
 int main(int argc, char **argv) {
     std::string dev = "lo0";
     std::string targetIp = "127.0.0.1";
-    std::string selfIp = "127.0.0.2";
+    std::string selfIp = "127.0.0.1";
     PortLists targetPorts = {10031, 10032,10033, 10034};   // target ports
     PortLists selfPorts = {10051, 10052, 10053, 10054};  // self ports
     int listenPort = 10030;
@@ -39,8 +37,7 @@ int main(int argc, char **argv) {
     generateIdBuf(id, hashKey);
 
     uv_loop_t *LOOP = uv_default_loop();
-//    auto cap = new ICap(dev, targetIp, targetPorts, selfPorts);
-    auto cap = new ICap(dev, targetIp, selfIp, targetPorts, selfPorts);
+    auto cap = new RCap(dev, selfIp, targetPorts, selfPorts, targetIp);
     cap->Init();
 
     const int datalink = cap->Datalink();

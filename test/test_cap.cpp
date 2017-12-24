@@ -4,7 +4,6 @@
 
 #include <syslog.h>
 #include <libnet.h>
-#include "../cap/RCap.h"
 #include "../debug.h"
 #include "../cap/cap_headers.h"
 #include "../enc.h"
@@ -91,18 +90,5 @@ void handler(u_char *args, const struct pcap_pkthdr *hdr, const u_char *pkt) {
 
 int main(int argc, char **argv) {
 //    std::string dev = "en0";
-    std::string dev = "lo0";
-    PortLists srcPorts = {10012, 10022};
-    PortLists dstPorts;
-    std::string srcIp = "127.0.0.1";
-//    std::string srcIp = "47.95.217.247";
-    auto cap = new RCap(dev, srcIp, srcPorts, dstPorts, nullptr, handler);
-    int nret = cap->Init();
-    if (nret) {
-        delete cap;
-        exit(1);
-    }
-    datalink = cap->Datalink();
-    cap->Run(nullptr, nullptr);
     return 0;
 }
