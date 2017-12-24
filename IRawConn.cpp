@@ -10,16 +10,17 @@
 #include "rsutil.h"
 #include "OHead.h"
 #include "enc.h"
+#include "rhash.h"
 
 
-// todo: change src and dst to network endian
+// todo: change src and dst to self and target.
 // RawConn has key of nullptr to expose errors as fast as it can if any.
-IRawConn::IRawConn(libnet_t *libnet, IUINT32 src, uv_loop_t *loop, const std::string &hashKey,
+IRawConn::IRawConn(libnet_t *libnet, IUINT32 self, uv_loop_t *loop, const std::string &hashKey,
                    const std::string &connKey, bool is_server, int type, int datalinkType,
-                   int injectionType, MacBufType const srcMac, MacBufType const dstMac, IUINT32 dst)
-        : IConn(connKey), mNet(libnet), mSrc(src), mLoop(loop), mHashKey(hashKey),
+                   int injectionType, MacBufType const srcMac, MacBufType const dstMac, IUINT32 target)
+        : IConn(connKey), mNet(libnet), mSelf(self), mLoop(loop), mHashKey(hashKey),
           mIsServer(is_server), mConnType(type), mDatalink(datalinkType),
-          mInjectionType(injectionType), mDst(dst) {
+          mInjectionType(injectionType), mTarget(target) {
 //    if (!is_server) {
 //        assert(dst != nullptr);
 //    }
@@ -39,8 +40,10 @@ IRawConn::IRawConn(libnet_t *libnet, IUINT32 src, uv_loop_t *loop, const std::st
     socketpair(AF_UNIX, SOCK_DGRAM, 0, mSockPair);
     mReadFd = mSockPair[0];
     mWriteFd = mSockPair[1];
-    mSrcNetEndian = htonl(mSrc);
-    mDstNetEndian = htonl(mDst);
+    mSelfNetEndian = mSelf;
+//    mSrcNetEndian = htonl(mSrc);
+//    mDstNetEndian = htonl(mDst);
+    mTargetNetEndian = mTarget;
 }
 
 int IRawConn::Init() {
@@ -66,15 +69,18 @@ int IRawConn::Send(ssize_t nread, const rbuf_t &rbuf) {
 #endif
         const int ENC_SIZE = oh->GetEncBufSize();
 
+        if (HASH_BUF_SIZE + ENC_SIZE + nread > OM_MAX_PKT_SIZE) {
 #ifndef NNDEBUG
-        assert(HASH_BUF_SIZE + ENC_SIZE + nread <= OM_MAX_PKT_SIZE);
-        debug(LOG_ERR, "packet exceeds MTU. redefine MTU. MTU: %d, HASH_BUF_SIZE: %d, ENC_SIZE: %d, nread: %d",
-              OM_MAX_PKT_SIZE, HASH_BUF_SIZE, ENC_SIZE, nread);
+            assert(HASH_BUF_SIZE + ENC_SIZE + nread <= OM_MAX_PKT_SIZE);
 #else
-        // todo: make OM_MAX_PKT_SIZE configurable, rather than macro
+            debug(LOG_ERR, "packet exceeds MTU. redefine MTU. MTU: %d, HASH_BUF_SIZE: %d, ENC_SIZE: %d, nread: %d",
+                  OM_MAX_PKT_SIZE, HASH_BUF_SIZE, ENC_SIZE, nread);
 #endif
+        }
+
+        // todo: make OM_MAX_PKT_SIZE configurable, rather than macro
         IUINT8 buf[OM_MAX_PKT_SIZE] = {0};
-        compute_hash(reinterpret_cast<const u_char *>(mHashKey.c_str()), mHashKey.size(), rbuf.base, nread, buf);
+        compute_hash((char *) buf, mHashKey, rbuf.base, nread);
         IUINT8 *p = buf + HASH_BUF_SIZE;
         p = oh->Enc2Buf(p, sizeof(buf) - HASH_BUF_SIZE);
         if (!p) {
@@ -100,9 +106,11 @@ int IRawConn::Send(ssize_t nread, const rbuf_t &rbuf) {
         }
 
         if (conn_type & OM_PIPE_TCP_SEND) {
-            return SendRawTcp(mNet, mSrc, sp, dst, dp, seq, buf, (p - buf), ipid, mInjectionType, mSrcMac, mDstMac);
+            return SendRawTcp(mNet, mSelf, sp, dst, dp, seq, buf, (p - buf), ipid, mInjectionType, mSrcMac, mDstMac,
+                              mTcp, mIp, mEth);
         } else {
-            return SendRawUdp(mNet, mSrc, sp, dst, dp, buf, (p - buf), ipid, mInjectionType, mSrcMac, mDstMac);
+            return SendRawUdp(mNet, mSelf, sp, dst, dp, buf, (p - buf), ipid, mInjectionType, mSrcMac, mDstMac,
+                              mUdp, mIp, mEth);
         }
     }
 
@@ -114,6 +122,7 @@ void IRawConn::CapInputCb(u_char *args, const pcap_pkthdr *hdr, const u_char *pa
     conn->RawInput(args, hdr, packet);
 }
 
+// todo: 本地向服务器发送数据的时候，本地会再次接收到数据
 int IRawConn::RawInput(u_char *args, const pcap_pkthdr *hdr, const u_char *packet) {
     struct ip *ip = NULL;
     if (mDatalink == DLT_EN10MB) {    // ethernet
@@ -143,14 +152,15 @@ int IRawConn::RawInput(u_char *args, const pcap_pkthdr *hdr, const u_char *packe
 #endif
     }
 
-    if (ip->ip_dst.s_addr != mSrcNetEndian) {
+    debug(LOG_ERR, "mSrc: %u, mDst: %u ip->src: %u, ip->dst: %u", mSelf, mTarget, ip->ip_src.s_addr, ip->ip_dst.s_addr);
+    if (ip->ip_dst.s_addr != mSelfNetEndian) {
         debug(LOG_ERR, "dst is not this machine");
         return 0;
     }
 
     // todo: libpcap outbound
     if (!mIsServer) {    // meanless to check src for server
-        if (ip->ip_src.s_addr != mDstNetEndian) {
+        if (ip->ip_src.s_addr != mTargetNetEndian) {
             debug(LOG_ERR, "client: src is not target.");
             return 0;
         }
@@ -196,13 +206,15 @@ int IRawConn::RawInput(u_char *args, const pcap_pkthdr *hdr, const u_char *packe
         hashhead = (const char *) udp + LIBNET_UDP_H;
     }
 
+//    const int len = hdr->len - ((const u_char *) hashhead - packet);
+    const int lenWithHash = ntohs(ip->ip_len) - ((const u_char *) hashhead - (const u_char *) ip);
     // this check is necessary.
     // because we may receive rst with length zero. if we don't check, we may cause illegal memory access error
     if (hdr->len - ((const u_char *) hashhead - packet) < HASH_BUF_SIZE + 1) {  // data len must >= 1
 #ifndef NNDEBUG
-        const int len = hdr->len - ((const u_char *) hashhead - packet);
-        fprintf(stderr, "receive %d bytes from %s:%d -> %s:%d\n", len, inet_ntoa(ip->ip_src), ntohs(src_port), inet_ntoa(ip->ip_dst), ntohs(dst_port));
-        for (int i = 0; i < len; i++) {
+        fprintf(stderr, "receive %d bytes from %s:%d -> %s:%d\n", lenWithHash, inet_ntoa(ip->ip_src), ntohs(src_port),
+                inet_ntoa(ip->ip_dst), ntohs(dst_port));
+        for (int i = 0; i < lenWithHash; i++) {
             fprintf(stderr, "%c", hashhead[i]);
         }
         fprintf(stderr, "\n");
@@ -210,6 +222,8 @@ int IRawConn::RawInput(u_char *args, const pcap_pkthdr *hdr, const u_char *packe
         debug(LOG_ERR, "incomplete message.");
         return 0;
     }
+    debug(LOG_ERR, "receive: %d bytes from: %s:%d -> %s:%d\n", lenWithHash, inet_ntoa(ip->ip_src), ntohs(src_port),
+          inet_ntoa(ip->ip_dst), ntohs(dst_port));
 
     const char *ohead = hashhead + HASH_BUF_SIZE;
     IUINT8 oheadLen = 0;
@@ -224,16 +238,14 @@ int IRawConn::RawInput(u_char *args, const pcap_pkthdr *hdr, const u_char *packe
     }
 
     const char *data = ohead + oheadLen;
-    int data_len = (int) (hdr->len - ((const u_char *) data - packet));
+    int data_len = lenWithHash - (data - hashhead);
+    debug(LOG_ERR, "oheadLen: %d, datalen: %d", oheadLen, data_len);
     if (data_len <= 0) {
         debug(LOG_ERR, "data_len <= 0! data_len: %d, hdr.len: %d", data_len, hdr->len);
         return 0;
     }
 
-    if (0 ==
-        hash_equal(reinterpret_cast<const u_char *>(mHashKey.c_str()), mHashKey.size(),
-                   reinterpret_cast<const u_char *>(hashhead), HASH_BUF_SIZE, data,
-                   data_len)) {
+    if (!hash_equal(hashhead, mHashKey, data, data_len)) {
         debug(LOG_ERR, "hash not match");
         return 0;
     }
@@ -298,7 +310,7 @@ void IRawConn::pollCb(uv_poll_t *handle, int status, int events) {
             rbuf.base = const_cast<char *>(p);
             rbuf.len = len;
             rbuf.data = &head;
-            conn->Input(nread, rbuf);
+            conn->Input(len, rbuf);
         } else {
             debug(LOG_ERR, "len <= 0");
         }
@@ -306,24 +318,26 @@ void IRawConn::pollCb(uv_poll_t *handle, int status, int events) {
 }
 
 int IRawConn::cap2uv(const char *head_beg, size_t head_len, const struct sockaddr_in *target, const char *data,
-                     size_t len) {
-    assert(len + sizeof(struct sockaddr_in) + head_len <= OM_MAX_PKT_SIZE);
+                     size_t data_len) {
+    assert(data_len + sizeof(struct sockaddr_in) + head_len <= OM_MAX_PKT_SIZE);
 
     char buf[OM_MAX_PKT_SIZE] = {0};
     memcpy(buf, head_beg, head_len);
     char *p = buf + head_len;
     p = encode_sockaddr4(p, target);
-    memcpy(p, data, len);
-    p += len;
+    memcpy(p, data, data_len);
+    p += data_len;
+    debug(LOG_ERR, "head_len: %d, data_len:%d", head_len, data_len);
     ssize_t n = write(mWriteFd, buf, p - buf);
     return n;
 }
 
 int
 IRawConn::SendRawTcp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT16 dp, IUINT32 seq, const IUINT8 *payload,
-                     IUINT16 payload_len, IUINT16 ip_id, int injection_type, MacBufType srcMac, MacBufType dstMac) {
+                    IUINT16 payload_len, IUINT16 ip_id, int injection_type, MacBufType srcMac, MacBufType dstMac,
+                    libnet_ptag_t &tcp, libnet_ptag_t &ip, libnet_ptag_t &eth) {
     const int DUMY_WIN_SIZE = 1000;
-    libnet_ptag_t ip = 0, tcp = 0, eth = 0;
+//    libnet_ptag_t ip = 0, tcp = 0, eth = 0;
 
     tcp = libnet_build_tcp(
             sp,              // source port
@@ -338,8 +352,9 @@ IRawConn::SendRawTcp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT16 
             payload,         // payload
             payload_len,     // playload len
             l,               // pointer to libnet context
-            0                // protocol tag to modify an existing header, 0 to build a new one
+            tcp                // protocol tag to modify an existing header, 0 to build a new one
     );
+    debug(LOG_ERR, "sp: %d, dp: %d, seq: %u, ack: %u, payload_len: %u", sp, dp, seq, 0, payload_len);
     if (tcp == -1) {
         debug(LOG_ERR, "failed to build tcp: %s", libnet_geterror(l));
         return tcp;
@@ -358,9 +373,15 @@ IRawConn::SendRawTcp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT16 
             NULL,           // payload optional payload or NULL
             0,              // payload_s payload length or 0
             l,              // l pointer to a libnet context
-            0               // ptag protocol tag to modify an existing header, 0 to build a new one
+            ip               // ptag protocol tag to modify an existing header, 0 to build a new one
 
     );
+    in_addr src_in_addr = {src};
+    in_addr dst_in_addr = {dst};
+    std::string  src1 = inet_ntoa(src_in_addr);
+    std::string  dst1 = inet_ntoa(dst_in_addr);
+    // todo: inet_ntoa, if used in same printf, it will collides
+    debug(LOG_ERR, "src: %u, %s, dst: %u, %s", src, src1.c_str(), dst, dst1.c_str());
     if (ip == -1) {
         debug(LOG_ERR, "failed to build ipv4: %s", libnet_geterror(l));
         return ip;
@@ -374,7 +395,7 @@ IRawConn::SendRawTcp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT16 
                 NULL,                   // payload optional payload or NULL
                 0,                      // payload_s payload length or 0
                 l,                      // l pointer to a libnet context
-                0                       // ptag protocol tag to modify an existing header, 0 to build a new one
+                eth                       // ptag protocol tag to modify an existing header, 0 to build a new one
 
         );
         if (eth == -1) {
@@ -387,14 +408,20 @@ IRawConn::SendRawTcp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT16 
     if (-1 == n) {
         debug(LOG_ERR, "libnet_write failed: %s", libnet_geterror(l));
     } else {
-        debug(LOG_ERR, "libnet_write %d bytes.", n);
+        // todo: remove
+//        in_addr dst_in_addr = {htonl(dst)};
+
+//        in_addr src_in_addr = {htonl(src)};
+        debug(LOG_ERR, "libnet_write %d bytes. %s:%d<->%s:%d.", n, src1.c_str(), sp, dst1.c_str(),
+              dp);
     }
     return n;
 }
 
-int IRawConn::SendRawUdp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT16 dp, const IUINT8 *payload,
-                         IUINT16 payload_len, IUINT16 ip_id, int injection_type, MacBufType srcMac, MacBufType dstMac) {
-    libnet_ptag_t udp = 0, ip = 0, eth = 0;
+int IRawConn::SendRawUdp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT16 dp, const IUINT8 *payload, IUINT16 payload_len,
+                         IUINT16 ip_id, int injection_type, MacBufType srcMac, MacBufType dstMac, libnet_ptag_t &udp,
+                         libnet_ptag_t &ip, libnet_ptag_t &eth) {
+//    libnet_ptag_t udp = 0, ip = 0, eth = 0;
     udp = libnet_build_udp(
             sp,         // sp source port
             dp,         // dp destination port
@@ -403,7 +430,7 @@ int IRawConn::SendRawUdp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUIN
             payload,                    // payload optional payload or NULL
             payload_len,                // payload_s payload length or 0
             l,                          // l pointer to a libnet context
-            0                           //  ptag protocol tag to modify an existing header, 0 to build a new one
+            udp                           //  ptag protocol tag to modify an existing header, 0 to build a new one
     );
     if (-1 == udp) {
         debug(LOG_ERR, "failed to build udp: %s", libnet_geterror(l));
@@ -424,7 +451,7 @@ int IRawConn::SendRawUdp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUIN
             NULL,           // payload optional payload or NULL
             0,              // payload_s payload length or 0
             l,              // l pointer to a libnet context
-            0               // ptag protocol tag to modify an existing header, 0 to build a new one
+            ip               // ptag protocol tag to modify an existing header, 0 to build a new one
     );
 
     if (-1 == ip) {
@@ -440,7 +467,7 @@ int IRawConn::SendRawUdp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUIN
                 NULL,                   // payload optional payload or NULL
                 0,                      // payload_s payload length or 0
                 l,                      // l pointer to a libnet context
-                0                       // ptag protocol tag to modify an existing header, 0 to build a new one
+                eth                       // ptag protocol tag to modify an existing header, 0 to build a new one
 
         );
         if (eth == -1) {

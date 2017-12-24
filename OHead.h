@@ -9,6 +9,7 @@
 #include <array>
 #include "ktype.h"
 #include "rscomm.h"
+#include "rstype.h"
 
 class OHead {
 public:
@@ -23,9 +24,10 @@ public:
 
     IUINT8 ConnType();
 
-    void UpdateGroupId(IdBufType const buf);
+    void UpdateGroupId(const IdBufType &buf);
 
-    const char * GroupId();
+    const std::string & GroupIdStr();
+    const IdBufType & GroupId();
 
     void UpdateDst(IUINT32 dst);
 
@@ -62,15 +64,16 @@ public:
     struct sockaddr *srcAddr = nullptr;
 
 private:
+    // todo: 加入len
     struct enc_head_t {
         // must correspond to fields that are gonna encoded;
-        static int GetEncBufSize() {
+        static int GetEncBufSize() {    // 15 right now
             return 0 +
 //                    sizeof(HashBufType)      // hash_buf. hash buf is not computed here.
                    + sizeof(IUINT8)         // len. not used right now
                    + sizeof(IUINT8)         // resereved
                    + sizeof(IUINT8)         // send_type
-                   + sizeof(IdBufType)  // id_buf
+                   + ID_BUF_SIZE            // id_buf
                    + sizeof(IUINT32);       // conv
         }
 
@@ -96,6 +99,7 @@ private:
     IUINT32 mDstAddr;
     IUINT16 mSourcePort;
     IUINT16 mDstPort;
+    std::string mGroupId;
 };
 
 

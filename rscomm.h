@@ -45,9 +45,9 @@ extern "C" {
 #define HASH_BUF_SIZE 8
 #define ID_BUF_SIZE 8
 
-typedef unsigned char HashBufType[HASH_BUF_SIZE];
+//typedef unsigned char HashBufType[HASH_BUF_SIZE];
 // todo, use std::array
-typedef char IdBufType[ID_BUF_SIZE];
+//typedef char IdBufType[ID_BUF_SIZE];
 
 #ifdef __cplusplus
 }

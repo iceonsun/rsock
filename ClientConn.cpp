@@ -7,10 +7,11 @@
 #include "ClientConn.h"
 #include "rsutil.h"
 #include "debug.h"
+#include "rstype.h"
 
-ClientConn::ClientConn(const IdBufType groupId, const char *listenUnPath, const char *listenUdpIp,
+ClientConn::ClientConn(const IdBufType &groupId, const char *listenUnPath, const char *listenUdpIp,
                        IUINT16 listenUdpPort, std::vector<IUINT16> &sourcePorts, std::vector<IUINT16> &destPorts,
-                       uv_loop_t *loop, IConn *btm, const sockaddr_in *target)
+                       uv_loop_t *loop, IConn *btm, uint32_t bigDst)
         : IGroupConn(groupId, btm){
     if (listenUdpIp) {
         mUdpAddr = new_addr4(listenUdpIp, listenUdpPort);
@@ -21,10 +22,11 @@ ClientConn::ClientConn(const IdBufType groupId, const char *listenUnPath, const 
         assert(mUnAddr != nullptr);
     }
 //    mhead  update connid
-    mHead.UpdateDst(ntohl(target->sin_addr.s_addr));
+    mHead.UpdateDst(bigDst);
     mHead.UpdateGroupId(groupId);
     mLoop = loop;
     mPortMapper.SetSrcPorts(sourcePorts);
+    mPortMapper.SetDstPorts(destPorts);
 }
 
 int ClientConn::Init() {
@@ -38,6 +40,7 @@ int ClientConn::Init() {
         if (nret) {
             return nret;
         }
+        debug(LOG_ERR, "client, listening on udp: %s:%d", inet_ntoa(mUdpAddr->sin_addr), ntohs(mUdpAddr->sin_port));
     }
 
     if (mUnAddr) {
@@ -46,6 +49,7 @@ int ClientConn::Init() {
             return nret;
         }
         mUnSock = nret;
+        debug(LOG_ERR, "client, listening on unix socket: %s", mUnAddr->sun_path);
     }
     return 0;
 }
@@ -61,6 +65,7 @@ int ClientConn::Send(ssize_t nread, const rbuf_t &rbuf) {
     IUINT32 conv = 0;
     if (it == mAddr2Conv.end()) {
         conv = mConvCounter++;
+        debug(LOG_ERR, "new conn, key: %s", key.c_str());
         mAddr2Conv.insert({key, conv}); // todo: should super class add this info?
         auto newAddr = new_addr(addr);
         mConv2Origin.insert({conv, newAddr});
@@ -105,10 +110,13 @@ int ClientConn::send2Origin(ssize_t nread, const rbuf_t &rbuf, const sockaddr *a
         return unSendOrigin(nread, rbuf, (sockaddr_un *) addr);
     }
 
+    const struct sockaddr_in* addr4 = reinterpret_cast<const sockaddr_in *>(addr);
+    debug(LOG_ERR, "send %d bytes to origin %s:%d\n", nread, inet_ntoa(addr4->sin_addr), ntohs(addr4->sin_port));
     rudp_send_t *snd = static_cast<rudp_send_t *>(malloc(sizeof(rudp_send_t)));
     memset(snd, 0, sizeof(rudp_send_t));
     snd->buf.base = static_cast<char *>(malloc(nread));
     memcpy(snd->buf.base, rbuf.base, nread);
+    snd->buf.len = nread;
     snd->udp_send.data = this;  // here is not wrapped
 
     uv_udp_send(reinterpret_cast<uv_udp_send_t *>(snd), mUdp, &snd->buf, 1, addr, send_cb);
@@ -140,8 +148,10 @@ void ClientConn::send_cb(uv_udp_send_t *req, int status) {
 void ClientConn::udpRecvCb(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf, const struct sockaddr *addr,
                                 unsigned flags) {
     auto *conn = static_cast<ClientConn *>(handle->data);
-    if (nread > 0) {
-        rbuf_t rbuf;
+   if (nread > 0) {
+       auto *addr4 = (const struct sockaddr_in*) addr;
+       debug(LOG_ERR, "client, receive %d bytes from %s:%d", nread, inet_ntoa(addr4->sin_addr), ntohs(addr4->sin_port));
+       rbuf_t rbuf;
         rbuf.base = buf->base;
         rbuf.len = buf->len;
         rbuf.data = (void *) addr;

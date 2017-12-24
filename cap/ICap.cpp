@@ -9,6 +9,11 @@
 #include "ICap.h"
 #include "../debug.h"
 
+ICap::ICap(const std::string &dev, const PortLists &srcPorts, const PortLists &dstPorts, int timeout_ms) : TIMEOUT(timeout_ms) {
+    mDev = dev;
+    mPorter.SetSrcPorts(srcPorts);
+    mPorter.SetDstPorts(dstPorts);
+}
 
 ICap::ICap(const std::string &dev, const std::string &srcIp, const PortLists &srcPorts, const PortLists &dstPorts,
            int timeout_ms) : TIMEOUT(timeout_ms) {
@@ -17,6 +22,17 @@ ICap::ICap(const std::string &dev, const std::string &srcIp, const PortLists &sr
     mPorter.SetSrcPorts(srcPorts);
     mPorter.SetDstPorts(dstPorts);
 }
+
+
+ICap::ICap(const std::string &dev, const std::string &srcIp, const std::string &dstIP, const PortLists &srcPorts,
+           const PortLists &dstPorts, int timeout_ms): TIMEOUT(timeout_ms) {
+    mDev = dev;
+    mSrcIp = srcIp;
+    mPorter.SetSrcPorts(srcPorts);
+    mPorter.SetDstPorts(dstPorts);
+    mDstIp = dstIP;
+}
+
 
 int ICap::initDevAndIp() {
     if (mDev.empty()) {
@@ -36,9 +52,14 @@ int ICap::initDevAndIp() {
 }
 
 int ICap::Init() {
-    int nret = initDevAndIp();
-    if (nret) {
-        return nret;
+    assert(mInited == false);
+//    todo: change:
+    int nret = 0;
+    if (mDstIp.empty()) {
+        nret = initDevAndIp();
+        if (nret) {
+            return nret;
+        }
     }
 
     auto filterStr = BuildFilterStr(mSrcIp, mDstIp, mPorter.GetSrcPortLists(), mPorter.GetDstPortLists());
@@ -94,12 +115,17 @@ void ICap::Run(pcap_handler handler, u_char *args) {
 
 // todo:
 uv_thread_t ICap::Start(pcap_handler handler, u_char *args) {
-    Run(handler, args);
+    uv_thread_t thread;
+    CapThreadArgs *threadArgs = new CapThreadArgs();
+    threadArgs->instance = this;
+    threadArgs->handler = handler;
+    threadArgs->args = args;
+    uv_thread_create(&thread, threadCb, threadArgs);
     return 0;
 }
 
 void ICap::capHandler(u_char *args, const struct pcap_pkthdr *hdr, const u_char *pkt) {
-    auto * cap = reinterpret_cast<ICap *>(args);
+    auto *cap = reinterpret_cast<ICap *>(args);
     if (cap->mDone) {
         pcap_breakloop(cap->mCap);
         return;
@@ -119,7 +145,7 @@ int ICap::Close() {
 }
 
 
-int ICap::Datalink()  {
+int ICap::Datalink() {
     return pcap_datalink(mCap);
 }
 
@@ -138,4 +164,13 @@ void ICap::HandlePkt(u_char *args, const struct pcap_pkthdr *hdr, const u_char *
     }
 #endif
     mHandler(args, hdr, pkt);
+}
+
+void ICap::threadCb(void *threadArg) {
+    CapThreadArgs *args = static_cast<CapThreadArgs *>(threadArg);
+    pcap_handler handler = args->handler;
+    u_char *arg = args->args;
+    ICap *cap = args->instance;
+    delete args;
+    cap->Run(handler, arg);
 }

@@ -64,6 +64,7 @@ IUINT16 PortMapper::nextFn(const PortLists &vec) {
         if (p < 20) {
             p = OM_DEF_PORT;
         }
+        debug(LOG_ERR, "port lists empty. choose random port: %d", p);
         return p;
     }
 }

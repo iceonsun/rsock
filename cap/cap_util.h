@@ -20,5 +20,5 @@ int ipv4OfDev(const char *dev, char *ip_buf, char *err);
 
 const std::string BuildFilterStr(const std::string &srcIp, const std::string &dstIp, const PortLists &srcPorts,
                                  const PortLists &dstPorts);
-uint32_t hostIntOfIp(const std::string &ip);
+//uint32_t hostIntOfIp(const std::string &ip);
 #endif //RSOCK_CAP_UTIL_H

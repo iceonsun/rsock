@@ -9,10 +9,11 @@
 #include "IGroupConn.h"
 #include "OHead.h"
 #include "PortMapper.h"
+#include "rstype.h"
 
 class GroupConn : public IGroupConn {
 public:
-    explicit GroupConn(const IdBufType groupId, uv_loop_t *loop, const struct sockaddr *target,
+    explicit GroupConn(const IdBufType &groupId, uv_loop_t *loop, const struct sockaddr *target,
                        const std::vector<IUINT16> &mSelfPorts, const struct sockaddr *origin, IUINT8 conn_type,
                        IConn *btm);
 

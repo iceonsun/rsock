@@ -7,10 +7,14 @@
 #include "IGroupConn.h"
 #include "rsutil.h"
 #include "debug.h"
+#include "rstype.h"
+#include "rhash.h"
+
 using namespace std::placeholders;
 
 
-IGroupConn::IGroupConn(const std::string &groupId, IConn *btm) : IConn(groupId), mGroupId(groupId), mBtm(btm) {
+IGroupConn::IGroupConn(const IdBufType &groupId, IConn *btm) : IConn(IdBuf2Str(groupId)), mBtm(btm) {
+    mGroupId = IdBuf2Str(groupId);
 }
 
 int IGroupConn::Init() {

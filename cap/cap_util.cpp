@@ -141,12 +141,13 @@ int devWithIpv4(std::string &devName, const std::string &ip) {
     return nret;
 }
 
-u_int32_t hostIntOfIp(const std::string &ip) {
-    in_addr addr = {0};
-    int nret = inet_aton(ip.c_str(), &addr);
-    if (!nret) {
-        debug(LOG_ERR, "inet_aton failed, nret %d:%s", nret, strerror(errno));
-        return 0;
-    }
-    return ntohl(addr.s_addr);
-}
+//u_int32_t hostIntOfIp(const std::string &ip) {
+//    in_addr addr = {0};
+//    int nret = inet_aton(ip.c_str(), &addr);
+//    if (!nret) {
+//        debug(LOG_ERR, "inet_aton failed, nret %d:%s", nret, strerror(errno));
+//        return 0;
+//    }
+////    return ntohl(addr.s_addr);
+//    return addr.s_addr;
+//}

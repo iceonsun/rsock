@@ -12,14 +12,14 @@
 #include "IGroupConn.h"
 #include "PortMapper.h"
 #include "OHead.h"
+#include "rstype.h"
 
 
 class ClientConn : public IGroupConn {
 public:
-    ClientConn(IdBufType const groupId, const char *listenUnPath, const char *listenUdpIp, IUINT16 listenUdpPort,
-               std::vector<IUINT16> &sourcePorts, std::vector<IUINT16> &destPorts, uv_loop_t *loop, IConn *btm,
-               const sockaddr_in *target);
-
+    ClientConn(const IdBufType &groupId, const char *listenUnPath, const char *listenUdpIp,
+                   IUINT16 listenUdpPort, std::vector<IUINT16> &sourcePorts, std::vector<IUINT16> &destPorts,
+                   uv_loop_t *loop, IConn *btm, uint32_t bigDst);
     int Init() override;
 
     int Send(ssize_t nread, const rbuf_t &rbuf) override;

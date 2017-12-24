@@ -9,6 +9,7 @@
 #include <cassert>
 #include "OHead.h"
 #include "enc.h"
+#include "rstype.h"
 
 void OHead::UpdateConv(IUINT32 conv) {
     enc.conv = conv;
@@ -26,9 +27,10 @@ IUINT8 OHead::ConnType() {
     return enc.conn_type;
 }
 
-void OHead::UpdateGroupId(IdBufType const buf) {
+void OHead::UpdateGroupId(const IdBufType &buf) {
 //    assert(sizeof(buf) == ID_BUF_SIZE); // this assert awayls fails
-    memcpy(enc.id_buf, buf, sizeof(IdBufType));
+    enc.id_buf = buf;
+    mGroupId = std::string(std::begin(enc.id_buf), std::end(enc.id_buf));
 }
 
 void OHead::UpdateDst(IUINT32 dst) {
@@ -42,13 +44,12 @@ int OHead::GetEncBufSize() {
 IUINT8 *OHead::Enc2Buf(IUINT8 *ptr, int len) {
     if (ptr && len >= GetEncBufSize()) {
         auto *p = reinterpret_cast<char *>(ptr);
-//        memcpy(p, enc.hash_buf, sizeof(HashBufType));   // hash_buf
 //        p += sizeof(HashBufType);
         p = encode_uint8(enc.len, p);                   // len
         p = encode_uint8(enc.resereved, p);             // reserved
         p = encode_uint8(enc.conn_type, p);             // conn_type
-        memcpy(p, enc.id_buf, sizeof(IdBufType));   // id_buf
-        p += sizeof(IdBufType);
+        std::copy(enc.id_buf.begin(), enc.id_buf.end(), p);
+        p += enc.id_buf.size();
         p = encode_uint32(enc.conv, p);                 // conv
         return reinterpret_cast<IUINT8 *>(p);
     }
@@ -61,20 +62,24 @@ const char *OHead::DecodeBuf(OHead &head, const char *p, int len) {
         p = decode_uint8(&e.len, p);
         p = decode_uint8(&e.resereved, p);
         p = decode_uint8(&e.conn_type, p);
-        memcpy(e.id_buf, p, ID_BUF_SIZE);
-        p += ID_BUF_SIZE;
+        std::copy(p, p + e.id_buf.size(), e.id_buf.begin());
+        // todo: use setter and getter
+        head.mGroupId = std::string(std::begin(e.id_buf), std::end(e.id_buf));
+        p += e.id_buf.size();
         p = decode_uint32(&e.conv, p);
         return p;
     }
     return nullptr;
 }
 
+// use port
 std::string OHead::BuildAddrKey(const struct sockaddr *origin) {
     if (origin->sa_family == AF_INET) {
         struct sockaddr_in *addr4 = (struct sockaddr_in *) origin;
         std::ostringstream out;
 //#ifndef NNDEBUG
         out << inet_ntoa(addr4->sin_addr) << ":" << ntohs(addr4->sin_port);
+//        out << inet_ntoa(addr4->sin_addr);
 //#else
 //        in << addr4->sin_addr.s_addr << ":" << addr4->sin_port;
 //#endif
@@ -90,6 +95,7 @@ std::string OHead::BuildAddrKey(const struct sockaddr *origin) {
 #endif
 }
 
+// don't use port
 std::string OHead::BuildKey(const struct sockaddr *origin, IUINT32 conv) {
     if (!origin) {
         return "";
@@ -99,7 +105,9 @@ std::string OHead::BuildKey(const struct sockaddr *origin, IUINT32 conv) {
         struct sockaddr_in *addr4 = (struct sockaddr_in *) origin;
         std::ostringstream out;
 //#ifndef NNDEBUG
-        out << inet_ntoa(addr4->sin_addr) << ":" << ntohs(addr4->sin_port) << ":" << conv;
+        // because source port of same conn may vary, so cannot use port as part of key
+//        out << inet_ntoa(addr4->sin_addr) << ":" << ntohs(addr4->sin_port) << ":" << conv;
+        out << inet_ntoa(addr4->sin_addr) << ":" << conv;
 //#else
 //        in << addr4->sin_addr.s_addr << ":" << addr4->sin_port << ":" << conv;
 //#endif
@@ -152,6 +160,10 @@ IUINT32 OHead::Dst() {
     return mDstAddr;
 }
 
-const char * OHead::GroupId() {
+const std::string & OHead::GroupIdStr() {
+    return mGroupId;
+}
+
+const IdBufType &OHead::GroupId() {
     return enc.id_buf;
 }

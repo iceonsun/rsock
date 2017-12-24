@@ -10,10 +10,10 @@
 #include <unistd.h>
 #include <uv.h>
 #include <sys/un.h>
-#include "rsutil.h"
 #include "debug.h"
 #include "rcommon.h"
 #include "enc.h"
+#include "rsutil.h"
 
 struct sockaddr *new_addr(const struct sockaddr *addr) {
     const int family = addr->sa_family;
@@ -66,16 +66,18 @@ uv_udp_t *om_listen_udp(const char *ip, int port, uv_loop_t *loop, uv_udp_recv_c
 }
 
 
-uv_udp_t *
-om_listen_udp_addr(const struct sockaddr_in *addr, uv_loop_t *loop, uv_udp_recv_cb recv_cb, void *arg, int *err) {
+uv_udp_t *om_listen_udp_addr(const struct sockaddr_in *addr, uv_loop_t *loop, uv_udp_recv_cb recv_cb, void *arg, int *err) {
     uv_udp_t *udp = (uv_udp_t *) malloc(sizeof(uv_udp_t));
     uv_udp_init(loop, udp);
     udp->data = arg;
 
-    int nret = uv_udp_bind(udp, (const struct sockaddr *) &addr, 0);
+    int nret = uv_udp_bind(udp, (const struct sockaddr *) addr, UV_UDP_REUSEADDR);
     if (nret) {
         if (err) { *err = nret;}
-        debug(LOG_ERR, "failed to bind udp: %s", uv_strerror(nret));
+        debug(LOG_ERR, "failed to bind udp on %s:%d, nret: %d, err : %s", inet_ntoa(addr->sin_addr), ntohs(addr->sin_port), nret, uv_strerror(nret));
+#ifndef NNDEBUG
+        assert(0);
+#endif
         free(udp);
         return NULL;
     }
@@ -123,46 +125,6 @@ om_listen_unix_dgram(const struct sockaddr_un *addr, uv_loop_t *loop, uv_poll_cb
     return poll;
 }
 
-IINT8 compute_hash(const u_char *key, int key_len, const char *data, int data_len, HashBufType hash) {
-    if (!data || data <= 0) {
-        return -1;
-    }
-    assert(HASH_BUF_SIZE > MD5_LEN);
-
-    const int hashLen = key_len + 1;
-    char need_hash[hashLen];
-    memcpy(need_hash, key, key_len);
-    need_hash[hashLen - 1] = data[0];
-
-    MD5_CTX md5_ctx;
-    MD5_Init(&md5_ctx);
-    MD5_Update(&md5_ctx, need_hash, hashLen);
-    u_char md5_result[MD5_LEN] = {0};
-    MD5_Final(md5_result, &md5_ctx);
-
-    memcpy(hash, md5_result + (MD5_LEN - HASH_BUF_SIZE), HASH_BUF_SIZE);
-    return 0;
-}
-
-IUINT8
-hash_equal(const u_char *key, int key_len, const u_char *hashed_buf, int buf_len, const char *data, int data_len) {
-    if (!data || data_len <= 0) {
-        return 0;
-    }
-
-    const int hashLen = key_len + 1;
-    char need_hash[hashLen];
-    memcpy(need_hash, key, key_len);
-    need_hash[hashLen - 1] = data[0];
-
-    MD5_CTX md5_ctx;
-    MD5_Init(&md5_ctx);
-    MD5_Update(&md5_ctx, need_hash, hashLen);
-    u_char md5_result[MD5_LEN] = {0};
-    MD5_Final(md5_result, &md5_ctx);
-    return !memcmp(hashed_buf, (md5_result + (MD5_LEN - HASH_BUF_SIZE)), buf_len);
-}
-
 char *encode_sockaddr4(char *buf, const struct sockaddr_in *addr) {
     char *p = buf;
     p = encode_uint32(addr->sin_addr.s_addr, p);
@@ -174,6 +136,7 @@ const char * decode_sockaddr4(const char *buf, struct sockaddr_in *addr) {
     const char *p = buf;
     p = decode_uint32(&addr->sin_addr.s_addr, p);
     p = decode_uint16(&addr->sin_port, p);
+    addr->sin_family = AF_INET;
     return p;
 }
 

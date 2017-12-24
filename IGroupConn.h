@@ -10,13 +10,14 @@
 #include <vector>
 #include "IConn.h"
 #include "IRawConn.h"
+#include "rstype.h"
 
 // each group has a groupId. each subconn in group shares same groupId. ip:port,
 // each subconn has a key. ip:port:conv,  or sockpath:conv
 class IGroupConn : public IConn {
 public:
 
-    explicit IGroupConn(const std::string &groupId, IConn *btm = nullptr);
+    explicit IGroupConn(const IdBufType &groupId, IConn *btm = nullptr);
 
     virtual IConn* ConnOfKey(const std::string &key) ;
 
@@ -37,7 +38,7 @@ public:
 
 //    virtual void SetRawConn(IRawConn *rawConn);
 private:
-    const std::string mGroupId;   // represents each machine
+    std::string mGroupId;   // represents each machine
     IConn *mBtm = nullptr;
     std::map<std::string, IConn*> mConns;
 
