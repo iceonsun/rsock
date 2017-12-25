@@ -57,7 +57,7 @@ int IRawConn::Init() {
     return 0;
 }
 
-int IRawConn::Send(ssize_t nread, const rbuf_t &rbuf) {
+int IRawConn::Output(ssize_t nread, const rbuf_t &rbuf){
     if (nread > 0) {
         OHead *oh = static_cast<OHead *>(rbuf.data);
 #ifndef NNDEBUG
@@ -376,12 +376,15 @@ IRawConn::SendRawTcp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT16 
             ip               // ptag protocol tag to modify an existing header, 0 to build a new one
 
     );
+    // todo: remove
+#ifndef NNDEBUG
     in_addr src_in_addr = {src};
     in_addr dst_in_addr = {dst};
     std::string  src1 = inet_ntoa(src_in_addr);
     std::string  dst1 = inet_ntoa(dst_in_addr);
     // todo: inet_ntoa, if used in same printf, it will collides
     debug(LOG_ERR, "src: %u, %s, dst: %u, %s", src, src1.c_str(), dst, dst1.c_str());
+#endif
     if (ip == -1) {
         debug(LOG_ERR, "failed to build ipv4: %s", libnet_geterror(l));
         return ip;
@@ -407,15 +410,14 @@ IRawConn::SendRawTcp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT16 
     int n = libnet_write(l);
     if (-1 == n) {
         debug(LOG_ERR, "libnet_write failed: %s", libnet_geterror(l));
+        return -1;
     } else {
-        // todo: remove
-//        in_addr dst_in_addr = {htonl(dst)};
-
-//        in_addr src_in_addr = {htonl(src)};
+#ifndef NNDEBUG
         debug(LOG_ERR, "libnet_write %d bytes. %s:%d<->%s:%d.", n, src1.c_str(), sp, dst1.c_str(),
               dp);
+#endif
     }
-    return n;
+    return payload_len;
 }
 
 int IRawConn::SendRawUdp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT16 dp, const IUINT8 *payload, IUINT16 payload_len,
@@ -479,9 +481,10 @@ int IRawConn::SendRawUdp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUIN
     int n = libnet_write(l);
     if (-1 == n) {
         debug(LOG_ERR, "libnet_write failed: %s", libnet_geterror(l));
+        return -1;
     } else {
         debug(LOG_ERR, "libnet_write %d bytes.", n);
     }
-    return n;
+    return payload_len;
 }
 

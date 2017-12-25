@@ -22,9 +22,9 @@ public:
                    uv_loop_t *loop, IConn *btm, uint32_t bigDst);
     int Init() override;
 
-    int Send(ssize_t nread, const rbuf_t &rbuf) override;
+    int Output(ssize_t nread, const rbuf_t &rbuf) override;
 
-    int Input(ssize_t nread, const rbuf_t &rbuf) override;
+    int OnRecv(ssize_t nread, const rbuf_t &rbuf) override;
 
     void Close() override;
 

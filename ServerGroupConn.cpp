@@ -20,7 +20,7 @@ ServerGroupConn::ServerGroupConn(const IdBufType &groupId, uv_loop_t *loop, ICon
 }
 
 
-int ServerGroupConn::Input(ssize_t nread, const rbuf_t &rbuf) {
+int ServerGroupConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
     if (nread > 0) {
         OHead *head = static_cast<OHead *>(rbuf.data);
         assert(head != nullptr);

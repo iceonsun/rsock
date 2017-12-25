@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 11)
 
 set(SOURCE_FILES ktype.h md5.c dlist.c debug.c enc.c  rcommon.c  rsutil.c rscomm.h
 IUnit.cpp IUnit.cpp IConn.cpp IGroupConn.cpp SConn.cpp ServerGroupConn.cpp ClientConn.cpp PortMapper.cpp
-IRawConn.cpp  SRawConn.cpp GroupConn.cpp OHead.cpp rhash.cpp
+IRawConn.cpp  SRawConn.cpp GroupConn.cpp OHead.cpp rhash.cpp util/RTimer.cpp
 cap/cap_util.cpp cap/RCap.cpp
         client/CRawConn.cpp client/RClient.cpp)
 

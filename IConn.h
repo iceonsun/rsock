@@ -28,24 +28,39 @@ public:
 
     virtual int Init();
 
-    virtual int Send(ssize_t nread, const rbuf_t &rbuf);
+    // non overridable to ensure child class don't override this method.
+    // if child class want to process data, override Output for sending data, OnRecv for input data
+     int Send(ssize_t nread, const rbuf_t &rbuf);
+//    virtual int Send(ssize_t nread, const rbuf_t &rbuf);
 
     virtual int Output(ssize_t nread, const rbuf_t &rbuf);
 
-    // ToOrignin
-    virtual int Input(ssize_t nread, const rbuf_t &rbuf);
+    // non overridable
+     int Input(ssize_t nread, const rbuf_t &rbuf);
+//    virtual int Input(ssize_t nread, const rbuf_t &rbuf);
 
-//    virtual int OnRecv(ssize_t nread, const rbuf_t &rbuf) = 0;
+    virtual int OnRecv(ssize_t nread, const rbuf_t &rbuf);
 
     virtual void SetOutputCb(const IConnCb &cb) { mOutputCb = cb; };
 
     virtual void SetOnRecvCb(const IConnCb &cb) { mOnRecvCb = cb; };
 
     virtual const std::string &Key() { return mKey; }
+
+//    virtual bool CanClose();
     
     IConn&operator=(const IConn &) = delete;
-private:
 
+private:
+    struct DataStat {
+        IUINT32 prev_cnt = 0;
+        IUINT32 curr_cnt = 0;
+        void afterInput(ssize_t nread);
+        void afterOutput(ssize_t nread);
+        bool canClose();
+    };
+
+    DataStat mStat;
     IConnCb mOutputCb = nullptr;
     IConnCb mOnRecvCb = nullptr;
 

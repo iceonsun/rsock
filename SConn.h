@@ -23,7 +23,7 @@ public:
 //    int Send(ssize_t nread, const rbuf_t &rbuf) override;
 
     // to target
-    int Input(ssize_t nread, const rbuf_t &rbuf) override;
+    int OnRecv(ssize_t nread, const rbuf_t &rbuf) override;
 
 private:
     static void udpRecvCb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf, const struct sockaddr* addr,

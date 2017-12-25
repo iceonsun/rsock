@@ -63,7 +63,7 @@ SConn::udpRecvCb(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf, const str
     }
 }
 
-int SConn::Input(ssize_t nread, const rbuf_t &rbuf) {
+int SConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
     if (nread > 0) {
         rudp_send_t *udp_send = static_cast<rudp_send_t *>(malloc(sizeof(rudp_send_t)));
         memset(udp_send, 0, sizeof(rudp_send_t));
@@ -73,7 +73,7 @@ int SConn::Input(ssize_t nread, const rbuf_t &rbuf) {
         udp_send->udp_send.data = this;
         uv_udp_send(reinterpret_cast<uv_udp_send_t *>(udp_send), mUdp, &udp_send->buf, 1, reinterpret_cast<const sockaddr *>(mTarget), sendCb);
     }
-    return 0;
+    return nread;
 }
 
 void SConn::sendCb(uv_udp_send_t *req, int status) {

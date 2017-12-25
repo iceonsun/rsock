@@ -39,7 +39,7 @@ public:
 
     int RawInput(u_char *args, const pcap_pkthdr *hdr, const u_char *packet);
 
-    int Send(ssize_t nread, const rbuf_t &rbuf) override;
+    int Output(ssize_t nread, const rbuf_t &rbuf) override;
 
     int Init() override;
 

@@ -54,7 +54,7 @@ int ClientConn::Init() {
     return 0;
 }
 
-int ClientConn::Send(ssize_t nread, const rbuf_t &rbuf) {
+int ClientConn::Output(ssize_t nread, const rbuf_t &rbuf) {
     assert(nread > 0);
     assert(rbuf.data);
 
@@ -82,11 +82,11 @@ int ClientConn::Send(ssize_t nread, const rbuf_t &rbuf) {
     buf.len = rbuf.len;
     buf.data = &mHead;
 
-    return Output(nread, buf); // should use raw conn to send
+    return IGroupConn::Output(nread, buf); // should use raw conn to send
 }
 
 // hash_buf check passed. src and dst check passed.
-int ClientConn::Input(ssize_t nread, const rbuf_t &rbuf) {
+int ClientConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
     assert(nread > 0);
     if (nread > 0) {
         // todo: check src == target. it's checked in rawconn. just assert(0) here if not match

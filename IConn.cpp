@@ -14,9 +14,11 @@ int IConn::Init() {
 }
 
 void IConn::Close() {
-
+    mOnRecvCb = nullptr;
+    mOutputCb = nullptr;
 }
 
+// non overridable
 int IConn::Send(ssize_t nread, const rbuf_t &rbuf) {
     return Output(nread, rbuf);
 }
@@ -28,10 +30,15 @@ int IConn::Output(ssize_t nread, const rbuf_t &rbuf) {
     if (mOutputCb) {
         return mOutputCb(nread, rbuf);
     }
-    return 0;
+    return nread;
 }
 
+// non overridable
 int IConn::Input(ssize_t nread, const rbuf_t &rbuf) {
+    return OnRecv(nread, rbuf);
+}
+
+int IConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
 #ifndef NNDEBUG
     assert(mOnRecvCb);
 #endif

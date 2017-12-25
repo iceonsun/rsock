@@ -28,7 +28,7 @@ GroupConn::GroupConn(const IdBufType &groupId, uv_loop_t *loop, const struct soc
     mPorter.SetSrcPorts(mSelfPorts);
 }
 
-int GroupConn::Input(ssize_t nread, const rbuf_t &rbuf) {
+int GroupConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
     auto head = static_cast<OHead *>(rbuf.data);
     auto addr = head->srcAddr;
     auto key = OHead::BuildKey(addr, head->Conv());
@@ -64,7 +64,7 @@ IConn *GroupConn::newConn(IUINT32 conv, const struct sockaddr *origin) {
     return conn;
 }
 
-int GroupConn::Send(ssize_t nread, const rbuf_t &rbuf) {
+int GroupConn::Output(ssize_t nread, const rbuf_t &rbuf) {
     OHead *head = static_cast<OHead *>(rbuf.data);
     mHead.UpdateConv(head->Conv());
     mHead.UpdateDstPort(mPorter.NextDstPort());
@@ -73,7 +73,7 @@ int GroupConn::Send(ssize_t nread, const rbuf_t &rbuf) {
     rbuf_t buf = {0};
     buf.base = rbuf.base;
     buf.data = &mHead;
-    return IGroupConn::Send(nread, buf);
+    return IGroupConn::Output(nread, buf);
 }
 
 void GroupConn::Close() {

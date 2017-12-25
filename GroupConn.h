@@ -17,9 +17,9 @@ public:
                        const std::vector<IUINT16> &mSelfPorts, const struct sockaddr *origin, IUINT8 conn_type,
                        IConn *btm);
 
-    int Input(ssize_t nread, const rbuf_t &rbuf) override;
+    int OnRecv(ssize_t nread, const rbuf_t &rbuf) override;
 
-    int Send(ssize_t nread, const rbuf_t &rbuf) override;
+    int Output(ssize_t nread, const rbuf_t &rbuf) override;
 
     void Close() override;
 
