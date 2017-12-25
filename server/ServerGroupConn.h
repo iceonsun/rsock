@@ -7,9 +7,9 @@
 
 
 #include <vector>
-#include "IGroupConn.h"
+#include "../IGroupConn.h"
 #include "SConn.h"
-#include "cap/cap_util.h"
+#include "../cap/cap_util.h"
 
 class ServerGroupConn : public IGroupConn {
 public:

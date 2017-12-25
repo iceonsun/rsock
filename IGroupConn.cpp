@@ -72,11 +72,22 @@ void IGroupConn::AddConn(IConn *conn, bool bindOutput) {
     }
 }
 
-void IGroupConn::RemoveConn(IConn *conn) {
+void IGroupConn::RemoveConn(IConn *conn, bool removeCb) {
     mConns.erase(conn->Key());
+    if (removeCb) {
+        conn->SetOnRecvCb(nullptr);
+        conn->SetOutputCb(nullptr);
+    }
 }
 
 IConn *IGroupConn::ConnOfKey(const std::string &key) {
     auto it = mConns.find(key);
     return (it != mConns.end()) ? it->second : nullptr;
+}
+
+void IGroupConn::AddConn(IConn *conn, const IConn::IConnCb &outCb, const IConn::IConnCb &recvCb) {
+    mConns.insert({conn->Key(), conn});
+    conn->SetOutputCb(outCb);
+    conn->SetOnRecvCb(recvCb);
+    debug(LOG_ERR, "");
 }

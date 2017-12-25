@@ -5,7 +5,7 @@
 #include <cassert>
 #include <syslog.h>
 #include "GroupConn.h"
-#include "SConn.h"
+#include "server/SConn.h"
 #include "rsutil.h"
 #include "debug.h"
 #include "rstype.h"

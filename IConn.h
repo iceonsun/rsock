@@ -2,8 +2,8 @@
 // Created on 12/16/17.
 //
 
-#ifndef RSOCK_ITASK_H
-#define RSOCK_ITASK_H
+#ifndef RSOCK_ICONN_H
+#define RSOCK_ICONN_H
 
 
 #include <string>
@@ -13,8 +13,6 @@
 
 #include "ktype.h"
 #include "rcommon.h"
-
-//class IConn;
 
 class IConn {
 public:
@@ -47,19 +45,24 @@ public:
 
     virtual const std::string &Key() { return mKey; }
 
-//    virtual bool CanClose();
+    // if no data send/input since last check, return true.
+    virtual bool CanCloseCheck(IUINT32 ms);
     
     IConn&operator=(const IConn &) = delete;
 
 private:
-    struct DataStat {
-        IUINT32 prev_cnt = 0;
-        IUINT32 curr_cnt = 0;
+    class DataStat {
+    public:
         void afterInput(ssize_t nread);
-        void afterOutput(ssize_t nread);
-        bool canClose();
+        void afterSend(ssize_t nread);
+        bool canCloseCheck();
+
+    private:
+        IUINT32 prev_cnt = 0;
+        IUINT32 curr_cnt = 1;
     };
 
+private:
     DataStat mStat;
     IConnCb mOutputCb = nullptr;
     IConnCb mOnRecvCb = nullptr;
@@ -68,4 +71,4 @@ private:
 };
 
 
-#endif //RSOCK_ITASK_H
+#endif //RSOCK_ICONN_H

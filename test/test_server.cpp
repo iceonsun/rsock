@@ -4,7 +4,7 @@
 #include <syslog.h>
 #include "../cap/cap_util.h"
 #include "../debug.h"
-#include "../SRawConn.h"
+#include "../server/SRawConn.h"
 #include "../rhash.h"
 #include "../cap/RCap.h"
 
@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
     uint32_t dstInt = libnet_name2addr4(l, const_cast<char *>(selfIp.c_str()), LIBNET_DONT_RESOLVE);
     auto *btm = new SRawConn(l, dstInt, LOOP ,hashKey, "" , datalink);
     IdBufType id;
-    generateIdBuf(id, hashKey);
+    GenerateIdBuf(id, hashKey);
     struct sockaddr_in target = {0};
     target.sin_family = AF_INET;
     target.sin_port = htons(targetPort);

@@ -20,7 +20,9 @@ void IConn::Close() {
 
 // non overridable
 int IConn::Send(ssize_t nread, const rbuf_t &rbuf) {
-    return Output(nread, rbuf);
+    int n = Output(nread, rbuf);
+    mStat.afterSend(n);
+    return n;
 }
 
 int IConn::Output(ssize_t nread, const rbuf_t &rbuf) {
@@ -35,7 +37,9 @@ int IConn::Output(ssize_t nread, const rbuf_t &rbuf) {
 
 // non overridable
 int IConn::Input(ssize_t nread, const rbuf_t &rbuf) {
-    return OnRecv(nread, rbuf);
+    int n = OnRecv(nread, rbuf);
+    mStat.afterInput(n);
+    return n;
 }
 
 int IConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
@@ -46,4 +50,26 @@ int IConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
         return mOnRecvCb(nread, rbuf);
     }
     return 0;
+}
+
+bool IConn::CanCloseCheck(IUINT32 ms) {
+    return mStat.canCloseCheck();
+}
+
+void IConn::DataStat::afterInput(ssize_t nread) {
+    if (nread > 0) {
+        curr_cnt++;
+    }
+}
+
+void IConn::DataStat::afterSend(ssize_t nread) {
+    if (nread > 0) {
+        curr_cnt++;
+    }
+}
+
+bool IConn::DataStat::canCloseCheck() {
+    bool canclose = (prev_cnt == curr_cnt);
+    prev_cnt = curr_cnt;
+    return canclose;
 }

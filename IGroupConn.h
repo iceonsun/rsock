@@ -22,9 +22,10 @@ public:
     virtual IConn* ConnOfKey(const std::string &key) ;
 
     virtual void AddConn(IConn *conn, bool bindOutput = true);
+    virtual void AddConn(IConn *conn, const IConnCb& outCb, const IConnCb& recvCb);
 
     // will not close conn or delete conn
-    virtual void RemoveConn(IConn *conn) ;
+    virtual void RemoveConn(IConn *conn, bool removeCb = true);
 
     virtual const std::string &GroupId() { return mGroupId; }
 

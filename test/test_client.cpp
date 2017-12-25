@@ -34,7 +34,7 @@ int main(int argc, char **argv) {
     }
     debug(LOG_ERR, "version: %s", libnet_version());
     IdBufType id;
-    generateIdBuf(id, hashKey);
+    GenerateIdBuf(id, hashKey);
 
     uv_loop_t *LOOP = uv_default_loop();
     auto cap = new RCap(dev, selfIp, targetPorts, selfPorts, targetIp);

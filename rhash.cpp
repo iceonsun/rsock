@@ -98,7 +98,7 @@ std::string IdBuf2Str(const IdBufType &id) {
     return std::string(id.begin(), id.end());
 }
 
-void generateIdBuf(IdBufType &hash, const std::string &key) {
+void GenerateIdBuf(IdBufType &hash, const std::string &key) {
     int sec = rand();
     const int APRIME = 709217;
     sec %= APRIME;

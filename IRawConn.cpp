@@ -212,7 +212,7 @@ int IRawConn::RawInput(u_char *args, const pcap_pkthdr *hdr, const u_char *packe
     // because we may receive rst with length zero. if we don't check, we may cause illegal memory access error
     if (hdr->len - ((const u_char *) hashhead - packet) < HASH_BUF_SIZE + 1) {  // data len must >= 1
 #ifndef NNDEBUG
-        fprintf(stderr, "receive %d bytes from %s:%d -> %s:%d\n", lenWithHash, inet_ntoa(ip->ip_src), ntohs(src_port),
+        debug(LOG_ERR, "receive %d bytes from %s:%d -> %s:%d\n", lenWithHash, inet_ntoa(ip->ip_src), ntohs(src_port),
                 inet_ntoa(ip->ip_dst), ntohs(dst_port));
         for (int i = 0; i < lenWithHash; i++) {
             fprintf(stderr, "%c", hashhead[i]);

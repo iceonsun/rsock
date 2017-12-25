@@ -8,8 +8,8 @@
 
 #include <sys/socket.h>
 #include <vector>
-#include "IConn.h"
-#include "OHead.h"
+#include "../IConn.h"
+#include "../OHead.h"
 
 // todo: add unix sock support
 class SConn : public IConn {
