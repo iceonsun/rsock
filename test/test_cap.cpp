@@ -4,9 +4,9 @@
 
 #include <syslog.h>
 #include <libnet.h>
-#include "../debug.h"
+#include "../thirdparty/debug.h"
 #include "../cap/cap_headers.h"
-#include "../enc.h"
+#include "../util/enc.h"
 
 int datalink = DLT_EN10MB;
 

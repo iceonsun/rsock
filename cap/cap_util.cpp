@@ -10,7 +10,7 @@
 
 #include <pcap.h>
 #include <sstream>
-#include "../debug.h"
+#include "../thirdparty/debug.h"
 #include "cap_util.h"
 
 

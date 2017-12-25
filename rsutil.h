@@ -6,7 +6,7 @@
 #define RSOCK_RSUTIL_H
 
 #include "ktype.h"
-#include "md5.h"
+#include "thirdparty/md5.h"
 #include "rscomm.h"
 
 #ifdef __cplusplus

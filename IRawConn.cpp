@@ -5,11 +5,11 @@
 #include <cassert>
 #include <syslog.h>
 #include "IRawConn.h"
-#include "debug.h"
+#include "thirdparty/debug.h"
 #include "cap/cap_headers.h"
 #include "rsutil.h"
 #include "OHead.h"
-#include "enc.h"
+#include "util/enc.h"
 #include "rhash.h"
 
 

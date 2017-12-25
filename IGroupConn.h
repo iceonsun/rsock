@@ -17,6 +17,8 @@
 class IGroupConn : public IConn {
 public:
 
+    using MapConnIter = std::map<std::string, IConn*>::iterator;
+
     explicit IGroupConn(const IdBufType &groupId, IConn *btm = nullptr);
 
     virtual IConn* ConnOfKey(const std::string &key) ;
@@ -37,12 +39,16 @@ public:
 
     virtual IConn *BtmConn() { return mBtm;}
 
+    MapConnIter begin();
+    MapConnIter end();
+
+    bool CheckAndClose(long now_sec) override;
+
 //    virtual void SetRawConn(IRawConn *rawConn);
 private:
     std::string mGroupId;   // represents each machine
     IConn *mBtm = nullptr;
     std::map<std::string, IConn*> mConns;
-
 };
 
 

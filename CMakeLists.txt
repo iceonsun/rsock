@@ -3,7 +3,7 @@ project(rSock)
 
 set(CMAKE_CXX_STANDARD 11)
 
-set(SOURCE_FILES ktype.h md5.c dlist.c debug.c enc.c  rcommon.c  rsutil.c rscomm.h
+set(SOURCE_FILES ktype.h thirdparty/md5.c thirdparty/debug.c util/enc.c rcommon.c  rsutil.c rscomm.h
         IConn.cpp IGroupConn.cpp server/SConn.cpp server/ServerGroupConn.cpp client/ClientConn.cpp PortMapper.cpp
 IRawConn.cpp server/SRawConn.cpp GroupConn.cpp OHead.cpp rhash.cpp util/RTimer.cpp
 cap/cap_util.cpp cap/RCap.cpp

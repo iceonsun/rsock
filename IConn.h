@@ -46,7 +46,7 @@ public:
     virtual const std::string &Key() { return mKey; }
 
     // if no data send/input since last check, return true.
-    virtual bool CanCloseCheck(IUINT32 ms);
+    virtual bool CheckAndClose(long now_sec);
     
     IConn&operator=(const IConn &) = delete;
 
@@ -59,7 +59,7 @@ private:
 
     private:
         IUINT32 prev_cnt = 0;
-        IUINT32 curr_cnt = 1;
+        IUINT32 curr_cnt = 0;
     };
 
 private:

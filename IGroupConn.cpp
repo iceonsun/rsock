@@ -6,7 +6,7 @@
 #include <cassert>
 #include "IGroupConn.h"
 #include "rsutil.h"
-#include "debug.h"
+#include "thirdparty/debug.h"
 #include "rstype.h"
 #include "rhash.h"
 
@@ -89,5 +89,40 @@ void IGroupConn::AddConn(IConn *conn, const IConn::IConnCb &outCb, const IConn::
     mConns.insert({conn->Key(), conn});
     conn->SetOutputCb(outCb);
     conn->SetOnRecvCb(recvCb);
-    debug(LOG_ERR, "");
+}
+
+bool IGroupConn::CheckAndClose(long now_sec) {
+//    std::vector<IConn*> vec;
+    std::vector<std::pair<std::string, IConn*>> vec;
+    int size = mConns.size();
+    for (auto &e: mConns) {
+        if (e.second->CheckAndClose(now_sec)) {
+            vec.emplace_back(e);
+        }
+    }
+    bool can = false;
+    if (vec.size() == size) {
+        can = true;
+    }
+    for (auto &e: vec) {
+        mConns.erase(e.first);
+        debug(LOG_ERR, "close iconn: %s, original size: %d", e.first.c_str(), size);
+        e.second->Close();
+        delete e.second;
+
+    }
+#ifndef NNDEBUG
+    // if any if sub conn should closed, self should be closed either.
+    debug(LOG_ERR, "can: %d, closed %d conns. original size: %d, new size: %d", can, vec.size(), size, mConns.size());
+    assert(can == IConn::CheckAndClose(now_sec));
+#endif
+    return can;
+}
+
+IGroupConn::MapConnIter IGroupConn::begin() {
+    return mConns.begin();
+}
+
+IGroupConn::MapConnIter IGroupConn::end() {
+    return mConns.end();
 }

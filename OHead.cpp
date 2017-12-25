@@ -8,7 +8,7 @@
 #include <sys/un.h>
 #include <cassert>
 #include "OHead.h"
-#include "enc.h"
+#include "util/enc.h"
 #include "rstype.h"
 
 void OHead::UpdateConv(IUINT32 conv) {

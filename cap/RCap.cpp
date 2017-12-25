@@ -7,7 +7,7 @@
 #include <syslog.h>
 #include <uv-unix.h>
 #include "RCap.h"
-#include "../debug.h"
+#include "../thirdparty/debug.h"
 
 
 RCap::RCap(const std::string &dev, const std::string &selfIp, const PortLists &srcPorts, const PortLists &dstPorts,

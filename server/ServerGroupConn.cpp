@@ -7,7 +7,7 @@
 #include "ServerGroupConn.h"
 #include "../GroupConn.h"
 #include "../rsutil.h"
-#include "../debug.h"
+#include "../thirdparty/debug.h"
 #include "../cap/cap_util.h"
 
 using namespace std::placeholders;

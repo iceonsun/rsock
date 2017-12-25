@@ -7,7 +7,7 @@
 #include "GroupConn.h"
 #include "server/SConn.h"
 #include "rsutil.h"
-#include "debug.h"
+#include "thirdparty/debug.h"
 #include "rstype.h"
 
 // todo: change all these thing origin to uint32_t? if not consider support ipv6

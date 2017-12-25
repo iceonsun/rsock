@@ -6,7 +6,7 @@
 #include <syslog.h>
 #include "ClientConn.h"
 #include "../rsutil.h"
-#include "../debug.h"
+#include "../thirdparty/debug.h"
 using namespace std::placeholders;
 
 ClientConn::ClientConn(const IdBufType &groupId, const char *listenUnPath, const char *listenUdpIp,

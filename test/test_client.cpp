@@ -7,19 +7,26 @@
 #include <syslog.h>
 #include "../cap/cap_util.h"
 #include "../client/CRawConn.h"
-#include "../debug.h"
+#include "../thirdparty/debug.h"
 #include "../rhash.h"
 #include "../cap/RCap.h"
 
+const int INTERVAL = 10000; // 10s
 int OnRecvCb(ssize_t nread, const rbuf_t &rbuf) {
     debug(LOG_ERR, "nread: %d", nread);
     return 0;
 }
 
+void timer_cb(uv_timer_t* handle) {
+    IConn *conn = static_cast<IConn *>(handle->data);
+    long now = time(NULL);
+    conn->CheckAndClose(now);
+}
+
 int main(int argc, char **argv) {
     std::string dev = "lo0";
     std::string targetIp = "127.0.0.1";
-    std::string selfIp = "127.0.0.1";
+    std::string selfIp = "127.0.0.2";
     PortLists targetPorts = {10031, 10032,10033, 10034};   // target ports
     PortLists selfPorts = {10051, 10052, 10053, 10054};  // self ports
     int listenPort = 10030;
@@ -49,6 +56,11 @@ int main(int argc, char **argv) {
     IConn *conn = new ClientConn(id, nullptr, selfIp.c_str(), listenPort, selfPorts, targetPorts, LOOP, btm, targetInt);
 //    IConn *conn = new ClientConn(id, nullptr, "127.0.0.1", listenPort, srcPorts, dstPorts, LOOP, btm, dstInt);
     conn->Init();
+    uv_timer_t timer;
+    uv_timer_init(LOOP, &timer);
+    timer.data = conn;
+    uv_timer_start(&timer, timer_cb, INTERVAL, INTERVAL);
+
     uv_run(LOOP, UV_RUN_DEFAULT);
     return 0;
 }

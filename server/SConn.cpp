@@ -6,7 +6,7 @@
 #include <syslog.h>
 #include "SConn.h"
 #include "../rsutil.h"
-#include "../debug.h"
+#include "../thirdparty/debug.h"
 
 SConn::SConn(uv_loop_t *loop, const struct sockaddr *origin, const struct sockaddr *target, IUINT32 conv) : IConn(
         OHead::BuildKey(origin, conv)) {

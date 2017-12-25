@@ -3,7 +3,7 @@
 #include <getopt.h>
 #include <syslog.h>
 #include "../cap/cap_util.h"
-#include "../debug.h"
+#include "../thirdparty/debug.h"
 #include "../server/SRawConn.h"
 #include "../rhash.h"
 #include "../cap/RCap.h"
@@ -11,6 +11,15 @@
 int OnRecvCb(ssize_t nread, const rbuf_t &rbuf) {
     debug(LOG_ERR, "nread: %d", nread);
     return 0;
+}
+
+const int INTERVAL = 10000; // 10s
+
+
+void timer_cb(uv_timer_t* handle) {
+    IConn *conn = static_cast<IConn *>(handle->data);
+    long now = time(NULL);
+    conn->CheckAndClose(now);
 }
 
 int main(int argc, char **argv) {
@@ -50,6 +59,11 @@ int main(int argc, char **argv) {
     conn->Init();
     scap->Start(IRawConn::CapInputCb, reinterpret_cast<u_char *>(btm));
 
+    uv_timer_t timer;
+    uv_timer_init(LOOP, &timer);
+    timer.data = conn;
+    uv_timer_start(&timer, timer_cb, INTERVAL, INTERVAL);
+    
     uv_run(LOOP, UV_RUN_DEFAULT);
     return 0;
 }

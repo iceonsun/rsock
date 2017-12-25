@@ -10,9 +10,9 @@
 #include <unistd.h>
 #include <uv.h>
 #include <sys/un.h>
-#include "debug.h"
+#include "thirdparty/debug.h"
 #include "rcommon.h"
-#include "enc.h"
+#include "util/enc.h"
 #include "rsutil.h"
 
 struct sockaddr *new_addr(const struct sockaddr *addr) {
@@ -71,7 +71,7 @@ uv_udp_t *om_listen_udp_addr(const struct sockaddr_in *addr, uv_loop_t *loop, uv
     uv_udp_init(loop, udp);
     udp->data = arg;
 
-    int nret = uv_udp_bind(udp, (const struct sockaddr *) addr, UV_UDP_REUSEADDR);
+    int nret = uv_udp_bind(udp, (const struct sockaddr *) addr, 0);
     if (nret) {
         if (err) { *err = nret;}
         debug(LOG_ERR, "failed to bind udp on %s:%d, nret: %d, err : %s", inet_ntoa(addr->sin_addr), ntohs(addr->sin_port), nret, uv_strerror(nret));

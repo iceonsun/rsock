@@ -5,7 +5,7 @@
 #include <syslog.h>
 #include <cstdlib>
 #include <sys/socket.h>
-#include "debug.h"
+#include "thirdparty/debug.h"
 #include "rscomm.h"
 
 #include "PortMapper.h"
