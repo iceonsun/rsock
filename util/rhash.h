@@ -5,9 +5,12 @@
 #ifndef RSOCK_RHASH_H
 #define RSOCK_RHASH_H
 
+#include <string>
 
 #include "../ktype.h"
 #include "../rstype.h"
+
+bool ValidIp4(const std::string &ip);
 
 bool hash_equal(const char *hashed_buf, const std::string &key, const char *data, int data_len);
 

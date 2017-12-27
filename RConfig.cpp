@@ -13,6 +13,7 @@
 #include "util/rhash.h"
 #include "thirdparty/json11.hpp"
 #include "util/TextUtils.h"
+#include "util/FdUtil.h"
 
 using namespace args;
 using namespace json11;
@@ -35,18 +36,20 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
             "(e.g.3000,3001,4000-4050. No blank spaces or other characters allowed)", {"lcapPorts"});
 
     ValueFlag<std::string> localUn(opt, "", "Local listening unix domain socket path.", {"unPath"});
-    ValueFlag<std::string> localUdp(opt, "", "Local listening udp port.", {"ludp"});
-   ;
+    ValueFlag<std::string> localUdp(opt, "", "Local listening udp port.", {"ludp"});;
     ValueFlag<std::string> serverCapPorts(opt, "", "Server capture ports. (Only valid for client)", {"tcapPorts"});
     ValueFlag<int> interval(opt, "",
                             "Interval(sec) to invalid connection. Client need to set to same value with server. "
                                     "(default 20s. min: 10s, max: 40s.)", {"duration"});
     ValueFlag<std::string> key(opt, "HashKey", "Key to check validation of packet. (default hello1235", {"hash"});
     ValueFlag<std::string> type(opt, "",
-                        "Type used to communicate with server. 1 for tcp up and down. 2 tcp up and udp down. "
-                                "3 for udp up and tcp down. 4 for udp up and down. (Only valid for client.)", {"type"});
+                                "Type used to communicate with server. 1 for tcp up and down. 2 tcp up and udp down. "
+                                        "3 for udp up and tcp down. 4 for udp up and down. (Only valid for client.)",
+                                {"type"});
     args::ValueFlag<int> daemon(opt, "daemon", "1 for running as daemon, 0 for not. (default as daemon)",
                                 {"daemon"});
+    debug(LOG_ERR, "strlen(argv[0]): %d", strlen(argv[0]));
+
     try {
         parser.ParseCLI(argc, argv);
         do {
@@ -73,7 +76,7 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
                     throw args::Error("Unable to parse self capture ports: " + selfCapPorts.Get());
                 }
             } else {
-                debug(LOG_ERR, "use default ports. 80,443,10010-10020");
+                debug(LOG_ERR, "use default ports. %s", TextUtils::Vector2String<IUINT16>(param.selfCapPorts).c_str());
             }
 
             if (localUn) {
@@ -81,7 +84,7 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
             }
 
             if (localUdp) {
-                if (!parseAddr(localUdp.Get(), param.localUdpIp, param.localUdpPort, true)) {
+                if (!parseAddr(localUdp.Get(), param.localUdpIp, param.localUdpPort, !is_server)) {
                     throw args::Error("Unable to parse local listening udp address: " + localUdp.Get());
                 }
             }
@@ -141,6 +144,7 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
         param.targetCapInt = NetIntOfIp(param.targetIp.c_str());
         GenerateIdBuf(param.id, param.hashKey);
         CheckValidation(*this);
+        mInited = true;
         return 0;
     } catch (args::Help &e) {
         std::cout << parser;
@@ -161,7 +165,7 @@ bool RConfig::ParseUINT16(const std::string &s, PortLists &ports) {
     std::string str = s;
     const std::regex re(R"(((\d+-\d+)|(\d+)))");
     std::smatch sm;
-    PortLists range(2);
+//    PortLists range(2);
     while (std::regex_search(str, sm, re)) {
         auto t = sm[0].str();
         auto pos = t.find('-');
@@ -178,26 +182,41 @@ bool RConfig::ParseUINT16(const std::string &s, PortLists &ports) {
                 return false;
             }
             debug(LOG_ERR, "port range: %d-%d", start, end);
-            range.push_back(start);
-            range.push_back(end);
+            for (int p = start; p <= end; p++) {
+                ports.push_back(p);
+            }
+//            range.push_back(start);
+//            range.push_back(end);
         }
         str = sm.suffix();
     }
-    if (!range.empty()) {
-        ports.push_back(0); // separate single ports and port range
-        ports.push_back(0);
-        ports.insert(ports.end(), range.begin(), range.end());
-    }
+//    if (!range.empty()) {
+//        ports.push_back(0); // separate single ports and port range
+//        ports.push_back(0);
+//        ports.insert(ports.end(), range.begin(), range.end());
+//    }
     return true;
 }
 
 void RConfig::CheckValidation(const RConfig &c) {
     const RParam &p = c.param;
     assert(!c.param.dev.empty());
+
     assert(!p.localUdpIp.empty());;
-    assert(p.localUdpPort != 0);
+    assert(ValidIp4(p.localUdpIp));
+
+    if (!c.isServer) {
+        assert(p.localUdpPort != 0);
+    }
+
     assert(!p.selfCapIp.empty());
+    assert(ValidIp4(p.selfCapIp));
+
     assert(!p.targetIp.empty());
+    assert(ValidIp4(p.targetIp));
+
+    assert(!p.selfCapPorts.empty());
+    assert(!p.targetCapPorts.empty());
     assert(p.selfCapInt != 0);
     assert(p.targetCapInt != 0);
     assert(!EmptyIdBuf(p.id));
@@ -216,7 +235,7 @@ void RConfig::CheckValidation(const RConfig &c) {
 }
 
 void RConfig::ParseJsonFile(RConfig &conf, const std::string &fName, std::string &err) {
-    if (access(fName.c_str(), F_OK) != 0) {
+    if (!FdUtil::FileExists(fName.c_str())) {
         err = "json file " + fName + " not exists";
         return;
     }
@@ -309,11 +328,13 @@ json11::Json RConfig::to_json() const {
             {"param",  Json::object {
                     {"dev",       param.dev},
                     {"unPath",    param.selfUnPath},
-                    {"ludp",      param.localUdpIp + ":" + std::to_string(param.localUdpPort)},
+                    {"ludp",      isServer ? param.localUdpIp :
+                                  (param.localUdpIp + ":" + std::to_string(param.localUdpPort))},
                     {"lcapIp",    param.selfCapIp},
                     {"lcapPorts", TextUtils::Vector2String<IUINT16>(param.selfCapPorts)},
-                    {"tudp",      isServer ? (param.targetIp + ":" + std::to_string(param.targetCapPorts[0])) : param.targetIp},
-                    {"tcapPorts", isServer ? "": TextUtils::Vector2String<IUINT16>(param.targetCapPorts)},
+                    {"tudp",      isServer ? (param.targetIp + ":" + std::to_string(param.targetCapPorts[0]))
+                                           : param.targetIp},
+                    {"tcapPorts", isServer ? "" : TextUtils::Vector2String<IUINT16>(param.targetCapPorts)},
                     {"duration",  (int) param.interval},
                     {"type",      strOfType(param.type)},
                     {"hash",      param.hashKey},
@@ -324,19 +345,18 @@ json11::Json RConfig::to_json() const {
 
 bool RConfig::parseAddr(const std::string &addr, std::string &ip, IUINT16 &port, bool usePort) {
     auto pos = addr.find(':');
-    if (pos != std::string::npos) {
-        ip = addr.substr(0, pos);
-        if (usePort) {
-            if (pos < addr.size() - 1) {
-                port = std::stoi(addr.substr(pos + 1));
-                return true;
-            }
-        } else {
+    ip = addr.substr(0, pos);
+
+    if (usePort) {
+        if (pos < addr.size() - 1) {
+            port = std::stoi(addr.substr(pos + 1));
             return true;
+        } else {
+            return false;
         }
     }
 
-    return false;
+    return true;
 }
 
 //int RConfig::typeOfInt(int t) {
@@ -397,6 +417,10 @@ std::string RConfig::strOfType(int type) {
         default:
             return "invalid";
     }
+}
+
+bool RConfig::Inited() {
+    return mInited;
 }
 
 

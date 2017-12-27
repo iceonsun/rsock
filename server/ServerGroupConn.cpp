@@ -14,11 +14,10 @@ using namespace std::placeholders;
 
 ServerGroupConn::ServerGroupConn(const IdBufType &groupId, uv_loop_t *loop, IConn *btm, const struct sockaddr *targetAddr,
                                  const PortLists &selfPorts) : IGroupConn(groupId, btm), mSelfPorts(selfPorts) {
+    assert(loop != nullptr);
     mLoop = loop;
     mTargetAddr = new_addr(targetAddr);
-//    debug(LOG_ERR, "server target: %s:%d", t)
 }
-
 
 int ServerGroupConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
     if (nread > 0) {
@@ -36,7 +35,7 @@ int ServerGroupConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
         }
 #ifndef NNDEBUG
         else {
-            debug(LOG_ERR, "input %d bytes to. old group: %s", group->Key().c_str());
+            debug(LOG_ERR, "input %d bytes to. old group: %s", nread, group->Key().c_str());
         }
 #endif
 

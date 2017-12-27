@@ -13,6 +13,7 @@ ClientConn::ClientConn(const IdBufType &groupId, const std::string &listenUnPath
                        IUINT16 listenUdpPort, std::vector<IUINT16> &sourcePorts, std::vector<IUINT16> &destPorts,
                        uv_loop_t *loop, IConn *btm, uint32_t bigDst)
         : IGroupConn(groupId, btm){
+    assert(loop != nullptr);
     if (!listenUdpIp.empty()) {
         mUdpAddr = new_addr4(listenUdpIp.c_str(), listenUdpPort);
     }
@@ -21,7 +22,7 @@ ClientConn::ClientConn(const IdBufType &groupId, const std::string &listenUnPath
         mUnAddr = new_addrUn(listenUnPath.c_str());
         assert(mUnAddr != nullptr);
     }
-//    mhead  update connid
+
     mHead.UpdateDst(bigDst);
     mHead.UpdateGroupId(groupId);
     mLoop = loop;
@@ -160,13 +161,21 @@ void ClientConn::pollCb(uv_poll_t *handle, int status, int events) {
         return;
     }
     if (events & UV_READABLE) {
-        struct sockaddr_un addr;
+        struct sockaddr_un addr = {0};
         char buf[OM_MAX_PKT_SIZE] = {0};
         socklen_t socklen = sizeof(addr);
         ssize_t nread = recvfrom(conn->mUnSock, buf, OM_MAX_PKT_SIZE, 0, reinterpret_cast<sockaddr *>(&addr), &socklen);
+        if (strlen(addr.sun_path) == 0) {
+            debug(LOG_ERR, "failed to get client unix domain socket path");
+            return;
+        }
+
 //        todo: just close conn
         if (nread < 0) {
-            debug(LOG_ERR, "read error on unix listen sock, %d: %s", errno, strerror(errno));
+            debug(LOG_ERR, "read error on listened unix domain sock, %d: %s", errno, strerror(errno));
+#ifndef NNDEBUG
+            assert(0);
+#endif
             return;
         }
         conn->onLocalRecv(nread, buf, reinterpret_cast<const sockaddr *>(&addr));

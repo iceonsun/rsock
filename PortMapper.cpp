@@ -57,7 +57,12 @@ IUINT16 PortMapper::nextFn(const PortLists &vec) {
     // todo: add srand in main
     int now = rand();
     if (!vec.empty()) {
-        return vec[now % vec.size()];
+        int p = vec[now % vec.size()];
+        while (p < 20) {
+            p = vec[rand() % vec.size()];
+        }
+        return p;
+
     } else {
         // if not specified. use random port
         auto p = static_cast<IUINT16>(now % 65536);

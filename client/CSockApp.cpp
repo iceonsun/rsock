@@ -3,21 +3,20 @@
 //
 
 #include "CSockApp.h"
-#include "../RConfig.h"
 #include "CRawConn.h"
-#include "../RConfig.h"
 
-CSockApp::CSockApp(uv_loop_t *loop) : ISockApp(true, loop) {}
+CSockApp::CSockApp(uv_loop_t *loop) : ISockApp(false, loop) {}
 
 RCap *CSockApp::CreateCap(RConfig &conf) {
     return new RCap(conf.param.dev, conf.param.selfCapIp, conf.param.selfCapPorts, conf.param.targetCapPorts, conf.param.targetIp, conf.param.interval);
 }
 
-IRawConn *CSockApp::CreateBtmConn(RConfig &conf, libnet_t *l, uv_loop_t *loop, int datalink) {
-    return new CRawConn(l, conf.param.selfCapInt, loop, conf.param.hashKey, "", conf.param.targetCapInt, datalink, 0);
+IRawConn *CSockApp::CreateBtmConn(RConfig &conf, libnet_t *l, uv_loop_t *loop, int datalink, int conn_type) {
+    return new CRawConn(l, conf.param.selfCapInt, loop, conf.param.hashKey, conf.param.targetCapInt, datalink,
+                        conn_type);
 }
 
 IConn *CSockApp::CreateBridgeConn(RConfig &conf, IRawConn *btm, uv_loop_t *loop) {
-    return new ClientConn(conf.param.id, conf.param.selfUnPath, conf.param.selfCapIp, conf.param.localUdpPort, conf.param.selfCapPorts, conf.param.targetCapPorts,
+    return new ClientConn(conf.param.id, conf.param.selfUnPath, conf.param.localUdpIp, conf.param.localUdpPort, conf.param.selfCapPorts, conf.param.targetCapPorts,
                           loop, btm, conf.param.targetCapInt);
 }

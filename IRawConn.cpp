@@ -24,6 +24,9 @@ IRawConn::IRawConn(libnet_t *libnet, IUINT32 selfInt, uv_loop_t *loop, const std
 //    if (!is_server) {
 //        assert(dst != nullptr);
 //    }
+    assert(libnet != nullptr);
+    assert(loop != nullptr);
+
     socketpair(AF_UNIX, SOCK_DGRAM, 0, mSockPair);
     mReadFd = mSockPair[0];
     mWriteFd = mSockPair[1];
@@ -83,6 +86,8 @@ int IRawConn::Output(ssize_t nread, const rbuf_t &rbuf) {
 
         IUINT16 sp = oh->SourcePort();
         IUINT16 dp = oh->DstPort();
+        assert(dp != 0);
+        assert(sp != 0);
         IUINT32 seq = oh->IncSeq();
         IUINT16 ipid = oh->IncIpId();
         IUINT32 dst = oh->Dst();
@@ -136,7 +141,6 @@ int IRawConn::RawInput(u_char *args, const pcap_pkthdr *hdr, const u_char *packe
 #endif
     }
 
-    debug(LOG_ERR, "mSrc: %u, mDst: %u ip->src: %u, ip->dst: %u", mSelf, mTarget, ip->ip_src.s_addr, ip->ip_dst.s_addr);
     if (ip->ip_dst.s_addr != mSelfNetEndian) {
         debug(LOG_ERR, "dst is not this machine");
         return 0;
@@ -202,8 +206,8 @@ int IRawConn::RawInput(u_char *args, const pcap_pkthdr *hdr, const u_char *packe
             fprintf(stderr, "%c", hashhead[i]);
         }
         fprintf(stderr, "\n");
-#endif
         debug(LOG_ERR, "incomplete message.");
+#endif
         return 0;
     }
     debug(LOG_ERR, "receive: %d bytes from: %s:%d -> %s:%d\n", lenWithHash, inet_ntoa(ip->ip_src), ntohs(src_port),
@@ -213,17 +217,12 @@ int IRawConn::RawInput(u_char *args, const pcap_pkthdr *hdr, const u_char *packe
     IUINT8 oheadLen = 0;
     decode_uint8(&oheadLen, ohead);
     if (oheadLen != OHead::GetEncBufSize()) {
-#ifndef NNDEBUG
-        assert(0);
-#else
-        debug(LOG_ERR, "failed to decode len. decoded len: %d, fixed EncBufSize: %d", headLen, OHead::GetEncBufSize());
+        debug(LOG_ERR, "failed to decode len. decoded len: %d, fixed EncBufSize: %d", oheadLen, OHead::GetEncBufSize());
         return 0;
-#endif
     }
 
     const char *data = ohead + oheadLen;
     int data_len = lenWithHash - (data - hashhead);
-    debug(LOG_ERR, "oheadLen: %d, datalen: %d", oheadLen, data_len);
     if (data_len <= 0) {
         debug(LOG_ERR, "data_len <= 0! data_len: %d, hdr.len: %d", data_len, hdr->len);
         return 0;
@@ -311,7 +310,6 @@ int IRawConn::cap2uv(const char *head_beg, size_t head_len, const struct sockadd
     p = encode_sockaddr4(p, target);
     memcpy(p, data, data_len);
     p += data_len;
-    debug(LOG_ERR, "head_len: %d, data_len:%d", head_len, data_len);
     ssize_t n = write(mWriteFd, buf, p - buf);
     return n;
 }

@@ -10,8 +10,9 @@
 #include "../rstype.h"
 #include "../thirdparty/debug.h"
 #include <algorithm>
-#include <string>
 #include <syslog.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 using u_char = unsigned char;
 
@@ -124,6 +125,11 @@ bool EmptyIdBuf(const IdBufType &id) {
         }
     }
     return true;
+}
+
+bool ValidIp4(const std::string &ip) {
+    struct in_addr addr = {0};
+    return -1 != inet_pton(AF_INET, ip.c_str(), &addr);
 }
 
 void OutputHash(const char *hash, int len) {

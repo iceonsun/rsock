@@ -1,67 +1,20 @@
-//
-// Created by System Administrator on 12/23/17.
-//
-
-
-#include <string>
-#include <syslog.h>
-#include "../cap/cap_util.h"
-#include "../client/CRawConn.h"
-#include "../thirdparty/debug.h"
-#include "../util/rhash.h"
-#include "../cap/RCap.h"
-
-const int INTERVAL = 10000; // 10s
-int OnRecvCb(ssize_t nread, const rbuf_t &rbuf) {
-    debug(LOG_ERR, "nread: %d", nread);
-    return 0;
-}
-
-void timer_cb(uv_timer_t* handle) {
-    IConn *conn = static_cast<IConn *>(handle->data);
-    long now = time(NULL);
-    conn->CheckAndClose();
-}
+#include "../client/csock.h"
 
 int main(int argc, char **argv) {
-    std::string dev = "lo0";
-    std::string targetIp = "127.0.0.1";
-    std::string selfIp = "127.0.0.1";
-//    PortLists targetPorts = {10031, 10032, 0, 10010, 10011, 10020, 10021};   // target ports
-    PortLists targetPorts = {10031, 10032,10033, 10034};   // target ports
-    PortLists selfPorts = {10051, 10052, 10053, 10054};  // self ports
-    int listenPort = 10030;
-//    PortLists dstPorts = {20011, 20012, 20013, 20014};
-    const std::string hashKey = "12345";
-    const int INJECTION = LIBNET_RAW4;
-    char err[LIBNET_ERRBUF_SIZE] = {0};
-    libnet_t *l = libnet_init(INJECTION, dev.c_str(), err);
-    if (nullptr == l) {
-        debug(LOG_ERR, "libnet_init failed %s", err);
-        exit(1);
-    }
-    debug(LOG_ERR, "version: %s", libnet_version());
-    IdBufType id;
-    GenerateIdBuf(id, hashKey);
+    char *fakearg[5];
+//    for (int i = 0; i < argc; i++) {
+//        memcpy(argv2[i], argv[i], strlen(argv[i]));
+//    }
 
-    uv_loop_t *LOOP = uv_default_loop();
-    auto cap = new RCap(dev, selfIp, selfPorts, targetPorts, targetIp);
-    cap->Init();
+    fakearg[0] = argv[0];
+    fakearg[1] = "--dev=lo0";
+    fakearg[2] = "--ludp=127.0.0.1:30000";
+//    fakearg[2] = "--ludp=127.0.0.1:30000";
+    fakearg[3] = "--tudp=127.0.0.1";
+    fakearg[4] = "--lcapIp=127.0.0.1";
+//    fakearg[4] = "--"
 
-    const int datalink = cap->Datalink();
-    uint32_t targetInt = libnet_name2addr4(l, const_cast<char *>(targetIp.c_str()), LIBNET_DONT_RESOLVE);
-    uint32_t selfInt = libnet_name2addr4(l, const_cast<char *>(selfIp.c_str()), LIBNET_DONT_RESOLVE);
-    auto *btm = new CRawConn(l, selfInt, LOOP, hashKey, "", targetInt, datalink);
-    cap->Start(IRawConn::CapInputCb, reinterpret_cast<u_char *>(btm));
-
-    IConn *conn = new ClientConn(id, "", selfIp.c_str(), listenPort, selfPorts, targetPorts, LOOP, btm, targetInt);
-//    IConn *conn = new ClientConn(id, nullptr, "127.0.0.1", listenPort, srcPorts, dstPorts, LOOP, btm, dstInt);
-    conn->Init();
-    uv_timer_t timer;
-    uv_timer_init(LOOP, &timer);
-    timer.data = conn;
-    uv_timer_start(&timer, timer_cb, INTERVAL, INTERVAL);
-
-    uv_run(LOOP, UV_RUN_DEFAULT);
-    return 0;
+//    sprintf(fakearg[1], "--dev=en0");
+//    sprintf(fakearg[2], "--tudp=127.0.0.1:10009");
+    return csock_main(5, fakearg);
 }

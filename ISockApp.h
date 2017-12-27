@@ -9,6 +9,7 @@
 #include <libnet.h>
 #include "util/RTimer.h"
 #include "cap/RCap.h"
+#include "RConfig.h"
 
 struct RConfig;
 
@@ -19,12 +20,13 @@ class IConn;
 class ISockApp {
 public:
     ISockApp(bool is_server, uv_loop_t *loop);
+    virtual ~ISockApp() = default;
 
-    int Parse(int argc, const char **argv);
+    int Parse(int argc, const char *const *argv);
 
-    virtual int Init(RConfig &conf);
+    virtual int Init();
 
-    virtual int Start(RConfig &conf);
+    virtual int Start();
 
     virtual void Close();
 
@@ -34,7 +36,7 @@ public:
 
     virtual void StartTimer(IUINT32 timeout_ms, IUINT32 repeat_ms);
 
-    virtual IRawConn *CreateBtmConn(RConfig &conf, libnet_t *l, uv_loop_t *loop, int datalink) = 0;
+    virtual IRawConn *CreateBtmConn(RConfig &conf, libnet_t *l, uv_loop_t *loop, int datalink, int conn_type) = 0;
 
     virtual IConn *CreateBridgeConn(RConfig &conf, IRawConn *btm, uv_loop_t *loop) = 0;
 
@@ -46,6 +48,7 @@ protected:
     IConn *mBridge;
     IRawConn *mBtmConn;
     libnet_t* mLibnet;
+    RConfig mConf;
 };
 
 

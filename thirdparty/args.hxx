@@ -165,26 +165,6 @@ namespace args
         return output;
     }
 
-    namespace detail
-    {
-        template <typename T>
-        std::string Join(const T& array, const std::string &delimiter)
-        {
-            std::string res;
-            for (auto &element : array)
-            {
-                if (!res.empty())
-                {
-                    res += delimiter;
-                }
-
-                res += element;
-            }
-
-            return res;
-        }
-    }
-
     /** (INTERNAL) Wrap a string into a vector of lines
      *
      * This is quick and hacky, but works well enough.  You can specify a
@@ -238,7 +218,6 @@ namespace args
         Extra,
         Help,
         Subparser,
-        Completion,
     };
 #else
     /** Base error class
@@ -247,7 +226,7 @@ namespace args
     {
     public:
         Error(const std::string &problem) : std::runtime_error(problem) {}
-        virtual ~Error() {}
+        virtual ~Error() {};
     };
 
     /** Errors that occur during usage
@@ -256,7 +235,7 @@ namespace args
     {
     public:
         UsageError(const std::string &problem) : Error(problem) {}
-        virtual ~UsageError() {}
+        virtual ~UsageError() {};
     };
 
     /** Errors that occur during regular parsing
@@ -265,7 +244,7 @@ namespace args
     {
     public:
         ParseError(const std::string &problem) : Error(problem) {}
-        virtual ~ParseError() {}
+        virtual ~ParseError() {};
     };
 
     /** Errors that are detected from group validation after parsing finishes
@@ -274,7 +253,7 @@ namespace args
     {
     public:
         ValidationError(const std::string &problem) : Error(problem) {}
-        virtual ~ValidationError() {}
+        virtual ~ValidationError() {};
     };
 
     /** Errors that when a required flag is omitted
@@ -283,7 +262,7 @@ namespace args
     {
     public:
         RequiredError(const std::string &problem) : ValidationError(problem) {}
-        virtual ~RequiredError() {}
+        virtual ~RequiredError() {};
     };
 
     /** Errors in map lookups
@@ -292,7 +271,7 @@ namespace args
     {
     public:
         MapError(const std::string &problem) : ParseError(problem) {}
-        virtual ~MapError() {}
+        virtual ~MapError() {};
     };
 
     /** Error that occurs when a singular flag is specified multiple times
@@ -301,7 +280,7 @@ namespace args
     {
     public:
         ExtraError(const std::string &problem) : ParseError(problem) {}
-        virtual ~ExtraError() {}
+        virtual ~ExtraError() {};
     };
 
     /** An exception that indicates that the user has requested help
@@ -310,7 +289,7 @@ namespace args
     {
     public:
         Help(const std::string &flag) : Error(flag) {}
-        virtual ~Help() {}
+        virtual ~Help() {};
     };
 
     /** (INTERNAL) An exception that emulates coroutine-like control flow for subparsers.
@@ -319,16 +298,7 @@ namespace args
     {
     public:
         SubparserError() : Error("") {}
-        virtual ~SubparserError() {}
-    };
-
-    /** An exception that contains autocompletion reply
-     */
-    class Completion : public Error
-    {
-    public:
-        Completion(const std::string &flag) : Error(flag) {}
-        virtual ~Completion() {}
+        virtual ~SubparserError() {};
     };
 #endif
 
@@ -544,29 +514,17 @@ namespace args
          */
                 Required = 0x02,
 
-        /** Flag is excluded from usage line.
+        /** Flag is excluded from help output.
          */
-                HiddenFromUsage = 0x04,
-
-        /** Flag is excluded from options help.
-         */
-                HiddenFromDescription = 0x08,
+                Hidden = 0x04,
 
         /** Flag is global and can be used in any subcommand.
          */
-                Global = 0x10,
+                Global = 0x08,
 
         /** Flag stops a parser.
          */
-                KickOut = 0x20,
-
-        /** Flag is excluded from auto completion.
-         */
-                HiddenFromCompletion = 0x40,
-
-        /** Flag is excluded from options help and usage line
-         */
-                Hidden = HiddenFromUsage | HiddenFromDescription | HiddenFromCompletion,
+                KickOut = 0x10,
     };
 
     inline Options operator | (Options lhs, Options rhs)
@@ -739,40 +697,6 @@ namespace args
         std::string defaultString = "\nDefault: ";
     };
 
-    /** A number of arguments which can be consumed by an option.
-     *
-     * Represents a closed interval [min, max].
-     */
-    struct Nargs
-    {
-        const size_t min;
-        const size_t max;
-
-        Nargs(size_t min_, size_t max_) : min(min_), max(max_)
-        {
-#ifndef ARGS_NOEXCEPT
-            if (max < min)
-            {
-                throw UsageError("Nargs: max > min");
-            }
-#endif
-        }
-
-        Nargs(size_t num_) : min(num_), max(num_)
-        {
-        }
-
-        friend bool operator == (const Nargs &lhs, const Nargs &rhs)
-        {
-            return lhs.min == rhs.min && lhs.max == rhs.max;
-        }
-
-        friend bool operator != (const Nargs &lhs, const Nargs &rhs)
-        {
-            return !(lhs == rhs);
-        }
-    };
-
     /** Base class for all match types
      */
     class Base
@@ -844,11 +768,6 @@ namespace args
             return nullptr;
         }
 
-        virtual std::vector<FlagBase*> GetAllFlags()
-        {
-            return {};
-        }
-
         virtual bool HasFlag() const
         {
             return false;
@@ -914,12 +833,12 @@ namespace args
         bool kickout = false;
         std::string defaultString;
         bool defaultStringManual = false;
-        std::vector<std::string> choicesStrings;
+        std::string choicesString;
         bool choicesStringManual = false;
 
         virtual std::string GetDefaultString(const HelpParams&) const { return {}; }
 
-        virtual std::vector<std::string> GetChoicesStrings(const HelpParams&) const { return {}; }
+        virtual std::string GetChoicesString(const HelpParams&) const { return {}; }
 
         virtual std::string GetNameString(const HelpParams&) const { return Name(); }
 
@@ -950,27 +869,13 @@ namespace args
             defaultString = str;
         }
 
-        /** Gets default value string that will be added to argument description.
+        /** Sets choices string that will be added to argument description.
+         *  Use empty string to disable it for this argument.
          */
-        std::string HelpDefault(const HelpParams &params) const
-        {
-            return defaultStringManual ? defaultString : GetDefaultString(params);
-        }
-
-        /** Sets choices strings that will be added to argument description.
-         *  Use empty vector to disable it for this argument.
-         */
-        void HelpChoices(const std::vector<std::string> &array)
+        void HelpChoices(const std::string &str)
         {
             choicesStringManual = true;
-            choicesStrings = array;
-        }
-
-        /** Gets choices strings that will be added to argument description.
-         */
-        std::vector<std::string> HelpChoices(const HelpParams &params) const
-        {
-            return choicesStringManual ? choicesStrings : GetChoicesStrings(params);
+            choicesString = str;
         }
 
         virtual std::vector<std::tuple<std::string, std::string, unsigned>> GetDescription(const HelpParams &params, const unsigned indentLevel) const override
@@ -980,7 +885,7 @@ namespace args
             std::get<1>(description) = help;
             std::get<2>(description) = indentLevel;
 
-            AddDescriptionPostfix(std::get<1>(description), choicesStringManual, detail::Join(choicesStrings, ", "), params.addChoices, detail::Join(GetChoicesStrings(params), ", "), params.choiceString);
+            AddDescriptionPostfix(std::get<1>(description), choicesStringManual, choicesString, params.addChoices, GetChoicesString(params), params.choiceString);
             AddDescriptionPostfix(std::get<1>(description), defaultStringManual, defaultString, params.addDefault, GetDefaultString(params), params.defaultString);
 
             return { std::move(description) };
@@ -989,6 +894,40 @@ namespace args
         virtual std::string Name() const
         {
             return name;
+        }
+    };
+
+    /** A number of arguments which can be consumed by an option.
+     *
+     * Represents a closed interval [min, max].
+     */
+    struct Nargs
+    {
+        const size_t min;
+        const size_t max;
+
+        Nargs(size_t min_, size_t max_) : min(min_), max(max_)
+        {
+#ifndef ARGS_NOEXCEPT
+            if (max < min)
+            {
+                throw UsageError("Nargs: max > min");
+            }
+#endif
+        }
+
+        Nargs(size_t num_) : min(num_), max(num_)
+        {
+        }
+
+        friend bool operator == (const Nargs &lhs, const Nargs &rhs)
+        {
+            return lhs.min == rhs.min && lhs.max == rhs.max;
+        }
+
+        friend bool operator != (const Nargs &lhs, const Nargs &rhs)
+        {
+            return !(lhs == rhs);
         }
     };
 
@@ -1008,29 +947,11 @@ namespace args
             s << value;
             return s.str();
         }
-
         template <typename T>
         typename std::enable_if<!IsConvertableToString<T>::value, std::string>::type
         ToString(const T &)
         {
             return {};
-        }
-
-        template <typename T>
-        std::vector<std::string> MapKeysToStrings(const T &map)
-        {
-            std::vector<std::string> res;
-            using K = typename std::decay<decltype(std::begin(map)->first)>::type;
-            if (IsConvertableToString<K>::value)
-            {
-                for (const auto &p : map)
-                {
-                    res.push_back(detail::ToString(p.first));
-                }
-
-                std::sort(res.begin(), res.end());
-            }
-            return res;
         }
     }
 
@@ -1093,16 +1014,6 @@ namespace args
                 return this;
             }
             return nullptr;
-        }
-
-        virtual std::vector<FlagBase*> GetAllFlags() override
-        {
-            return { this };
-        }
-
-        const Matcher &GetMatcher() const
-        {
-            return matcher;
         }
 
         virtual void Validate(const std::string &shortPrefix, const std::string &longPrefix) const override
@@ -1193,49 +1104,6 @@ namespace args
         }
     };
 
-    class CompletionFlag : public ValueFlagBase
-    {
-    public:
-        std::vector<std::string> reply;
-        size_t cword = 0;
-        std::string syntax;
-
-        template <typename GroupClass>
-        CompletionFlag(GroupClass &group_, Matcher &&matcher_): ValueFlagBase("completion", "completion flag", std::move(matcher_), Options::Hidden)
-        {
-            group_.AddCompletion(*this);
-        }
-
-        virtual ~CompletionFlag() {}
-
-        virtual Nargs NumberOfArguments() const noexcept override
-        {
-            return 2;
-        }
-
-        virtual void ParseValue(const std::vector<std::string> &value_) override
-        {
-            syntax = value_.at(0);
-            std::istringstream(value_.at(1)) >> cword;
-        }
-
-        /** Get the completion reply
-         */
-        std::string Get() noexcept
-        {
-            return detail::Join(reply, "\n");
-        }
-
-        virtual void Reset() noexcept override
-        {
-            ValueFlagBase::Reset();
-            cword = 0;
-            syntax.clear();
-            reply.clear();
-        }
-    };
-
-
     /** Base class for positional options
      */
     class PositionalBase : public NamedBase
@@ -1244,7 +1112,7 @@ namespace args
         bool ready;
 
     public:
-        PositionalBase(const std::string &name_, const std::string &help_, Options options_ = {}) : NamedBase(name_, help_, options_), ready(true) {}
+        PositionalBase(const std::string &name_, const std::string &help_, Options options_ = Options::None) : NamedBase(name_, help_, options_), ready(true) {}
         virtual ~PositionalBase() {}
 
         bool Ready()
@@ -1394,17 +1262,6 @@ namespace args
             return nullptr;
         }
 
-        virtual std::vector<FlagBase*> GetAllFlags() override
-        {
-            std::vector<FlagBase*> res;
-            for (Base *child: Children())
-            {
-                auto childRes = child->GetAllFlags();
-                res.insert(res.end(), childRes.begin(), childRes.end());
-            }
-            return res;
-        }
-
         virtual void Validate(const std::string &shortPrefix, const std::string &longPrefix) const override
         {
             for (Base *child: Children())
@@ -1493,7 +1350,7 @@ namespace args
 
             for (Base *child: Children())
             {
-                if ((child->GetOptions() & Options::HiddenFromDescription) != Options::None)
+                if ((child->GetOptions() & Options::Hidden) != Options::None)
                 {
                     continue;
                 }
@@ -1514,7 +1371,7 @@ namespace args
             std::vector <std::string> names;
             for (Base *child: Children())
             {
-                if ((child->GetOptions() & Options::HiddenFromUsage) != Options::None)
+                if ((child->GetOptions() & Options::Hidden) != Options::None)
                 {
                     continue;
                 }
@@ -1866,39 +1723,6 @@ namespace args
             return Matched() ? Group::Match(flag) : nullptr;
         }
 
-        virtual std::vector<FlagBase*> GetAllFlags() override
-        {
-            std::vector<FlagBase*> res;
-
-            if (!Matched())
-            {
-                return res;
-            }
-
-            for (auto *child: Children())
-            {
-                if (selectedCommand == nullptr || (child->GetOptions() & Options::Global) != Options::None)
-                {
-                    auto childFlags = child->GetAllFlags();
-                    res.insert(res.end(), childFlags.begin(), childFlags.end());
-                }
-            }
-
-            if (selectedCommand != nullptr)
-            {
-                auto childFlags = selectedCommand->GetAllFlags();
-                res.insert(res.end(), childFlags.begin(), childFlags.end());
-            }
-
-            if (subparser != nullptr)
-            {
-                auto childFlags = subparser->GetAllFlags();
-                res.insert(res.end(), childFlags.begin(), childFlags.end());
-            }
-
-            return res;
-        }
-
         virtual PositionalBase *GetNextPositional() override
         {
             if (selectedCommand != nullptr)
@@ -2076,7 +1900,7 @@ namespace args
 
             for (Base *child: Children())
             {
-                if ((child->GetOptions() & Options::HiddenFromDescription) != Options::None)
+                if ((child->GetOptions() & Options::Hidden) != Options::None)
                 {
                     continue;
                 }
@@ -2204,9 +2028,6 @@ namespace args
         bool allowSeparateShortValue = true;
         bool allowSeparateLongValue = true;
 
-        CompletionFlag *completion = nullptr;
-        bool readCompletion = false;
-
     protected:
         enum class OptionType
         {
@@ -2215,41 +2036,19 @@ namespace args
             Positional
         };
 
-        OptionType ParseOption(const std::string &s, bool allowEmpty = false)
+        OptionType ParseOption(const std::string &s)
         {
-            if (s.find(longprefix) == 0 && (allowEmpty || s.length() > longprefix.length()))
+            if (s.find(longprefix) == 0 && s.length() > longprefix.length())
             {
                 return OptionType::LongFlag;
             }
 
-            if (s.find(shortprefix) == 0 && (allowEmpty || s.length() > shortprefix.length()))
+            if (s.find(shortprefix) == 0 && s.length() > shortprefix.length())
             {
                 return OptionType::ShortFlag;
             }
 
             return OptionType::Positional;
-        }
-
-        template <typename It>
-        bool Complete(FlagBase &flag, It it, It end)
-        {
-            auto nextIt = it;
-            if (!readCompletion || (++nextIt != end))
-            {
-                return false;
-            }
-
-            const auto &chunk = *it;
-            for (auto &choice : flag.HelpChoices(helpParams))
-            {
-                AddCompletionReply(chunk, choice);
-            }
-
-#ifndef ARGS_NOEXCEPT
-            throw Completion(completion->Get());
-#else
-            return true;
-#endif
         }
 
         /** (INTERNAL) Parse flag's values
@@ -2297,11 +2096,6 @@ namespace args
                        values.size() < nargs.max &&
                        (nargs.min == nargs.max || ParseOption(*valueIt) == OptionType::Positional))
                 {
-                    if (Complete(flag, valueIt, end))
-                    {
-                        it = end;
-                        return "";
-                    }
 
                     values.push_back(*valueIt);
                     ++it;
@@ -2364,10 +2158,7 @@ namespace args
 #endif
                 }
 
-                if (!readCompletion)
-                {
-                    flag->ParseValue(values);
-                }
+                flag->ParseValue(values);
 
                 if (flag->KickOut())
                 {
@@ -2414,10 +2205,7 @@ namespace args
 #endif
                     }
 
-                    if (!readCompletion)
-                    {
-                        flag->ParseValue(values);
-                    }
+                    flag->ParseValue(values);
 
                     if (flag->KickOut())
                     {
@@ -2443,148 +2231,16 @@ namespace args
             return true;
         }
 
-        bool AddCompletionReply(const std::string &cur, const std::string &choice)
-        {
-            if (cur.empty() || choice.find(cur) == 0)
-            {
-                if (completion->syntax == "bash" && ParseOption(choice) == OptionType::LongFlag && choice.find(longseparator) != std::string::npos)
-                {
-                    completion->reply.push_back(choice.substr(choice.find(longseparator) + 1));
-                } else
-                {
-                    completion->reply.push_back(choice);
-                }
-                return true;
-            }
-
-            return false;
-        }
-
-        template <typename It>
-        bool Complete(It it, It end)
-        {
-            auto nextIt = it;
-            if (!readCompletion || (++nextIt != end))
-            {
-                return false;
-            }
-
-            const auto &chunk = *it;
-            auto pos = GetNextPositional();
-            std::vector<Command *> commands = GetCommands();
-            const auto optionType = ParseOption(chunk, true);
-
-            if (!commands.empty() && (chunk.empty() || optionType == OptionType::Positional))
-            {
-                for (auto &cmd : commands)
-                {
-                    if ((cmd->GetOptions() & Options::HiddenFromCompletion) == Options::None)
-                    {
-                        AddCompletionReply(chunk, cmd->Name());
-                    }
-                }
-            } else
-            {
-                bool hasPositionalCompletion = true;
-
-                if (!commands.empty())
-                {
-                    for (auto &cmd : commands)
-                    {
-                        if ((cmd->GetOptions() & Options::HiddenFromCompletion) == Options::None)
-                        {
-                            AddCompletionReply(chunk, cmd->Name());
-                        }
-                    }
-                } else if (pos)
-                {
-                    if ((pos->GetOptions() & Options::HiddenFromCompletion) == Options::None)
-                    {
-                        auto choices = pos->HelpChoices(helpParams);
-                        hasPositionalCompletion = !choices.empty() || optionType != OptionType::Positional;
-                        for (auto &choice : choices)
-                        {
-                            AddCompletionReply(chunk, choice);
-                        }
-                    }
-                }
-
-                if (hasPositionalCompletion)
-                {
-                    auto flags = GetAllFlags();
-                    for (auto flag : flags)
-                    {
-                        if ((flag->GetOptions() & Options::HiddenFromCompletion) != Options::None)
-                        {
-                            continue;
-                        }
-
-                        auto &matcher = flag->GetMatcher();
-                        if (!AddCompletionReply(chunk, matcher.GetShortOrAny().str(shortprefix, longprefix)))
-                        {
-                            for (auto &flagName : matcher.GetFlagStrings())
-                            {
-                                if (AddCompletionReply(chunk, flagName.str(shortprefix, longprefix)))
-                                {
-                                    break;
-                                }
-                            }
-                        }
-                    }
-
-                    if (optionType == OptionType::LongFlag && allowJoinedLongValue)
-                    {
-                        const auto separator = longseparator.empty() ? chunk.npos : chunk.find(longseparator);
-                        if (separator != chunk.npos)
-                        {
-                            std::string arg(chunk, 0, separator);
-                            if (auto flag = this->Match(arg.substr(longprefix.size())))
-                            {
-                                for (auto &choice : flag->HelpChoices(helpParams))
-                                {
-                                    AddCompletionReply(chunk, arg + longseparator + choice);
-                                }
-                            }
-                        }
-                    } else if (optionType == OptionType::ShortFlag && allowJoinedShortValue)
-                    {
-                        if (chunk.size() > shortprefix.size() + 1)
-                        {
-                            auto arg = chunk.at(shortprefix.size());
-                            //TODO: support -abcVALUE where a and b take no value
-                            if (auto flag = this->Match(arg))
-                            {
-                                for (auto &choice : flag->HelpChoices(helpParams))
-                                {
-                                    AddCompletionReply(chunk, shortprefix + arg + choice);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-#ifndef ARGS_NOEXCEPT
-            throw Completion(completion->Get());
-#else
-            return true;
-#endif
-        }
-
         template <typename It>
         It Parse(It begin, It end)
         {
             bool terminated = false;
+
             std::vector<Command *> commands = GetCommands();
 
             // Check all arg chunks
             for (auto it = begin; it != end; ++it)
             {
-                if (Complete(it, end))
-                {
-                    return end;
-                }
-
                 const auto &chunk = *it;
 
                 if (!terminated && chunk == terminator)
@@ -2666,66 +2322,6 @@ namespace args
 #endif
                     }
                 }
-
-                if (!readCompletion && completion != nullptr && completion->Matched())
-                {
-#ifdef ARGS_NOEXCEPT
-                    error = Error::Completion;
-#endif
-                    readCompletion = true;
-                    ++it;
-                    size_t argsLeft = std::distance(it, end);
-                    if (completion->cword == 0 || argsLeft <= 1 || completion->cword >= argsLeft)
-                    {
-#ifndef ARGS_NOEXCEPT
-                        throw Completion("");
-#endif
-                    }
-
-                    std::vector<std::string> curArgs(++it, end);
-                    curArgs.resize(completion->cword);
-
-                    if (completion->syntax == "bash")
-                    {
-                        // bash tokenizes --flag=value as --flag=value
-                        for (size_t idx = 0; idx < curArgs.size(); )
-                        {
-                            if (idx > 0 && curArgs[idx] == "=")
-                            {
-                                curArgs[idx - 1] += "=";
-                                if (idx + 1 < curArgs.size())
-                                {
-                                    curArgs[idx - 1] += curArgs[idx + 1];
-                                    curArgs.erase(curArgs.begin() + idx, curArgs.begin() + idx + 2);
-                                } else
-                                {
-                                    curArgs.erase(curArgs.begin() + idx);
-                                }
-                            } else
-                            {
-                                ++idx;
-                            }
-                        }
-
-                    }
-#ifndef ARGS_NOEXCEPT
-                    try
-                    {
-                        Parse(curArgs.begin(), curArgs.end());
-                        throw Completion("");
-                    }
-                    catch (Completion &)
-                    {
-                        throw;
-                    }
-                    catch (args::Error&)
-                    {
-                        throw Completion("");
-                    }
-#else
-                    return Parse(curArgs.begin(), curArgs.end());
-#endif
-                }
             }
 
             Validate(shortprefix, longprefix);
@@ -2745,12 +2341,6 @@ namespace args
             Terminator("--");
             SetArgumentSeparations(true, true, true, true);
             matched = true;
-        }
-
-        void AddCompletion(CompletionFlag &completionFlag)
-        {
-            completion = &completionFlag;
-            Add(completionFlag);
         }
 
         /** The program name for help generation
@@ -2974,7 +2564,6 @@ namespace args
         {
             Command::Reset();
             matched = true;
-            readCompletion = false;
         }
 
         /** Parse all arguments.
@@ -3022,12 +2611,6 @@ namespace args
                 Prog(argv[0]);
             }
             const std::vector<std::string> args(argv + 1, argv + argc);
-            return ParseArgs(args) == std::end(args);
-        }
-
-        template <typename T>
-        bool ParseCLI(const T &args)
-        {
             return ParseArgs(args) == std::end(args);
         }
     };
@@ -3121,13 +2704,18 @@ namespace args
 
         virtual ~HelpFlag() {}
 
-        virtual void ParseValue(const std::vector<std::string> &)
+        virtual FlagBase *Match(const EitherFlag &arg) override
         {
+            if (FlagBase::Match(arg))
+            {
 #ifdef ARGS_NOEXCEPT
-            error = Error::Help;
+                error = Error::Help;
+                    return this;
 #else
-            throw Help(Name());
+                throw Help(arg.str());
 #endif
+            }
+            return nullptr;
         }
 
         /** Get whether this was matched
@@ -3147,8 +2735,7 @@ namespace args
         int count;
 
     public:
-        CounterFlag(Group &group_, const std::string &name_, const std::string &help_, Matcher &&matcher_, const int startcount_ = 0, Options options_ = {}):
-                Flag(group_, name_, help_, std::move(matcher_), options_), startcount(startcount_), count(startcount_) {}
+        CounterFlag(Group &group_, const std::string &name_, const std::string &help_, Matcher &&matcher_, const int startcount_ = 0): Flag(group_, name_, help_, std::move(matcher_)), startcount(startcount_), count(startcount_) {}
 
         virtual ~CounterFlag() {}
 
@@ -3507,8 +3094,7 @@ namespace args
         typedef std::reverse_iterator<iterator> reverse_iterator;
         typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
 
-        ValueFlagList(Group &group_, const std::string &name_, const std::string &help_, Matcher &&matcher_, const Container &defaultValues_ = Container(), Options options_ = {}):
-                ValueFlagBase(name_, help_, std::move(matcher_), options_), values(defaultValues_)
+        ValueFlagList(Group &group_, const std::string &name_, const std::string &help_, Matcher &&matcher_, const Container &defaultValues_ = Container()): ValueFlagBase(name_, help_, std::move(matcher_)), values(defaultValues_)
         {
             group_.Add(*this);
         }
@@ -3600,9 +3186,28 @@ namespace args
         Reader reader;
 
     protected:
-        virtual std::vector<std::string> GetChoicesStrings(const HelpParams &) const override
+        virtual std::string GetChoicesString(const HelpParams &) const override
         {
-            return detail::MapKeysToStrings(map);
+            std::string res;
+            if (detail::IsConvertableToString<K>::value)
+            {
+                std::vector<std::string> values;
+                for (const auto &p : map)
+                {
+                    values.push_back(detail::ToString(p.first));
+                }
+
+                std::sort(values.begin(), values.end());
+                for (const auto &s : values)
+                {
+                    if (!res.empty())
+                    {
+                        res += ", ";
+                    }
+                    res += s;
+                }
+            }
+            return res;
         }
 
     public:
@@ -3680,12 +3285,6 @@ namespace args
         const Map<K, T> map;
         Container values;
         Reader reader;
-
-    protected:
-        virtual std::vector<std::string> GetChoicesStrings(const HelpParams &) const override
-        {
-            return detail::MapKeysToStrings(map);
-        }
 
     public:
         typedef T value_type;
@@ -3800,7 +3399,7 @@ namespace args
         T value;
         Reader reader;
     public:
-        Positional(Group &group_, const std::string &name_, const std::string &help_, const T &defaultValue_ = T(), Options options_ = {}): PositionalBase(name_, help_, options_), value(defaultValue_)
+        Positional(Group &group_, const std::string &name_, const std::string &help_, const T &defaultValue_ = T(), Options options_ = Options::None): PositionalBase(name_, help_, options_), value(defaultValue_)
         {
             group_.Add(*this);
         }
@@ -3958,16 +3557,9 @@ namespace args
         T value;
         Reader reader;
 
-    protected:
-        virtual std::vector<std::string> GetChoicesStrings(const HelpParams &) const override
-        {
-            return detail::MapKeysToStrings(map);
-        }
-
     public:
 
-        MapPositional(Group &group_, const std::string &name_, const std::string &help_, const Map<K, T> &map_, const T &defaultValue_ = T(), Options options_ = {}):
-                PositionalBase(name_, help_, options_), map(map_), value(defaultValue_)
+        MapPositional(Group &group_, const std::string &name_, const std::string &help_, const Map<K, T> &map_, const T &defaultValue_ = T()): PositionalBase(name_, help_), map(map_), value(defaultValue_)
         {
             group_.Add(*this);
         }
@@ -4034,12 +3626,6 @@ namespace args
         Container values;
         Reader reader;
 
-    protected:
-        virtual std::vector<std::string> GetChoicesStrings(const HelpParams &) const override
-        {
-            return detail::MapKeysToStrings(map);
-        }
-
     public:
         typedef T value_type;
         typedef typename Container::allocator_type allocator_type;
@@ -4054,8 +3640,7 @@ namespace args
         typedef std::reverse_iterator<iterator> reverse_iterator;
         typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
 
-        MapPositionalList(Group &group_, const std::string &name_, const std::string &help_, const Map<K, T> &map_, const Container &defaultValues_ = Container(), Options options_ = {}):
-                PositionalBase(name_, help_, options_), map(map_), values(defaultValues_)
+        MapPositionalList(Group &group_, const std::string &name_, const std::string &help_, const Map<K, T> &map_, const Container &defaultValues_ = Container()): PositionalBase(name_, help_), map(map_), values(defaultValues_)
         {
             group_.Add(*this);
         }

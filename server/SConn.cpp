@@ -46,6 +46,7 @@ SConn::udpRecvCb(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf, const str
         if (nullptr == conn->mSelfAddr) {
             int socklen = sizeof(struct sockaddr_in*);
             conn->mSelfAddr = static_cast<sockaddr_in *>(malloc(sizeof(struct sockaddr_in)));
+            memset(conn->mSelfAddr, 0, sizeof(struct sockaddr_in));
             int err = uv_udp_getsockname(handle, reinterpret_cast<sockaddr *>(conn->mSelfAddr), &socklen);
             if (err) {
                 debug(LOG_ERR, "getsockname failed, err: %s", err, strerror(errno));

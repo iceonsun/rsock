@@ -12,6 +12,7 @@
 #include <sstream>
 #include "../thirdparty/debug.h"
 #include "cap_util.h"
+#include "../util/TextUtils.h"
 
 
 int ipv4OfDev(const char *dev, char *ip_buf, char *err) {
@@ -85,8 +86,12 @@ const std::string BuildFilterStr(const std::string &srcIp, const std::string &ds
 
     const auto portFn = [&ok, &out](const PortLists &ports, bool src) -> bool {
         if (!ports.empty()) {
-            std::ostringstream out2;
+            auto vec = ports;
+            std::sort(vec.begin(), vec.end());
+            auto last = std::unique(vec.begin(), vec.end());
+            vec.erase(last, vec.end());
 
+            std::ostringstream out2;
             if (ok) {
                 out2 << " and (";
             }
@@ -94,37 +99,32 @@ const std::string BuildFilterStr(const std::string &srcIp, const std::string &ds
             int i = 0;
             int cnt = 0;
 
-            for (i = 0; i < ports.size() && ports[i] != 0; i++) {
-                if (src) {
-                    out2 << " or src port " << ports[i];
-                } else {
-                    out2 << " or dst port " << ports[i];
-                }
-                cnt++;
-            }
-
-            while (i < ports.size() && (ports[i] == 0)) {
-                i++;
-            }
-
-            if (i < ports.size()) {
-                if ((ports.size() - i) % 2 != 0) {  // must be a pair
-                    debug(LOG_ERR, "wrong port list. port range must be a pair");
-                    return false;
-                }
-                while (i + 1 < ports.size()) {
-                    if (ports[i] >= ports[i + 1] || !ports[i] || ports[i + 1]) {
-                        debug(LOG_ERR, "wrong port range: %d-%d", ports[i], ports[i + 1]);
-                        return false;
+            for (int j = 0; j < vec.size();) {      // find single port or consecutive port range
+                if (vec[j] > 0) {
+                    int k = j + 1;
+                    for (; k < vec.size() && (vec[k] == (vec[j] + (k - j))); k++) {
                     }
-                    if (src) {
-                        out2 << " or src portrange ";
+                    if (k == j + 1) {
+                        if (src) {
+                            out2 << " or src port " << vec[j];
+                        } else {
+                            out2 << " or dst port " << vec[j];
+                        }
+                        cnt++;
+                        j++;
                     } else {
-                        out2 << " or dst portrange ";
+                        if (src) {
+                            out2 << " or src portrange ";
+                        } else {
+                            out2 << " or dst portrange ";
+                        }
+
+                        out2 << vec[j] << '-' << vec[k-1];
+                        cnt++;
+                        j = k;
                     }
-                    out2 << ports[i] << '-' << ports[i + 1];
-                    i += 2;
-                    cnt++;
+                } else {
+                    j++;
                 }
             }
 
@@ -138,7 +138,6 @@ const std::string BuildFilterStr(const std::string &srcIp, const std::string &ds
             if (pos == std::string::npos) {
                 return false;
             }
-            debug(LOG_ERR, "before substr: %s", s.c_str());
             s = s.replace(pos, 2, "");
             out << s;
             ok = true;
