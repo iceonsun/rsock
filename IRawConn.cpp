@@ -7,43 +7,29 @@
 #include "IRawConn.h"
 #include "thirdparty/debug.h"
 #include "cap/cap_headers.h"
-#include "rsutil.h"
+#include "util/rsutil.h"
 #include "OHead.h"
 #include "util/enc.h"
-#include "rhash.h"
+#include "util/rhash.h"
 
 
 // todo: change src and dst to self and target.
 // RawConn has key of nullptr to expose errors as fast as it can if any.
-IRawConn::IRawConn(libnet_t *libnet, IUINT32 self, uv_loop_t *loop, const std::string &hashKey,
-                   const std::string &connKey, bool is_server, int type, int datalinkType,
-                   int injectionType, MacBufType const srcMac, MacBufType const dstMac, IUINT32 target)
-        : IConn(connKey), mNet(libnet), mSelf(self), mLoop(loop), mHashKey(hashKey),
+IRawConn::IRawConn(libnet_t *libnet, IUINT32 selfInt, uv_loop_t *loop, const std::string &hashKey, bool is_server, int type,
+                   int datalinkType, IUINT32 targetInt)
+        : IConn("IRawConn"), mNet(libnet), mSelf(selfInt), mLoop(loop), mHashKey(hashKey),
           mIsServer(is_server), mConnType(type), mDatalink(datalinkType),
-          mInjectionType(injectionType), mTarget(target) {
+          mTarget(targetInt) {
+
 //    if (!is_server) {
 //        assert(dst != nullptr);
 //    }
-
-    if (injectionType == LIBNET_LINK) {
-        assert(srcMac != nullptr);
-        assert(dstMac != nullptr);
-    }
-
-    if (srcMac) {
-        memcpy(mSrcMac, srcMac, MAC_LEN);
-    }
-    if (dstMac) {
-        memcpy(mDstMac, dstMac, MAC_LEN);
-    }
-
     socketpair(AF_UNIX, SOCK_DGRAM, 0, mSockPair);
     mReadFd = mSockPair[0];
     mWriteFd = mSockPair[1];
     mSelfNetEndian = mSelf;
-//    mSrcNetEndian = htonl(mSrc);
-//    mDstNetEndian = htonl(mDst);
     mTargetNetEndian = mTarget;
+    assert(mSelf != 0);
 }
 
 int IRawConn::Init() {
@@ -57,7 +43,7 @@ int IRawConn::Init() {
     return 0;
 }
 
-int IRawConn::Output(ssize_t nread, const rbuf_t &rbuf){
+int IRawConn::Output(ssize_t nread, const rbuf_t &rbuf) {
     if (nread > 0) {
         OHead *oh = static_cast<OHead *>(rbuf.data);
 #ifndef NNDEBUG
@@ -106,11 +92,9 @@ int IRawConn::Output(ssize_t nread, const rbuf_t &rbuf){
         }
 
         if (conn_type & OM_PIPE_TCP_SEND) {
-            return SendRawTcp(mNet, mSelf, sp, dst, dp, seq, buf, (p - buf), ipid, mInjectionType, mSrcMac, mDstMac,
-                              mTcp, mIp, mEth);
+            return SendRawTcp(mNet, mSelf, sp, dst, dp, seq, buf, (p - buf), ipid, mTcp, mIp);
         } else {
-            return SendRawUdp(mNet, mSelf, sp, dst, dp, buf, (p - buf), ipid, mInjectionType, mSrcMac, mDstMac,
-                              mUdp, mIp, mEth);
+            return SendRawUdp(mNet, mSelf, sp, dst, dp, buf, (p - buf), ipid, mUdp, mIp);
         }
     }
 
@@ -213,7 +197,7 @@ int IRawConn::RawInput(u_char *args, const pcap_pkthdr *hdr, const u_char *packe
     if (hdr->len - ((const u_char *) hashhead - packet) < HASH_BUF_SIZE + 1) {  // data len must >= 1
 #ifndef NNDEBUG
         debug(LOG_ERR, "receive %d bytes from %s:%d -> %s:%d\n", lenWithHash, inet_ntoa(ip->ip_src), ntohs(src_port),
-                inet_ntoa(ip->ip_dst), ntohs(dst_port));
+              inet_ntoa(ip->ip_dst), ntohs(dst_port));
         for (int i = 0; i < lenWithHash; i++) {
             fprintf(stderr, "%c", hashhead[i]);
         }
@@ -334,10 +318,8 @@ int IRawConn::cap2uv(const char *head_beg, size_t head_len, const struct sockadd
 
 int
 IRawConn::SendRawTcp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT16 dp, IUINT32 seq, const IUINT8 *payload,
-                    IUINT16 payload_len, IUINT16 ip_id, int injection_type, MacBufType srcMac, MacBufType dstMac,
-                    libnet_ptag_t &tcp, libnet_ptag_t &ip, libnet_ptag_t &eth) {
+                     IUINT16 payload_len, IUINT16 ip_id, libnet_ptag_t &tcp, libnet_ptag_t &ip) {
     const int DUMY_WIN_SIZE = 1000;
-//    libnet_ptag_t ip = 0, tcp = 0, eth = 0;
 
     tcp = libnet_build_tcp(
             sp,              // source port
@@ -380,31 +362,14 @@ IRawConn::SendRawTcp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT16 
 #ifndef NNDEBUG
     in_addr src_in_addr = {src};
     in_addr dst_in_addr = {dst};
-    std::string  src1 = inet_ntoa(src_in_addr);
-    std::string  dst1 = inet_ntoa(dst_in_addr);
+    std::string src1 = inet_ntoa(src_in_addr);
+    std::string dst1 = inet_ntoa(dst_in_addr);
     // todo: inet_ntoa, if used in same printf, it will collides
     debug(LOG_ERR, "src: %u, %s, dst: %u, %s", src, src1.c_str(), dst, dst1.c_str());
 #endif
     if (ip == -1) {
         debug(LOG_ERR, "failed to build ipv4: %s", libnet_geterror(l));
         return ip;
-    }
-
-    if (injection_type == LIBNET_LINK) {
-        eth = libnet_build_ethernet(
-                dstMac,            // dst destination ethernet address
-                srcMac,            // src source ethernet address
-                ETHERTYPE_IP,           // type upper layer protocol type
-                NULL,                   // payload optional payload or NULL
-                0,                      // payload_s payload length or 0
-                l,                      // l pointer to a libnet context
-                eth                       // ptag protocol tag to modify an existing header, 0 to build a new one
-
-        );
-        if (eth == -1) {
-            debug(LOG_ERR, "failed to build eth: %s", libnet_geterror(l));
-            return eth;
-        }
     }
 
     int n = libnet_write(l);
@@ -420,10 +385,8 @@ IRawConn::SendRawTcp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT16 
     return payload_len;
 }
 
-int IRawConn::SendRawUdp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT16 dp, const IUINT8 *payload, IUINT16 payload_len,
-                         IUINT16 ip_id, int injection_type, MacBufType srcMac, MacBufType dstMac, libnet_ptag_t &udp,
-                         libnet_ptag_t &ip, libnet_ptag_t &eth) {
-//    libnet_ptag_t udp = 0, ip = 0, eth = 0;
+int IRawConn::SendRawUdp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT16 dp, const IUINT8 *payload,
+                         IUINT16 payload_len, IUINT16 ip_id, libnet_ptag_t &udp, libnet_ptag_t &ip) {
     udp = libnet_build_udp(
             sp,         // sp source port
             dp,         // dp destination port
@@ -459,23 +422,6 @@ int IRawConn::SendRawUdp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUIN
     if (-1 == ip) {
         debug(LOG_ERR, "failed to build ipv4: %s", libnet_geterror(l));
         return ip;
-    }
-
-    if (LIBNET_LINK == injection_type) {
-        eth = libnet_build_ethernet(
-                dstMac,            // dst destination ethernet address
-                srcMac,            // src source ethernet address
-                ETHERTYPE_IP,           // type upper layer protocol type
-                NULL,                   // payload optional payload or NULL
-                0,                      // payload_s payload length or 0
-                l,                      // l pointer to a libnet context
-                eth                       // ptag protocol tag to modify an existing header, 0 to build a new one
-
-        );
-        if (eth == -1) {
-            debug(LOG_ERR, "failed to build eth: %s", libnet_geterror(l));
-            return eth;
-        }
     }
 
     int n = libnet_write(l);

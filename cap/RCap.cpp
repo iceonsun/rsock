@@ -10,13 +10,13 @@
 #include "../thirdparty/debug.h"
 
 
-RCap::RCap(const std::string &dev, const std::string &selfIp, const PortLists &srcPorts, const PortLists &dstPorts,
+RCap::RCap(const std::string &dev, const std::string &selfIp, const PortLists &selfPorts, const PortLists &srcPorts,
            const std::string &srcIp, int timeout_ms) : TIMEOUT(timeout_ms) {
     mDev = dev;
     mSrcIp = srcIp;
     mDstIp = selfIp;
     mPorter.SetSrcPorts(srcPorts);
-    mPorter.SetDstPorts(dstPorts);
+    mPorter.SetDstPorts(selfPorts);
 }
 
 
@@ -50,6 +50,10 @@ int RCap::Init() {
 
     auto filterStr = BuildFilterStr(mSrcIp, mDstIp, mPorter.GetSrcPortLists(), mPorter.GetDstPortLists());
     debug(LOG_ERR, "filter: %s", filterStr.c_str());
+    if (filterStr.empty()) {
+        debug(LOG_ERR, "failed to build capture filter");
+        return -1;
+    }
 
     char err[PCAP_ERRBUF_SIZE] = {0};
     struct bpf_program filter;

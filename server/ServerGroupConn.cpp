@@ -6,7 +6,7 @@
 #include <syslog.h>
 #include "ServerGroupConn.h"
 #include "../GroupConn.h"
-#include "../rsutil.h"
+#include "../util/rsutil.h"
 #include "../thirdparty/debug.h"
 #include "../cap/cap_util.h"
 

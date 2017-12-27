@@ -5,20 +5,20 @@
 #include <cassert>
 #include <syslog.h>
 #include "ClientConn.h"
-#include "../rsutil.h"
+#include "../util/rsutil.h"
 #include "../thirdparty/debug.h"
 using namespace std::placeholders;
 
-ClientConn::ClientConn(const IdBufType &groupId, const char *listenUnPath, const char *listenUdpIp,
+ClientConn::ClientConn(const IdBufType &groupId, const std::string &listenUnPath, const std::string &listenUdpIp,
                        IUINT16 listenUdpPort, std::vector<IUINT16> &sourcePorts, std::vector<IUINT16> &destPorts,
                        uv_loop_t *loop, IConn *btm, uint32_t bigDst)
         : IGroupConn(groupId, btm){
-    if (listenUdpIp) {
-        mUdpAddr = new_addr4(listenUdpIp, listenUdpPort);
+    if (!listenUdpIp.empty()) {
+        mUdpAddr = new_addr4(listenUdpIp.c_str(), listenUdpPort);
     }
 
-    if (listenUnPath) {
-        mUnAddr = new_addrUn(listenUnPath);
+    if (!listenUnPath.empty()) {
+        mUnAddr = new_addrUn(listenUnPath.c_str());
         assert(mUnAddr != nullptr);
     }
 //    mhead  update connid

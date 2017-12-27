@@ -10,10 +10,10 @@
 #include <unistd.h>
 #include <uv.h>
 #include <sys/un.h>
-#include "thirdparty/debug.h"
-#include "rcommon.h"
-#include "util/enc.h"
+#include "../thirdparty/debug.h"
+#include "enc.h"
 #include "rsutil.h"
+#include "../rcommon.h"
 
 struct sockaddr *new_addr(const struct sockaddr *addr) {
     const int family = addr->sa_family;

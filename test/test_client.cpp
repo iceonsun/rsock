@@ -8,7 +8,7 @@
 #include "../cap/cap_util.h"
 #include "../client/CRawConn.h"
 #include "../thirdparty/debug.h"
-#include "../rhash.h"
+#include "../util/rhash.h"
 #include "../cap/RCap.h"
 
 const int INTERVAL = 10000; // 10s
@@ -20,13 +20,14 @@ int OnRecvCb(ssize_t nread, const rbuf_t &rbuf) {
 void timer_cb(uv_timer_t* handle) {
     IConn *conn = static_cast<IConn *>(handle->data);
     long now = time(NULL);
-    conn->CheckAndClose(now);
+    conn->CheckAndClose();
 }
 
 int main(int argc, char **argv) {
     std::string dev = "lo0";
     std::string targetIp = "127.0.0.1";
-    std::string selfIp = "127.0.0.2";
+    std::string selfIp = "127.0.0.1";
+//    PortLists targetPorts = {10031, 10032, 0, 10010, 10011, 10020, 10021};   // target ports
     PortLists targetPorts = {10031, 10032,10033, 10034};   // target ports
     PortLists selfPorts = {10051, 10052, 10053, 10054};  // self ports
     int listenPort = 10030;
@@ -44,7 +45,7 @@ int main(int argc, char **argv) {
     GenerateIdBuf(id, hashKey);
 
     uv_loop_t *LOOP = uv_default_loop();
-    auto cap = new RCap(dev, selfIp, targetPorts, selfPorts, targetIp);
+    auto cap = new RCap(dev, selfIp, selfPorts, targetPorts, targetIp);
     cap->Init();
 
     const int datalink = cap->Datalink();
@@ -53,7 +54,7 @@ int main(int argc, char **argv) {
     auto *btm = new CRawConn(l, selfInt, LOOP, hashKey, "", targetInt, datalink);
     cap->Start(IRawConn::CapInputCb, reinterpret_cast<u_char *>(btm));
 
-    IConn *conn = new ClientConn(id, nullptr, selfIp.c_str(), listenPort, selfPorts, targetPorts, LOOP, btm, targetInt);
+    IConn *conn = new ClientConn(id, "", selfIp.c_str(), listenPort, selfPorts, targetPorts, LOOP, btm, targetInt);
 //    IConn *conn = new ClientConn(id, nullptr, "127.0.0.1", listenPort, srcPorts, dstPorts, LOOP, btm, dstInt);
     conn->Init();
     uv_timer_t timer;

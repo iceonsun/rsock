@@ -52,7 +52,7 @@ int IConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
     return 0;
 }
 
-bool IConn::CheckAndClose(long now_sec) {
+bool IConn::CheckAndClose() {
     return mStat.canCloseCheck();
 }
 

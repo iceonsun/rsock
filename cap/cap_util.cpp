@@ -83,33 +83,72 @@ const std::string BuildFilterStr(const std::string &srcIp, const std::string &ds
     ipFn(srcIp, true);
     ipFn(dstIp, false);
 
-    const auto portFn = [&ok, &out](const PortLists &ports, bool src) {
+    const auto portFn = [&ok, &out](const PortLists &ports, bool src) -> bool {
         if (!ports.empty()) {
+            std::ostringstream out2;
+
             if (ok) {
-                out << " and (";
+                out2 << " and (";
             }
 
-            if (src) {
-                out << " src port ";
-            } else {
-                out << " dst port ";
-            }
+            int i = 0;
+            int cnt = 0;
 
-            out << std::to_string(ports[0]);
-
-            for (int i = 1; i < ports.size(); i++) {
+            for (i = 0; i < ports.size() && ports[i] != 0; i++) {
                 if (src) {
-                    out << " or src port " << ports[i];
+                    out2 << " or src port " << ports[i];
                 } else {
-                    out << " or dst port " << ports[i];
+                    out2 << " or dst port " << ports[i];
+                }
+                cnt++;
+            }
+
+            while (i < ports.size() && (ports[i] == 0)) {
+                i++;
+            }
+
+            if (i < ports.size()) {
+                if ((ports.size() - i) % 2 != 0) {  // must be a pair
+                    debug(LOG_ERR, "wrong port list. port range must be a pair");
+                    return false;
+                }
+                while (i + 1 < ports.size()) {
+                    if (ports[i] >= ports[i + 1] || !ports[i] || ports[i + 1]) {
+                        debug(LOG_ERR, "wrong port range: %d-%d", ports[i], ports[i + 1]);
+                        return false;
+                    }
+                    if (src) {
+                        out2 << " or src portrange ";
+                    } else {
+                        out2 << " or dst portrange ";
+                    }
+                    out2 << ports[i] << '-' << ports[i + 1];
+                    i += 2;
+                    cnt++;
                 }
             }
-            out << " )";
+
+            out2 << " )";
+            if (cnt == 0) { // no port or portrange
+                return false;
+            }
+
+            auto s = out2.str();
+            auto pos = s.find("or");
+            if (pos == std::string::npos) {
+                return false;
+            }
+            debug(LOG_ERR, "before substr: %s", s.c_str());
+            s = s.replace(pos, 2, "");
+            out << s;
             ok = true;
         }
+        return true;
     };
-    portFn(srcPorts, true);
-    portFn(dstPorts, false);
+
+    if (!portFn(srcPorts, true) || !portFn(dstPorts, false)) {
+        return "";
+    }
     return out.str();
 }
 
@@ -124,11 +163,10 @@ int devWithIpv4(std::string &devName, const std::string &ip) {
     in_addr ipaddr = {0};
     inet_aton(ip.c_str(), &ipaddr);
 
-    for (auto dev = dev_list->next; dev; dev = dev->next) {
+    for (auto dev = dev_list; dev && nret; dev = dev->next) {
         for (auto addr = dev->addresses; addr; addr = addr->next) {
             if (addr->addr->sa_family == AF_INET) {
-                struct sockaddr_in *addr4 = reinterpret_cast<sockaddr_in *>(addr);
-//                if (!strcmp(inet_ntoa(addr4->sin_addr), ip.c_str())) {
+                struct sockaddr_in *addr4 = reinterpret_cast<sockaddr_in *>(addr->addr);
                 if (addr4->sin_addr.s_addr == ipaddr.s_addr) {
                     devName = dev->name;
                     nret = 0;
@@ -141,13 +179,28 @@ int devWithIpv4(std::string &devName, const std::string &ip) {
     return nret;
 }
 
-//u_int32_t hostIntOfIp(const std::string &ip) {
-//    in_addr addr = {0};
-//    int nret = inet_aton(ip.c_str(), &addr);
-//    if (!nret) {
-//        debug(LOG_ERR, "inet_aton failed, nret %d:%s", nret, strerror(errno));
-//        return 0;
-//    }
-////    return ntohl(addr.s_addr);
+bool DevIpMatch(const std::string &dev, const std::string &ip) {
+    std::string d;
+
+    if (devWithIpv4(d, ip)) {
+        return false;
+    }
+    return d == dev;
+}
+
+uint32_t NetIntOfIp(const char *ip) {
+    in_addr addr = {0};
+    inet_aton(ip, &addr);
+    return addr.s_addr;
+}
+
+u_int32_t hostIntOfIp(const std::string &ip) {
+    in_addr addr = {0};
+    int nret = inet_aton(ip.c_str(), &addr);
+    if (!nret) {
+        debug(LOG_ERR, "inet_aton failed, nret %d:%s", nret, strerror(errno));
+        return 0;
+    }
+    return ntohl(addr.s_addr);
 //    return addr.s_addr;
-//}
+}

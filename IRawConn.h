@@ -15,25 +15,22 @@
 #include "IConn.h"
 #include "rscomm.h"
 
+// todo: IRawConn and SRawConn, CRawConn
 class IRawConn : public IConn {
 public:
-    typedef IUINT8 MacBufType[MAC_LEN];
     const static int TTL_OUT = OM_TTL_OUT;
 
-    // todo change default argument value
-    IRawConn(libnet_t *libnet, IUINT32 self, uv_loop_t *loop, const std::string &hashKey, const std::string &connKey, bool is_server = false,
-             int type = OM_PIPE_DEF, int datalinkType = DLT_EN10MB, int injectionType = LIBNET_RAW4,
-             MacBufType const srcMac = nullptr, MacBufType const dstMac = nullptr, IUINT32 target = 0);
+    IRawConn(libnet_t *libnet, IUINT32 selfInt, uv_loop_t *loop, const std::string &hashKey, bool is_server,
+             int type = OM_PIPE_DEF, int datalinkType = DLT_EN10MB, IUINT32 targetInt = 0);
 
     void Close() override;
 
-    static int SendRawTcp(libnet_t *libnet, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT16 dp, IUINT32 seq, const IUINT8 *payload,
-                              IUINT16 payload_s, IUINT16 ip_id, int injection_type, MacBufType srcMac, MacBufType dstMac,
-                              libnet_ptag_t &tcp, libnet_ptag_t &ip, libnet_ptag_t &eth);
+    static int SendRawTcp(libnet_t *libnet, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT16 dp, IUINT32 seq,
+                             const IUINT8 *payload, IUINT16 payload_s, IUINT16 ip_id, libnet_ptag_t &tcp,
+                             libnet_ptag_t &ip);
 
     static int SendRawUdp(libnet_t *libnet, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT16 dp, const IUINT8 *payload,
-                             IUINT16 payload_len, IUINT16 ip_id, int injection_type, MacBufType srcMac, MacBufType dstMac,
-                             libnet_ptag_t &udp, libnet_ptag_t &ip, libnet_ptag_t &eth);
+                              IUINT16 payload_len, IUINT16 ip_id, libnet_ptag_t &udp, libnet_ptag_t &ip);
 
     static void CapInputCb(u_char *args, const pcap_pkthdr *hdr, const u_char *packet);
 
@@ -60,23 +57,17 @@ private:
 
     libnet_t *mNet;
 
-    int mInjectionType = LIBNET_RAW4;
-    MacBufType mSrcMac;
-    MacBufType mDstMac;
     int mConnType = OM_PIPE_DEF;
 
     int mSockPair[2];
     int mReadFd;
     int mWriteFd;
-//    int unixSock = 0;   // for thread synchronization
+
     uv_loop_t *mLoop = nullptr;
     uv_poll_t *mUnixDgramPoll = nullptr;
     std::string mHashKey;
     libnet_ptag_t mTcp = 0;
     libnet_ptag_t mUdp = 0;
     libnet_ptag_t mIp = 0;
-    libnet_ptag_t mEth = 0;
 };
-
-
 #endif //RSOCK_RAWCONN_H

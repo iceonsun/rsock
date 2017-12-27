@@ -6,9 +6,8 @@
 #include <syslog.h>
 #include "GroupConn.h"
 #include "server/SConn.h"
-#include "rsutil.h"
+#include "util/rsutil.h"
 #include "thirdparty/debug.h"
-#include "rstype.h"
 
 // todo: change all these thing origin to uint32_t? if not consider support ipv6
 GroupConn::GroupConn(const IdBufType &groupId, uv_loop_t *loop, const struct sockaddr *target,

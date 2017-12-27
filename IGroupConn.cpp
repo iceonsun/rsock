@@ -5,10 +5,10 @@
 #include <syslog.h>
 #include <cassert>
 #include "IGroupConn.h"
-#include "rsutil.h"
+#include "util/rsutil.h"
 #include "thirdparty/debug.h"
 #include "rstype.h"
-#include "rhash.h"
+#include "util/rhash.h"
 
 using namespace std::placeholders;
 
@@ -91,12 +91,12 @@ void IGroupConn::AddConn(IConn *conn, const IConn::IConnCb &outCb, const IConn::
     conn->SetOnRecvCb(recvCb);
 }
 
-bool IGroupConn::CheckAndClose(long now_sec) {
+bool IGroupConn::CheckAndClose() {
 //    std::vector<IConn*> vec;
     std::vector<std::pair<std::string, IConn*>> vec;
     int size = mConns.size();
     for (auto &e: mConns) {
-        if (e.second->CheckAndClose(now_sec)) {
+        if (e.second->CheckAndClose()) {
             vec.emplace_back(e);
         }
     }
@@ -114,7 +114,7 @@ bool IGroupConn::CheckAndClose(long now_sec) {
 #ifndef NNDEBUG
     // if any if sub conn should closed, self should be closed either.
     debug(LOG_ERR, "can: %d, closed %d conns. original size: %d, new size: %d", can, vec.size(), size, mConns.size());
-    assert(can == IConn::CheckAndClose(now_sec));
+    assert(can == IConn::CheckAndClose());
 #endif
     return can;
 }

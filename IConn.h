@@ -9,8 +9,6 @@
 #include <string>
 #include <functional>
 
-#include <sys/socket.h>
-
 #include "ktype.h"
 #include "rcommon.h"
 
@@ -46,7 +44,7 @@ public:
     virtual const std::string &Key() { return mKey; }
 
     // if no data send/input since last check, return true.
-    virtual bool CheckAndClose(long now_sec);
+    virtual bool CheckAndClose();
     
     IConn&operator=(const IConn &) = delete;
 

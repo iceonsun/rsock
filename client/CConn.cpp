@@ -3,7 +3,7 @@
 //
 
 #include "CConn.h"
-#include "../rsutil.h"
+#include "../util/rsutil.h"
 
 CConn::CConn(const std::string &key, const struct sockaddr *addr, IUINT32 conv) : IConn(key) {
     mAddr = new_addr(addr);

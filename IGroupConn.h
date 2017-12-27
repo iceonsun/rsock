@@ -42,7 +42,7 @@ public:
     MapConnIter begin();
     MapConnIter end();
 
-    bool CheckAndClose(long now_sec) override;
+    bool CheckAndClose() override;
 
 //    virtual void SetRawConn(IRawConn *rawConn);
 private:

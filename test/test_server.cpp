@@ -5,7 +5,7 @@
 #include "../cap/cap_util.h"
 #include "../thirdparty/debug.h"
 #include "../server/SRawConn.h"
-#include "../rhash.h"
+#include "../util/rhash.h"
 #include "../cap/RCap.h"
 
 int OnRecvCb(ssize_t nread, const rbuf_t &rbuf) {
@@ -19,7 +19,7 @@ const int INTERVAL = 10000; // 10s
 void timer_cb(uv_timer_t* handle) {
     IConn *conn = static_cast<IConn *>(handle->data);
     long now = time(NULL);
-    conn->CheckAndClose(now);
+    conn->CheckAndClose();
 }
 
 int main(int argc, char **argv) {
@@ -42,12 +42,16 @@ int main(int argc, char **argv) {
 
     uv_loop_t *LOOP = uv_default_loop();
 
-    auto scap = new RCap(dev, selfIp, srcPorts, selfPorts);
+    auto scap = new RCap(dev, selfIp, selfPorts, srcPorts);
     scap->Init();
 
     int datalink = scap->Datalink();
     uint32_t dstInt = libnet_name2addr4(l, const_cast<char *>(selfIp.c_str()), LIBNET_DONT_RESOLVE);
-    auto *btm = new SRawConn(l, dstInt, LOOP ,hashKey, "" , datalink);
+//    uint32_t dstIn2 = libnet_name2addr4(l, const_cast<char *>(selfIp.c_str()), LIBNET_RESOLVE);
+//    uint32_t dstInt3 = hostIntOfIp(selfIp);
+//    uint32_t dstInt4 = NetIntOfIp(selfIp.c_str());
+//    debug(LOG_ERR, "dstInt1: %u, dstInt2: %u, hostInt: %u, dstInt4: %u", dstInt, dstIn2, dstInt3, dstInt4);
+    auto *btm = new SRawConn(l, dstInt, LOOP, hashKey, "", datalink);
     IdBufType id;
     GenerateIdBuf(id, hashKey);
     struct sockaddr_in target = {0};
@@ -63,7 +67,7 @@ int main(int argc, char **argv) {
     uv_timer_init(LOOP, &timer);
     timer.data = conn;
     uv_timer_start(&timer, timer_cb, INTERVAL, INTERVAL);
-    
+
     uv_run(LOOP, UV_RUN_DEFAULT);
     return 0;
 }

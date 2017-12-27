@@ -22,7 +22,7 @@ public:
     };
 
     // todo: remove for testing
-    RCap(const std::string &dev, const std::string &selfIp, const PortLists &srcPorts, const PortLists &dstPorts,
+    RCap(const std::string &dev, const std::string &selfIp, const PortLists &selfPorts, const PortLists &srcPorts,
          const std::string &srcIp = "", int timeout_ms = 20);
 
     virtual int Init();

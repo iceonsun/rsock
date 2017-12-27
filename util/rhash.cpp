@@ -5,10 +5,10 @@
 #include <cstring>
 #include <cassert>
 #include "rhash.h"
-#include "thirdparty/md5.h"
-#include "rscomm.h"
-#include "rstype.h"
-#include "thirdparty/debug.h"
+#include "../thirdparty/md5.h"
+#include "../rscomm.h"
+#include "../rstype.h"
+#include "../thirdparty/debug.h"
 #include <algorithm>
 #include <string>
 #include <syslog.h>
@@ -115,6 +115,15 @@ void GenerateIdBuf(IdBufType &hash, const std::string &key) {
         len = MD5_LEN;
     }
     std::copy(md5_result, md5_result + len, hash.begin());
+}
+
+bool EmptyIdBuf(const IdBufType &id) {
+    for (auto ch: id) {
+        if (ch != 0) {
+            return false;
+        }
+    }
+    return true;
 }
 
 void OutputHash(const char *hash, int len) {

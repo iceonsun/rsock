@@ -1,0 +1,23 @@
+//
+// Created by System Administrator on 12/26/17.
+//
+
+#include "CSockApp.h"
+#include "../RConfig.h"
+#include "CRawConn.h"
+#include "../RConfig.h"
+
+CSockApp::CSockApp(uv_loop_t *loop) : ISockApp(true, loop) {}
+
+RCap *CSockApp::CreateCap(RConfig &conf) {
+    return new RCap(conf.param.dev, conf.param.selfCapIp, conf.param.selfCapPorts, conf.param.targetCapPorts, conf.param.targetIp, conf.param.interval);
+}
+
+IRawConn *CSockApp::CreateBtmConn(RConfig &conf, libnet_t *l, uv_loop_t *loop, int datalink) {
+    return new CRawConn(l, conf.param.selfCapInt, loop, conf.param.hashKey, "", conf.param.targetCapInt, datalink, 0);
+}
+
+IConn *CSockApp::CreateBridgeConn(RConfig &conf, IRawConn *btm, uv_loop_t *loop) {
+    return new ClientConn(conf.param.id, conf.param.selfUnPath, conf.param.selfCapIp, conf.param.localUdpPort, conf.param.selfCapPorts, conf.param.targetCapPorts,
+                          loop, btm, conf.param.targetCapInt);
+}

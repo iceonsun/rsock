@@ -12,9 +12,8 @@
 
 class CRawConn : public IRawConn {
 public:
-    CRawConn(libnet_t *libnet, IUINT32 self, uv_loop_t *loop, const std::string &hashKey, const std::string &connKey, IUINT32 target,int datalinkType, int type = OM_PIPE_DEF,
-              int injectionType = LIBNET_RAW4, MacBufType const srcMac = nullptr,
-             MacBufType const dstMac = nullptr);
+    CRawConn(libnet_t *libnet, IUINT32 selfInt, uv_loop_t *loop, const std::string &hashKey,
+             const std::string &connKey, IUINT32 targetInt, int datalinkType, int type = OM_PIPE_TCP);
 };
 
 
