@@ -101,8 +101,8 @@ int ClientConn::send2Origin(ssize_t nread, const rbuf_t &rbuf, const sockaddr *a
         return unSendOrigin(nread, rbuf, (sockaddr_un *) addr);
     }
 
-    const struct sockaddr_in* addr4 = reinterpret_cast<const sockaddr_in *>(addr);
-    debug(LOG_ERR, "send %d bytes to origin %s:%d\n", nread, inet_ntoa(addr4->sin_addr), ntohs(addr4->sin_port));
+//    const struct sockaddr_in* addr4 = reinterpret_cast<const sockaddr_in *>(addr);
+//    debug(LOG_ERR, "send %d bytes to origin %s:%d\n", nread, inet_ntoa(addr4->sin_addr), ntohs(addr4->sin_port));
     rudp_send_t *snd = static_cast<rudp_send_t *>(malloc(sizeof(rudp_send_t)));
     memset(snd, 0, sizeof(rudp_send_t));
     snd->buf.base = static_cast<char *>(malloc(nread));
@@ -140,8 +140,8 @@ void ClientConn::udpRecvCb(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf,
                                 unsigned flags) {
     auto *conn = static_cast<ClientConn *>(handle->data);
    if (nread > 0) {
-       auto *addr4 = (const struct sockaddr_in*) addr;
-       debug(LOG_ERR, "client, receive %d bytes from %s:%d", nread, inet_ntoa(addr4->sin_addr), ntohs(addr4->sin_port));
+//       auto *addr4 = (const struct sockaddr_in*) addr;
+//       debug(LOG_ERR, "client, receive %d bytes from %s:%d", nread, inet_ntoa(addr4->sin_addr), ntohs(addr4->sin_port));
        conn->onLocalRecv(nread, buf->base, addr);
     } else if (nread < 0) {
         // todo: error processing

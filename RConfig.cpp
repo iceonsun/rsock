@@ -75,7 +75,9 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
                     throw args::Error("Unable to parse self capture ports: " + selfCapPorts.Get());
                 }
             } else {
+#ifndef RSOCK_NNDEBUG
                 debug(LOG_ERR, "use default ports. %s", TextUtils::Vector2String<IUINT16>(param.selfCapPorts).c_str());
+#endif
             }
 
             if (localUn) {
@@ -286,8 +288,8 @@ void RConfig::ParseJsonString(RConfig &c, const std::string &content, std::strin
                 throw args::Error("Unable to parse local listening udp address: " + s);
             }
         }
-        if (o["tudp"].is_string()) {
-            auto s = o["tudp"].string_value();
+        if (o["taddr"].is_string()) {
+            auto s = o["taddr"].string_value();
             PortLists &vec = p.targetCapPorts;
             if (c.isServer) {
                 vec.resize(1);
@@ -331,7 +333,7 @@ json11::Json RConfig::to_json() const {
                                   (param.localUdpIp + ":" + std::to_string(param.localUdpPort))},
                     {"lcapIp",    param.selfCapIp},
                     {"lcapPorts", TextUtils::Vector2String<IUINT16>(param.selfCapPorts)},
-                    {"tudp",      isServer ? (param.targetIp + ":" + std::to_string(param.targetCapPorts[0]))
+                    {"taddr",      isServer ? (param.targetIp + ":" + std::to_string(param.targetCapPorts[0]))
                                            : param.targetIp},
                     {"tcapPorts", isServer ? "" : TextUtils::Vector2String<IUINT16>(param.targetCapPorts)},
                     {"duration",  (int) param.interval},

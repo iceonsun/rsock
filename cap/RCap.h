@@ -25,6 +25,8 @@ public:
     RCap(const std::string &dev, const std::string &selfIp, const PortLists &selfPorts, const PortLists &srcPorts,
          const std::string &srcIp = "", int timeout_ms = 20);
 
+    virtual ~RCap() = default;
+
     virtual int Init();
 
     virtual int Close();

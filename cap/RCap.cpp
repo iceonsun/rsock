@@ -60,7 +60,7 @@ int RCap::Init() {
 
     do {
         assert(!mDev.empty());
-        if (nullptr == (mCap = pcap_open_live(mDev.c_str(), 65535, -1, TIMEOUT, err))) {
+        if (nullptr == (mCap = pcap_open_live(mDev.c_str(), 65535, 0, TIMEOUT, err))) {
             nret = -1;
             break;
         }
