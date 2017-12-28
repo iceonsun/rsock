@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <uv.h>
 #include <sys/un.h>
+//#include <sys/event.h>
 #include "../thirdparty/debug.h"
 #include "enc.h"
 #include "rsutil.h"
@@ -42,10 +43,31 @@ int checkFdType(int fd, int type) {
     return nret;
 }
 
+//int uv__io_check_fd(uv_loop_t* loop, int fd) {
+//    struct kevent ev;
+//    int rc;
+//
+//    rc = 0;
+//    EV_SET(&ev, fd, EVFILT_READ, EV_ADD, 0, 0, 0);
+//    if (kevent(loop->backend_fd, &ev, 1, NULL, 0, NULL))
+//        rc = -errno;
+//
+//    EV_SET(&ev, fd, EVFILT_READ, EV_DELETE, 0, 0, 0);
+//    if (rc == 0)
+//        if (kevent(loop->backend_fd, &ev, 1, NULL, 0, NULL))
+//            abort();
+//
+//    return rc;
+//}
+
 uv_poll_t *poll_dgram_fd(int fd, uv_loop_t *loop, uv_poll_cb cb, void *arg, int *err) {
     checkFdType(fd, SOCK_DGRAM);
 
+//    int n = uv__io_check_fd(loop, fd);    // todo: if run in daemon, this check will fail. why?
+//    debug(LOG_ERR, "uv_io_checkfd: %d", n);
+
     uv_poll_t *poll = malloc(sizeof(uv_poll_t));
+    memset(poll, 0, sizeof(uv_poll_t));
     int nret = uv_poll_init(loop, poll, fd);
     if (nret) {
         *err = nret;

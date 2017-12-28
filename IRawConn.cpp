@@ -15,18 +15,15 @@
 
 // todo: change src and dst to self and target.
 // RawConn has key of nullptr to expose errors as fast as it can if any.
-IRawConn::IRawConn(libnet_t *libnet, IUINT32 selfInt, uv_loop_t *loop, const std::string &hashKey, bool is_server, int type,
+IRawConn::IRawConn(libnet_t *libnet, IUINT32 selfInt, uv_loop_t *loop, const std::string &hashKey, bool is_server,
+                   int type,
                    int datalinkType, IUINT32 targetInt)
         : IConn("IRawConn"), mNet(libnet), mSelf(selfInt), mLoop(loop), mHashKey(hashKey),
           mIsServer(is_server), mConnType(type), mDatalink(datalinkType),
           mTarget(targetInt) {
-
     assert(libnet != nullptr);
     assert(loop != nullptr);
 
-    socketpair(AF_UNIX, SOCK_DGRAM, 0, mSockPair);
-    mReadFd = mSockPair[0];
-    mWriteFd = mSockPair[1];
     mSelfNetEndian = mSelf;
     mTargetNetEndian = mTarget;
     assert(mSelf != 0);
@@ -34,7 +31,13 @@ IRawConn::IRawConn(libnet_t *libnet, IUINT32 selfInt, uv_loop_t *loop, const std
 
 int IRawConn::Init() {
     IConn::Init();
-    int nret = 0;
+    int nret = socketpair(AF_UNIX, SOCK_DGRAM, 0, mSockPair);
+    if (nret) {
+        debug(LOG_ERR, "create unix socket pair failed: %s", strerror(errno));
+        return nret;
+    }
+    mReadFd = mSockPair[0];
+    mWriteFd = mSockPair[1];
     mUnixDgramPoll = poll_dgram_fd(mReadFd, mLoop, pollCb, this, &nret);
     if (!mUnixDgramPoll) {
         debug(LOG_ERR, "poll failed: %s", uv_strerror(nret));
@@ -196,13 +199,16 @@ int IRawConn::RawInput(u_char *args, const pcap_pkthdr *hdr, const u_char *packe
     // because we may receive rst with length zero. if we don't check, we may cause illegal memory access error
     if (hdr->len - ((const u_char *) hashhead - packet) < HASH_BUF_SIZE + 1) {  // data len must >= 1
 #ifndef NNDEBUG
-        debug(LOG_ERR, "receive %d bytes from %s:%d -> %s:%d\n", lenWithHash, inet_ntoa(ip->ip_src), ntohs(src_port),
-              inet_ntoa(ip->ip_dst), ntohs(dst_port));
+        if (lenWithHash > 0) {  // just ignore zero length msg. it's all about rst.
+            debug(LOG_ERR, "incomplete message. receive %d bytes from %s:%d -> %s:%d\n", lenWithHash,
+                  inet_ntoa(ip->ip_src), ntohs(src_port),
+                  inet_ntoa(ip->ip_dst), ntohs(dst_port));
+        }
 #endif
         return 0;
     }
-#ifndef NNDEBUG
-    debug(LOG_ERR, "receive: %d bytes from: %s:%d -> %s:%d\n", lenWithHash, inet_ntoa(ip->ip_src), ntohs(src_port),
+#ifndef RSOCK_NNDEBUG
+    debug(LOG_ERR, "receive: %d bytes from: %s:%d -> %s:%d", lenWithHash, inet_ntoa(ip->ip_src), ntohs(src_port),
           inet_ntoa(ip->ip_dst), ntohs(dst_port));
 #endif
 
@@ -327,7 +333,11 @@ IRawConn::SendRawTcp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT16 
             l,               // pointer to libnet context
             tcp                // protocol tag to modify an existing header, 0 to build a new one
     );
-    debug(LOG_ERR, "sp: %d, dp: %d, seq: %u, ack: %u, payload_len: %u", sp, dp, seq, 0, payload_len);
+
+#ifndef RSOCK_NNDEBUG
+    debug(LOG_ERR, "sendrawtcp: sp: %d, dp: %d, seq: %u, ack: %u, payload_len: %u", sp, dp, seq, 0, payload_len);
+#endif
+
     if (tcp == -1) {
         debug(LOG_ERR, "failed to build tcp: %s", libnet_geterror(l));
         return tcp;
@@ -355,8 +365,6 @@ IRawConn::SendRawTcp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT16 
     in_addr dst_in_addr = {dst};
     std::string src1 = inet_ntoa(src_in_addr);
     std::string dst1 = inet_ntoa(dst_in_addr);
-    // todo: inet_ntoa, if used in same printf, it will collides
-    debug(LOG_ERR, "src: %u, %s, dst: %u, %s", src, src1.c_str(), dst, dst1.c_str());
 #endif
     if (ip == -1) {
         debug(LOG_ERR, "failed to build ipv4: %s", libnet_geterror(l));
@@ -367,11 +375,11 @@ IRawConn::SendRawTcp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT16 
     if (-1 == n) {
         debug(LOG_ERR, "libnet_write failed: %s", libnet_geterror(l));
         return -1;
-    } else {
-#ifndef NNDEBUG
-        debug(LOG_ERR, "libnet_write %d bytes. %s:%d<->%s:%d.", n, src1.c_str(), sp, dst1.c_str(),
-              dp);
-#endif
+//    } else {
+//#ifndef NNDEBUG
+//        debug(LOG_ERR, "libnet_write %d bytes. %s:%d<->%s:%d.", n, src1.c_str(), sp, dst1.c_str(),
+//              dp);
+//#endif
     }
     return payload_len;
 }

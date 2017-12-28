@@ -37,7 +37,7 @@
 debugconf_t debugconf = {
     .debuglevel = LOG_ERR,
     .log_stderr = 1,
-    .log_syslog = 0,
+    .log_syslog = 1,
     .syslog_facility = LOG_USER
 };
 

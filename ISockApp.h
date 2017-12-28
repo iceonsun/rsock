@@ -42,15 +42,18 @@ public:
 
     virtual IConn *CreateBridgeConn(RConfig &conf, IRawConn *btm, uv_loop_t *loop) = 0;
 
-protected:
-    uv_loop_t *mLoop;
-    RTimer mTimer;
+private:
+    int makeDaemon(bool d);
+private:
+    uv_loop_t *mLoop = nullptr;
+    RTimer *mTimer;
     bool mServer;
     RCap *mCap;
     IConn *mBridge;
     IRawConn *mBtmConn;
     libnet_t* mLibnet;
     RConfig mConf;
+    bool mInited = false;
 };
 
 
