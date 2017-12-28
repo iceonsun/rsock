@@ -26,6 +26,8 @@ public:
 
     virtual int Init();
 
+    virtual int Init(RConfig &conf);
+
     virtual int Start();
 
     virtual void Close();

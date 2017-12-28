@@ -14,6 +14,18 @@ ISockApp::ISockApp(bool is_server, uv_loop_t *loop) : mServer(is_server), mTimer
 }
 
 
+int ISockApp::Init(RConfig &conf) {
+    if (!conf.Inited()) {
+        debug(LOG_ERR, "conf must be inited");
+#ifndef NNDEBUG
+        assert(0);
+#endif
+        return -1;
+    }
+    mConf = conf;
+    return Init();
+}
+
 int ISockApp::Parse(int argc, const char *const *argv) {
     assert(argv != nullptr);
     int nret = mConf.Parse(mServer, argc, argv);

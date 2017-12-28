@@ -27,11 +27,15 @@ set_target_properties(
 
 add_executable(test_client ${SOURCE_FILES} test/test_client.cpp)
 add_executable(test_conf ${SOURCE_FILES} test/test_conf.cpp)
+add_executable(test_udp_echo_server thirdparty/debug.c rcommon.c test/udp_echo_server.cpp)
+add_executable(test_udp_echo_client thirdparty/debug.c rcommon.c test/udp_echo_client.cpp)
+add_executable(test_cap ${SOURCE_FILES} test/test_cap.cpp)
+
+add_definitions(-Wall)
 
 # library
 add_library(rawsock ${SOURCE_FILES})
 
-add_executable(test_cap ${SOURCE_FILES} test/test_cap.cpp)
 
 # change /usr/local/lib to the folder of your libnet.so/.a
 find_library(NET_PATH net /usr/local/lib NO_DEFAULT_PATH)
@@ -52,3 +56,5 @@ target_link_libraries(test_cap uv net pcap)
 target_link_libraries(test_server uv net pcap)
 target_link_libraries(test_client uv net pcap)
 target_link_libraries(test_conf uv net pcap)
+target_link_libraries(test_udp_echo_client uv)
+target_link_libraries(test_udp_echo_server uv)

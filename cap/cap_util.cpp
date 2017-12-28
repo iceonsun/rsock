@@ -4,6 +4,8 @@
 
 #include <cstring>
 
+#include <algorithm>
+
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <syslog.h>
@@ -96,7 +98,6 @@ const std::string BuildFilterStr(const std::string &srcIp, const std::string &ds
                 out2 << " and (";
             }
 
-            int i = 0;
             int cnt = 0;
 
             for (int j = 0; j < vec.size();) {      // find single port or consecutive port range

@@ -82,7 +82,7 @@ private:
         IUINT8 len = enc_head_t::GetEncBufSize();
         IUINT8 resereved = 0;
         IUINT8 conn_type = OM_PIPE_TCP;
-        IdBufType id_buf = {0};
+        IdBufType id_buf {{0}};
         IUINT32 conv = 0;
         // }
 

@@ -24,9 +24,9 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
 
 
     Group required(parser, "Required arguments");
-    ValueFlag<std::string> dev(required, "dev", "The network interface to work around.", {'d', "dev"});
-    ValueFlag<std::string> targetAddr(required, "", "The target addresss.(e.g. client, 8.8.8.8 . server, 7.7.7.7:80. "
-            "Port after ip is ignored if it's client.)", {"tudp"});
+    ValueFlag<std::string> dev(required, "dev", "The network interface to work around.", {'d', "dev"}, Options::Required);
+    ValueFlag<std::string> targetAddr(required, "taddr", "The target address.(e.g. client, 8.8.8.8 . server, 7.7.7.7:80. "
+            "Port is ignored if it's client.)", {"taddr"}, "127.0.0.1:10030", Options::Required);
     Group opt(parser, "Optional arguments");
 
     HelpFlag help(opt, "help", "Display this help menu", {'h', "help"});
@@ -41,14 +41,13 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
     ValueFlag<int> interval(opt, "",
                             "Interval(sec) to invalid connection. Client need to set to same value with server. "
                                     "(default 20s. min: 10s, max: 40s.)", {"duration"});
-    ValueFlag<std::string> key(opt, "HashKey", "Key to check validation of packet. (default hello1235", {"hash"});
+    ValueFlag<std::string> key(opt, "HashKey", "Key to check validation of packet. (default hello1235)", {"hash"});
     ValueFlag<std::string> type(opt, "",
                                 "Type used to communicate with server. 1 for tcp up and down. 2 tcp up and udp down. "
                                         "3 for udp up and tcp down. 4 for udp up and down. (Only valid for client.)",
                                 {"type"});
     args::ValueFlag<int> daemon(opt, "daemon", "1 for running as daemon, 0 for not. (default as daemon)",
                                 {"daemon"});
-    debug(LOG_ERR, "strlen(argv[0]): %d", strlen(argv[0]));
 
     try {
         parser.ParseCLI(argc, argv);
@@ -421,6 +420,10 @@ std::string RConfig::strOfType(int type) {
 
 bool RConfig::Inited() {
     return mInited;
+}
+
+void RConfig::SetInited(bool init) {
+    mInited = init;
 }
 
 

@@ -44,9 +44,9 @@ struct RConfig {
         // after 0, 0, all are port range.
 
 #ifdef RSOCK_IS_SERVER_
-        PortLists selfCapPorts {80, 443, 10010, 10011, 10012, 10013, 10014, 10015, 10016, 10017, 10018, 10019, 10020};
+        PortLists selfCapPorts = {80, 443, 10010, 10011, 10012, 10013, 10014, 10015, 10016, 10017, 10018, 10019, 10020};
 #else
-        PortLists selfCapPorts {8090, 9090, 20000, 20002, 20002, 20003, 20004, 20005, 20006, 20007, 20008, 20009, 20010};
+        PortLists selfCapPorts = {8090, 9090, 20000, 20002, 20002, 20003, 20004, 20005, 20006, 20007, 20008, 20009, 20010};
 #endif
 
         std::string targetIp;
@@ -54,15 +54,15 @@ struct RConfig {
         // only valid for client
         // for server. only element[0] is valid and it's used for target port for server
 #ifdef RSOCK_IS_SERVER_
-        PortLists targetCapPorts {30010};    // if same machine this may not work
+        PortLists targetCapPorts = {30010};    // if same machine this may not work
 #else
-        PortLists targetCapPorts {80, 443, 10010, 10011, 10012, 10013, 10014, 10015, 10016, 10017, 10018, 10019, 10020};
+        PortLists targetCapPorts = {80, 443, 10010, 10011, 10012, 10013, 10014, 10015, 10016, 10017, 10018, 10019, 10020};
 #endif
         IUINT16 interval = 20;
         IUINT32 selfCapInt = 0;
         IUINT32 targetCapInt = 0;
         std::string hashKey = "hello135";
-        IdBufType id {0};
+        IdBufType id {{0}};
         int type = OM_PIPE_ALL;
     };
 
@@ -77,7 +77,10 @@ public:
 
     int Parse(bool is_server, int argc, const char *const *argv);
 
+    // if caller called Config#Parse() or call SetInited manually, this method will return true
     bool Inited();
+
+    void SetInited(bool init);
 
     static bool ParseUINT16(const std::string &s, PortLists &ports);
 

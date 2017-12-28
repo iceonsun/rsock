@@ -20,8 +20,6 @@ static bool hash_equal(const HashBufType &hashed_buf, const std::string &key, co
 
 static IINT8 compute_hash(HashBufType &hash, const std::string &key, const char *data, int data_len);
 
-static void OutputHash(const char *hash, int len);
-
 IINT8 compute_hash(HashBufType &hash, const std::string &key, const char *data, int data_len) {
     if (!data || data <= 0) {
         return -1;
@@ -130,11 +128,4 @@ bool EmptyIdBuf(const IdBufType &id) {
 bool ValidIp4(const std::string &ip) {
     struct in_addr addr = {0};
     return -1 != inet_pton(AF_INET, ip.c_str(), &addr);
-}
-
-void OutputHash(const char *hash, int len) {
-    for (int i = 0; i < len; i++) {
-        fprintf(stderr, "%2d", hash[i]);
-    }
-    fprintf(stderr, "\n");
 }

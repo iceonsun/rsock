@@ -2,9 +2,10 @@
 // Created on 12/17/17.
 //
 
-#include <syslog.h>
 #include <cstdlib>
-#include <sys/socket.h>
+
+#include <algorithm>
+#include <syslog.h>
 #include "thirdparty/debug.h"
 #include "rscomm.h"
 

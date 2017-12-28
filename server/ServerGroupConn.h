@@ -23,7 +23,6 @@ private:
     IGroupConn *newGroup(const IdBufType &conn_id, const struct sockaddr *origin, IUINT8 conn_type);
 
 private:
-    struct sockaddr* mSelfAddr;
     struct sockaddr* mTargetAddr;
     uv_loop_t *mLoop = nullptr;
     const PortLists mSelfPorts;

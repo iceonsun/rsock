@@ -75,7 +75,7 @@ _debug(const char *filename, int line, int level, const char *format, ...)
         }
 
         if (debugconf.log_syslog) {
-            openlog("rpipe", LOG_PID, debugconf.syslog_facility);
+            openlog("rawsock", LOG_PID, debugconf.syslog_facility);
             va_start(vlist, format);
             vsyslog(level, format, vlist);
             va_end(vlist);

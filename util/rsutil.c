@@ -150,6 +150,8 @@ struct sockaddr_in *new_addr4(const char *ip, int port) {
 
 struct sockaddr_un *new_addrUn(const char *sockPath) {
     struct sockaddr_un *un = malloc(sizeof(struct sockaddr_un));
+    memset(un, 0, sizeof(struct sockaddr_un));
+
     if (strlen(sockPath) > sizeof(un->sun_path)) {
         debug(LOG_ERR, "%s exceedes maximum path of unix domain socket path: %d", sockPath, sizeof(un->sun_path));
         free(un);
@@ -157,6 +159,6 @@ struct sockaddr_un *new_addrUn(const char *sockPath) {
     }
     un->sun_family = AF_UNIX;
     memcpy(un->sun_path, sockPath, strlen(sockPath));
-    un->sun_len = strlen(sockPath);
+//    un->sun_len = strlen(sockPath);
     return un;
 }

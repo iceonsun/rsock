@@ -21,9 +21,6 @@ IRawConn::IRawConn(libnet_t *libnet, IUINT32 selfInt, uv_loop_t *loop, const std
           mIsServer(is_server), mConnType(type), mDatalink(datalinkType),
           mTarget(targetInt) {
 
-//    if (!is_server) {
-//        assert(dst != nullptr);
-//    }
     assert(libnet != nullptr);
     assert(loop != nullptr);
 
@@ -146,7 +143,6 @@ int IRawConn::RawInput(u_char *args, const pcap_pkthdr *hdr, const u_char *packe
         return 0;
     }
 
-    // todo: libpcap outbound
     if (!mIsServer) {    // meanless to check src for server
         if (ip->ip_src.s_addr != mTargetNetEndian) {
             debug(LOG_ERR, "client: src is not target.");
@@ -202,16 +198,13 @@ int IRawConn::RawInput(u_char *args, const pcap_pkthdr *hdr, const u_char *packe
 #ifndef NNDEBUG
         debug(LOG_ERR, "receive %d bytes from %s:%d -> %s:%d\n", lenWithHash, inet_ntoa(ip->ip_src), ntohs(src_port),
               inet_ntoa(ip->ip_dst), ntohs(dst_port));
-        for (int i = 0; i < lenWithHash; i++) {
-            fprintf(stderr, "%c", hashhead[i]);
-        }
-        fprintf(stderr, "\n");
-        debug(LOG_ERR, "incomplete message.");
 #endif
         return 0;
     }
+#ifndef NNDEBUG
     debug(LOG_ERR, "receive: %d bytes from: %s:%d -> %s:%d\n", lenWithHash, inet_ntoa(ip->ip_src), ntohs(src_port),
           inet_ntoa(ip->ip_dst), ntohs(dst_port));
+#endif
 
     const char *ohead = hashhead + HASH_BUF_SIZE;
     IUINT8 oheadLen = 0;

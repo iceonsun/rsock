@@ -3,6 +3,7 @@
 //
 
 #include <sstream>
+#include <iterator>
 //#include <vector>
 #include "TextUtils.h"
 
