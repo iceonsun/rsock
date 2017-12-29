@@ -148,8 +148,10 @@ void OHead::UpdateDstPort(IUINT16 dp) {
     mDstPort = dp;
 }
 
-IUINT32 OHead::IncSeq() {
-    return seq++;
+IUINT32 OHead::IncSeq(IUINT32 len) {
+    IUINT32 n = seq;
+    seq += len;
+    return n;
 }
 
 IUINT16 OHead::IncIpId() {

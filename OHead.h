@@ -50,7 +50,7 @@ public:
 
     void UpdateDstPort(IUINT16 dp);
 
-    IUINT32 IncSeq();
+    IUINT32 IncSeq(IUINT32 len);
 
     IUINT16 IncIpId();
 
@@ -93,12 +93,12 @@ private:
     enc_head_t enc;
 //    IUINT32 mConv;
 
-    IUINT32 seq;
-    IUINT16 ipid;
-    IUINT8 connType;
-    IUINT32 mDstAddr;
-    IUINT16 mSourcePort;
-    IUINT16 mDstPort;
+    IUINT32 seq = 0;
+    IUINT16 ipid = 0;
+    IUINT8 connType = 0;
+    IUINT32 mDstAddr = 0;
+    IUINT16 mSourcePort = 0;
+    IUINT16 mDstPort = 0;
     std::string mGroupId;
 };
 

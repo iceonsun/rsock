@@ -156,6 +156,7 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
 }
 
 bool RConfig::ParseUINT16(const std::string &s, PortLists &ports) {
+    ports.clear();
     // 3000,3001,4000-4050
     for (char ch : s) {     // check if all valid characters
         if (!isdigit(ch) && ch != ',' && ch != '-') {

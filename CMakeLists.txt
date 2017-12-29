@@ -42,6 +42,11 @@ add_definitions(-Wall)
 
 # library
 add_library(rawsock ${SOURCE_FILES})
+set_target_properties(
+        rawsock
+        PROPERTIES
+        COMPILE_DEFINITIONS RSOCK_NNDEBUG
+)
 
 # change /usr/local/lib to the folder of your libnet.so/.a
 find_library(NET_PATH net /usr/local/lib NO_DEFAULT_PATH)

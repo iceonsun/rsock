@@ -8,6 +8,7 @@
 #include "server/SConn.h"
 #include "util/rsutil.h"
 #include "thirdparty/debug.h"
+#include "util/TextUtils.h"
 
 // todo: change all these thing origin to uint32_t? if not consider support ipv6
 GroupConn::GroupConn(const IdBufType &groupId, uv_loop_t *loop, const struct sockaddr *target,
@@ -20,7 +21,7 @@ GroupConn::GroupConn(const IdBufType &groupId, uv_loop_t *loop, const struct soc
 //    mOrigin = new_addr(origin);
     assert(origin->sa_family == AF_INET);
 
-    struct sockaddr_in* addr4 = (sockaddr_in *) origin;
+    struct sockaddr_in *addr4 = (sockaddr_in *) origin;
     mHead.UpdateDst(addr4->sin_addr.s_addr);
     mHead.UpdateGroupId(groupId);
     mHead.UpdateConnType(conn_type);
@@ -41,12 +42,15 @@ int GroupConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
     auto conn = ConnOfKey(key);
     if (!conn) {
         conn = newConn(head->Conv(), head->srcAddr);
-        mPorter.AddDstPort(head->SourcePort());
     }
 #ifndef NNDEBUG
     else {
         debug(LOG_ERR, "old SConn, key: %s, conv: %d", conn->Key().c_str(), head->Conv());
     }
+
+    debug(LOG_ERR, "add dst port: %d", head->SourcePort());
+    mPorter.AddDstPort(head->SourcePort());
+    debug(LOG_ERR, "dst port lists: %s", TextUtils::Vector2String(mPorter.GetDstPortLists()).c_str());
 #endif
     return conn->Input(nread, rbuf);
 }

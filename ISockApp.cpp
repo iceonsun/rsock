@@ -6,6 +6,8 @@
 
 #include <syslog.h>
 #include <cassert>
+#include "uv.h"
+
 #include "ISockApp.h"
 #include "IConn.h"
 #include "IRawConn.h"

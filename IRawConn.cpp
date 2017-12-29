@@ -88,8 +88,11 @@ int IRawConn::Output(ssize_t nread, const rbuf_t &rbuf) {
         IUINT16 dp = oh->DstPort();
         assert(dp != 0);
         assert(sp != 0);
-        IUINT32 seq = oh->IncSeq();
-        IUINT16 ipid = oh->IncIpId();
+        IUINT16 len = p - buf;
+        IUINT32 seq = oh->IncSeq(len);
+        static IUINT16 ipid = 0;
+        ipid++;
+//        IUINT16 ipid = oh->IncIpId();
         IUINT32 dst = oh->Dst();
         int conn_type = mIsServer ? oh->ConnType() : mConnType;
         if (!conn_type) {
@@ -97,9 +100,9 @@ int IRawConn::Output(ssize_t nread, const rbuf_t &rbuf) {
         }
 
         if (conn_type & OM_PIPE_TCP_SEND) {
-            return SendRawTcp(mNet, mSelf, sp, dst, dp, seq, buf, (p - buf), ipid, mTcp, mIp);
+            return SendRawTcp(mNet, mSelf, sp, dst, dp, seq, buf, (len), ipid, mTcp, mIp);
         } else {
-            return SendRawUdp(mNet, mSelf, sp, dst, dp, buf, (p - buf), ipid, mUdp, mIp);
+            return SendRawUdp(mNet, mSelf, sp, dst, dp, buf, (len), ipid, mUdp, mIp);
         }
     }
 
@@ -198,12 +201,14 @@ int IRawConn::RawInput(u_char *args, const pcap_pkthdr *hdr, const u_char *packe
     // this check is necessary.
     // because we may receive rst with length zero. if we don't check, we may cause illegal memory access error
     if (hdr->len - ((const u_char *) hashhead - packet) < HASH_BUF_SIZE + 1) {  // data len must >= 1
-#ifndef NNDEBUG
-        if (lenWithHash > 0) {  // just ignore zero length msg. it's all about rst.
-            debug(LOG_ERR, "incomplete message. receive %d bytes from %s:%d -> %s:%d\n", lenWithHash,
-                  inet_ntoa(ip->ip_src), ntohs(src_port),
-                  inet_ntoa(ip->ip_dst), ntohs(dst_port));
-        }
+#ifndef RSOCK_NNDEBUG
+        in_addr src_in_addr = {ip->ip_src};
+        in_addr dst_in_addr = {ip->ip_dst};
+        std::string src1 = inet_ntoa(src_in_addr);
+        std::string dst1 = inet_ntoa(dst_in_addr);
+        debug(LOG_ERR, "incomplete message. receive %d bytes from %s:%d -> %s:%d\n", lenWithHash,
+              src1.c_str(), ntohs(src_port),
+              dst1.c_str(), ntohs(dst_port));
 #endif
         return 0;
     }
@@ -323,7 +328,11 @@ IRawConn::SendRawTcp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT16 
             dp,              // dst port
             seq,             // seq
             0,               // ack number
-            0,               // control flag
+//            TH_FIN,               // control flag
+//            TH_RST,               // control flag
+//            TH_SYN | TH_PUSH,               // control flag
+//            0,
+            TH_ACK,
             DUMY_WIN_SIZE,   // window size
             0,               // check sum. = 0 auto fill
             0,               // urgent pointer
@@ -375,11 +384,11 @@ IRawConn::SendRawTcp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT16 
     if (-1 == n) {
         debug(LOG_ERR, "libnet_write failed: %s", libnet_geterror(l));
         return -1;
-//    } else {
-//#ifndef NNDEBUG
-//        debug(LOG_ERR, "libnet_write %d bytes. %s:%d<->%s:%d.", n, src1.c_str(), sp, dst1.c_str(),
-//              dp);
-//#endif
+    } else {
+#ifndef RSOCK_NNDEBUG
+        debug(LOG_ERR, "libnet_write %d bytes. %s:%d<->%s:%d.", n, src1.c_str(), sp, dst1.c_str(),
+              dp);
+#endif
     }
     return payload_len;
 }

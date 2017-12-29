@@ -36,7 +36,7 @@ struct RConfig {
 
         // todo: remove all default values?
         // other app communicate with client/server through this port.
-        IUINT16 localUdpPort = 0;
+        IUINT16 localUdpPort = 10000;
         // The ip for passed in dev. e.g. 192.168.3.2. This may be different from localUdpIp
         std::string selfCapIp;
 
@@ -46,7 +46,7 @@ struct RConfig {
 #ifdef RSOCK_IS_SERVER_
         PortLists selfCapPorts = {80, 443, 10010, 10011, 10012, 10013, 10014, 10015, 10016, 10017, 10018, 10019, 10020};
 #else
-        PortLists selfCapPorts = {8090, 9090, 20000, 20002, 20002, 20003, 20004, 20005, 20006, 20007, 20008, 20009, 20010};
+        PortLists selfCapPorts = {8090, 9090, 20000, 20001, 20002, 20003, 20004, 20005, 20006, 20007, 20008, 20009, 20010};
 #endif
 
         std::string targetIp;
@@ -67,7 +67,7 @@ struct RConfig {
     };
 
     bool isServer = false;
-    bool isDaemon = true;
+    bool isDaemon = false;  // todo: print conf when daemon. current no output
     RParam param;
 private:
     bool mInited = false;

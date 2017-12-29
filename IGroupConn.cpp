@@ -106,12 +106,11 @@ bool IGroupConn::CheckAndClose() {
     }
     for (auto &e: vec) {
         mConns.erase(e.first);
-        debug(LOG_ERR, "close iconn: %s, original size: %d", e.first.c_str(), size);
         e.second->Close();
         delete e.second;
 
     }
-#ifndef NNDEBUG
+#ifndef RSOCK_NNDEBUG
     // if any if sub conn should closed, self should be closed either.
     debug(LOG_ERR, "can: %d, closed %d conns. original size: %d, new size: %d", can, vec.size(), size, mConns.size());
     assert(can == IConn::CheckAndClose());

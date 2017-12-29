@@ -15,7 +15,8 @@ extern "C" {
 #include <netinet/tcp.h>
 #include <netinet/udp.h>
 
-#define OM_PROTO_IP 0x0800
+#define OM_PROTO_IP 0x0008 // network order
+//#define OM_PROTO_IP 0x0800 // little endian
 #define OM_IPV4 0x4
 
 /* source: www.tcpdump.org/pcap.htm */
