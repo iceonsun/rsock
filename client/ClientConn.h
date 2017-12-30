@@ -19,7 +19,7 @@
 class ClientConn : public IGroupConn {
 public:
     ClientConn(const IdBufType &groupId, const std::string &listenUnPath, const std::string &listenUdpIp,
-               IUINT16 listenUdpPort, std::vector<IUINT16> &sourcePorts, std::vector<IUINT16> &destPorts,
+               IUINT16 listenUdpPort, const RPortList &sourcePorts, const RPortList &destPorts,
                uv_loop_t *loop, IConn *btm, uint32_t bigDst);
     int Init() override;
 

@@ -3,6 +3,7 @@
 //
 
 #include <cstdlib>
+#include <ctime>
 
 #include <syslog.h>
 #include <cassert>
@@ -81,6 +82,7 @@ int ISockApp::Init() {
     }
 
     mInited = true;
+    srand(time(NULL));
     return 0;
 }
 

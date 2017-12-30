@@ -12,8 +12,8 @@
 
 using namespace std::placeholders;
 
-ServerGroupConn::ServerGroupConn(const IdBufType &groupId, uv_loop_t *loop, IConn *btm, const struct sockaddr *targetAddr,
-                                 const PortLists &selfPorts) : IGroupConn(groupId, btm), mSelfPorts(selfPorts) {
+ServerGroupConn::ServerGroupConn(const IdBufType &groupId, uv_loop_t *loop, IConn *btm,
+                                 const struct sockaddr *targetAddr) : IGroupConn(groupId, btm) {
     assert(loop != nullptr);
     mLoop = loop;
     mTargetAddr = new_addr(targetAddr);
@@ -46,7 +46,7 @@ int ServerGroupConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
 }
 
 IGroupConn *ServerGroupConn::newGroup(const IdBufType &conn_id, const struct sockaddr *origin, IUINT8 conn_type) {
-    IGroupConn *group = new GroupConn(conn_id, mLoop, mTargetAddr, mSelfPorts, origin, conn_type, nullptr);
+    IGroupConn *group = new GroupConn(conn_id, mLoop, mTargetAddr, origin, conn_type, nullptr);
     AddConn(group);
 #ifndef NNDEBUG
     debug(LOG_ERR, "new group, key: %s", group->Key().c_str());

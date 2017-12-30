@@ -11,9 +11,8 @@
 #include "thirdparty/args.hxx"
 #include "thirdparty/debug.h"
 #include "util/rhash.h"
-#include "thirdparty/json11.hpp"
-#include "util/TextUtils.h"
 #include "util/FdUtil.h"
+#include "cap/cap_util.h"
 
 using namespace args;
 using namespace json11;
@@ -24,9 +23,10 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
 
 
     Group required(parser, "Required arguments");
-    ValueFlag<std::string> dev(required, "dev", "The network interface to work around.", {'d', "dev"}, Options::Required);
-    ValueFlag<std::string> targetAddr(required, "taddr", "The target address.(e.g. client, 8.8.8.8 . server, 7.7.7.7:80. "
-            "Port is ignored if it's client.)", {"taddr"}, "127.0.0.1:10030", Options::Required);
+    ValueFlag<std::string> dev(required, "dev", "The network interface to work around.", {'d', "dev"});
+    ValueFlag<std::string> targetAddr(required, "taddr",
+                                      "The target address.(e.g. client, 8.8.8.8 . server, 7.7.7.7:80. "
+                                              "Port is ignored if it's client.)", {"taddr"}, "127.0.0.1:10030");
     Group opt(parser, "Optional arguments");
 
     HelpFlag help(opt, "help", "Display this help menu", {'h', "help"});
@@ -71,12 +71,12 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
             }
 
             if (selfCapPorts) {
-                if (!ParseUINT16(selfCapPorts.Get(), param.selfCapPorts)) {
+                if (!RPortList::FromString(param.selfCapPorts, selfCapPorts.Get())) {
                     throw args::Error("Unable to parse self capture ports: " + selfCapPorts.Get());
                 }
             } else {
 #ifndef RSOCK_NNDEBUG
-                debug(LOG_ERR, "use default ports. %s", TextUtils::Vector2String<IUINT16>(param.selfCapPorts).c_str());
+                debug(LOG_ERR, "use default ports. %s", RPortList::ToString(param.selfCapPorts).c_str());
 #endif
             }
 
@@ -91,11 +91,7 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
             }
 
             if (targetAddr) {
-                PortLists &vec = param.targetCapPorts;
-                if (is_server) {
-                    vec.resize(1);
-                }
-                if (!parseAddr(targetAddr.Get(), param.targetIp, vec[0], is_server)) {
+                if (!parseAddr(targetAddr.Get(), param.targetIp, param.targetPort, is_server)) {
                     throw args::Error("Unable to parse target address: " + targetAddr.Get());
                 }
             } else {
@@ -103,7 +99,7 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
             }
 
             if (serverCapPorts && !is_server) {
-                if (!ParseUINT16(serverCapPorts.Get(), param.targetCapPorts)) {
+                if (!RPortList::FromString(param.targetCapPorts, serverCapPorts.Get())) {
                     throw args::Error("Unable to parse server capture ports: " + selfCapPorts.Get());
                 }
             }
@@ -155,51 +151,6 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
     return 1;
 }
 
-bool RConfig::ParseUINT16(const std::string &s, PortLists &ports) {
-    ports.clear();
-    // 3000,3001,4000-4050
-    for (char ch : s) {     // check if all valid characters
-        if (!isdigit(ch) && ch != ',' && ch != '-') {
-            return false;
-        }
-    }
-
-    std::string str = s;
-    const std::regex re(R"(((\d+-\d+)|(\d+)))");
-    std::smatch sm;
-//    PortLists range(2);
-    while (std::regex_search(str, sm, re)) {
-        auto t = sm[0].str();
-        auto pos = t.find('-');
-        if (pos == std::string::npos) {
-            int p = std::stoi(t);
-            debug(LOG_ERR, "port: %d", p);
-            ports.push_back(p);
-        } else {
-            int start = std::stoi(t.substr(0, pos));
-            int end = std::stoi(t.substr(pos + 1));
-            if (start >= end || !start || !end) {
-                ports.clear();
-                debug(LOG_ERR, "%s wrong format.", t.c_str());
-                return false;
-            }
-            debug(LOG_ERR, "port range: %d-%d", start, end);
-            for (int p = start; p <= end; p++) {
-                ports.push_back(p);
-            }
-//            range.push_back(start);
-//            range.push_back(end);
-        }
-        str = sm.suffix();
-    }
-//    if (!range.empty()) {
-//        ports.push_back(0); // separate single ports and port range
-//        ports.push_back(0);
-//        ports.insert(ports.end(), range.begin(), range.end());
-//    }
-    return true;
-}
-
 void RConfig::CheckValidation(const RConfig &c) {
     const RParam &p = c.param;
     assert(!c.param.dev.empty());
@@ -218,7 +169,11 @@ void RConfig::CheckValidation(const RConfig &c) {
     assert(ValidIp4(p.targetIp));
 
     assert(!p.selfCapPorts.empty());
-    assert(!p.targetCapPorts.empty());
+    if (!c.isServer) {
+        assert(!p.targetCapPorts.empty());
+    } else {
+        assert(p.targetPort != 0);
+    }
     assert(p.selfCapInt != 0);
     assert(p.targetCapInt != 0);
     assert(!EmptyIdBuf(p.id));
@@ -273,7 +228,7 @@ void RConfig::ParseJsonString(RConfig &c, const std::string &content, std::strin
         }
         if (o["lcapPorts"].is_string()) {
             auto s = o["lcapPorts"].string_value();
-            if (!ParseUINT16(s, p.selfCapPorts)) {
+            if (!RPortList::FromString(p.selfCapPorts, s)) {
                 throw args::Error("Unable to parse self capture ports: " + s);
             }
         } else {
@@ -285,23 +240,19 @@ void RConfig::ParseJsonString(RConfig &c, const std::string &content, std::strin
         }
         if (o["ludp"].is_string()) {
             auto s = o["ludp"].string_value();
-            if (!parseAddr(s, p.localUdpIp, p.localUdpPort, true)) {
+            if (!parseAddr(s, p.localUdpIp, p.localUdpPort, !c.isServer)) {
                 throw args::Error("Unable to parse local listening udp address: " + s);
             }
         }
         if (o["taddr"].is_string()) {
             auto s = o["taddr"].string_value();
-            PortLists &vec = p.targetCapPorts;
-            if (c.isServer) {
-                vec.resize(1);
-            }
-            if (!parseAddr(s, p.targetIp, vec[0], c.isServer)) {
+            if (!parseAddr(s, p.targetIp, p.targetPort, c.isServer)) {
                 throw args::Error("Unable to parse target address: " + s);
             }
         }
         if (!c.isServer && o["tcapPorts"].is_string()) {
             auto s = o["tcapPorts"].string_value();
-            if (!ParseUINT16(s, p.targetCapPorts)) {
+            if (!RPortList::FromString(p.targetCapPorts, s)) {
                 throw args::Error("Unable to parse server capture ports: " + s);
             }
         }
@@ -333,10 +284,10 @@ json11::Json RConfig::to_json() const {
                     {"ludp",      isServer ? param.localUdpIp :
                                   (param.localUdpIp + ":" + std::to_string(param.localUdpPort))},
                     {"lcapIp",    param.selfCapIp},
-                    {"lcapPorts", TextUtils::Vector2String<IUINT16>(param.selfCapPorts)},
-                    {"taddr",      isServer ? (param.targetIp + ":" + std::to_string(param.targetCapPorts[0]))
+                    {"lcapPorts", RPortList::ToString(param.selfCapPorts)},
+                    {"taddr",     isServer ? (param.targetIp + ":" + std::to_string(param.targetPort))
                                            : param.targetIp},
-                    {"tcapPorts", isServer ? "" : TextUtils::Vector2String<IUINT16>(param.targetCapPorts)},
+                    {"tcapPorts", isServer ? "" : RPortList::ToString(param.targetCapPorts)},
                     {"duration",  (int) param.interval},
                     {"type",      strOfType(param.type)},
                     {"hash",      param.hashKey},
@@ -392,11 +343,11 @@ int RConfig::typeOfStr(const std::string &str) {
     if (str == "tcp") {
         return OM_PIPE_TCP;
     } else if (str == "udp") {
-        return OM_PIPE_TCP_SEND | OM_PIPE_UDP_RECV;
-    } else if (str == "tcpudp") {
-        return OM_PIPE_UDP_SEND | OM_PIPE_TCP_RECV;
-    } else if (str == "udptcp") {
         return OM_PIPE_UDP;
+    } else if (str == "tcpudp") {
+        return OM_PIPE_TCP_SEND | OM_PIPE_UDP_RECV;
+    } else if (str == "udptcp") {
+        return OM_PIPE_UDP_SEND | OM_PIPE_TCP_RECV;
     } else if (str == "all") {
         return OM_PIPE_ALL;
     } else {

@@ -13,9 +13,8 @@
 
 class GroupConn : public IGroupConn {
 public:
-    explicit GroupConn(const IdBufType &groupId, uv_loop_t *loop, const struct sockaddr *target,
-                       const std::vector<IUINT16> &mSelfPorts, const struct sockaddr *origin, IUINT8 conn_type,
-                       IConn *btm);
+    explicit GroupConn(const IdBufType &groupId, uv_loop_t *loop, const struct sockaddr *target, const struct sockaddr *origin,
+                           IUINT8 conn_type, IConn *btm);
 
     int OnRecv(ssize_t nread, const rbuf_t &rbuf) override;
 

@@ -9,8 +9,8 @@
 
 #include <pcap.h>
 #include <uv.h>
-#include "../PortMapper.h"
 #include "cap_util.h"
+#include "../util/RPortList.h"
 
 // todo: move icap construction to irawconn
 class RCap {
@@ -22,7 +22,7 @@ public:
     };
 
     // todo: remove for testing
-    RCap(const std::string &dev, const std::string &selfIp, const PortLists &selfPorts, const PortLists &srcPorts,
+    RCap(const std::string &dev, const std::string &selfIp, const RPortList &selfPorts, const RPortList &srcPorts,
          const std::string &srcIp = "", int timeout_ms = 20);
 
     virtual ~RCap() = default;
@@ -55,7 +55,8 @@ private:
     std::string mDstIp;
     std::string mDev;
     pcap_t *mCap = nullptr;
-    PortMapper mPorter;
+    RPortList mSrc;
+    RPortList mDest;
     bool mDone = false;
     const int TIMEOUT = 20;
 

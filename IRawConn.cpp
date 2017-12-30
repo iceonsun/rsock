@@ -241,7 +241,7 @@ int IRawConn::RawInput(u_char *args, const pcap_pkthdr *hdr, const u_char *packe
     src.sin_family = AF_INET;
     src.sin_port = src_port;
     src.sin_addr.s_addr = ip->ip_src.s_addr;
-    return cap2uv(ohead, oheadLen, &src, data, data_len);
+    return cap2uv(ohead, oheadLen, &src, data, data_len, dst_port);
 }
 
 void IRawConn::Close() {
@@ -288,7 +288,10 @@ void IRawConn::pollCb(uv_poll_t *handle, int status, int events) {
         // todo: how to update omhead field using addr
         struct sockaddr_in addr = {0};
         p = decode_sockaddr4(p, &addr);
+        IUINT16 dst_port = 0;
+        p = decode_uint16(&dst_port, p);
         head.UpdateSourcePort(ntohs(addr.sin_port));
+        head.UpdateDstPort(ntohs(dst_port));
 
         int len = nread - (p - buf);
         if (len > 0) {
@@ -305,19 +308,21 @@ void IRawConn::pollCb(uv_poll_t *handle, int status, int events) {
 }
 
 int IRawConn::cap2uv(const char *head_beg, size_t head_len, const struct sockaddr_in *target, const char *data,
-                     size_t data_len) {
+                     size_t data_len, IUINT16 dst_port) {
     assert(data_len + sizeof(struct sockaddr_in) + head_len <= OM_MAX_PKT_SIZE);
 
     char buf[OM_MAX_PKT_SIZE] = {0};
     memcpy(buf, head_beg, head_len);
     char *p = buf + head_len;
     p = encode_sockaddr4(p, target);
+    p = encode_uint16(dst_port, p);
     memcpy(p, data, data_len);
     p += data_len;
     ssize_t n = write(mWriteFd, buf, p - buf);
     return n;
 }
 
+// todo: send ack number too.
 int
 IRawConn::SendRawTcp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT16 dp, IUINT32 seq, const IUINT8 *payload,
                      IUINT16 payload_len, IUINT16 ip_id, libnet_ptag_t &tcp, libnet_ptag_t &ip) {
@@ -417,7 +422,7 @@ int IRawConn::SendRawUdp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUIN
             ip_id,  // id IP identification number
             IP_DF,              // frag fragmentation bits and offset
             TTL_OUT,        // ttl time to live in the network
-            IPPROTO_TCP,    // prot upper layer protocol
+            IPPROTO_UDP,    // prot upper layer protocol
             0,              // sum checksum (0 for libnet to autofill)
             src,  // src source IPv4 address (little endian)
             dst,// dst destination IPv4 address (little endian)
@@ -437,7 +442,17 @@ int IRawConn::SendRawUdp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUIN
         debug(LOG_ERR, "libnet_write failed: %s", libnet_geterror(l));
         return -1;
     } else {
-        debug(LOG_ERR, "libnet_write %d bytes.", n);
+#ifndef RSOCK_NNDEBUG
+        in_addr src_addr = {src};
+        in_addr dst_addr = {dst};
+        char srcbuf[32] = {0};
+        char dstbuf[32] = {0};
+        const char *s1 = inet_ntoa(src_addr);
+        memcpy(srcbuf, s1, strlen(s1));
+        s1 = inet_ntoa(dst_addr);
+        memcpy(dstbuf, s1, strlen(s1));
+        debug(LOG_ERR, "libnet_write %d bytes %s:%d<->%s:%d .", n, srcbuf, sp, dstbuf, dp);
+#endif
     }
     return payload_len;
 }

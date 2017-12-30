@@ -7,12 +7,13 @@
 #include "ClientConn.h"
 #include "../util/rsutil.h"
 #include "../thirdparty/debug.h"
+
 using namespace std::placeholders;
 
 ClientConn::ClientConn(const IdBufType &groupId, const std::string &listenUnPath, const std::string &listenUdpIp,
-                       IUINT16 listenUdpPort, std::vector<IUINT16> &sourcePorts, std::vector<IUINT16> &destPorts,
+                       IUINT16 listenUdpPort, const RPortList &sourcePorts, const RPortList &destPorts,
                        uv_loop_t *loop, IConn *btm, uint32_t bigDst)
-        : IGroupConn(groupId, btm){
+        : IGroupConn(groupId, btm), mPortMapper(sourcePorts, destPorts) {
     assert(loop != nullptr);
     if (!listenUdpIp.empty()) {
         mUdpAddr = new_addr4(listenUdpIp.c_str(), listenUdpPort);
@@ -26,8 +27,6 @@ ClientConn::ClientConn(const IdBufType &groupId, const std::string &listenUnPath
     mHead.UpdateDst(bigDst);
     mHead.UpdateGroupId(groupId);
     mLoop = loop;
-    mPortMapper.SetSrcPorts(sourcePorts);
-    mPortMapper.SetDstPorts(destPorts);
 }
 
 int ClientConn::Init() {
@@ -64,8 +63,9 @@ int ClientConn::Output(ssize_t nread, const rbuf_t &rbuf) {
     IUINT32 conv = conn->Conv();
 
     mHead.UpdateConv(conv);
-    mHead.UpdateSourcePort(mPortMapper.NextSrcPort());
-    mHead.UpdateDstPort(mPortMapper.NextDstPort());
+    auto &p = mPortMapper.NextPortPair();
+    mHead.UpdateSourcePort(p.source);
+    mHead.UpdateDstPort(p.dest);
 
     rbuf_t buf = {0};
     buf.base = rbuf.base;
@@ -137,12 +137,12 @@ void ClientConn::send_cb(uv_udp_send_t *req, int status) {
 }
 
 void ClientConn::udpRecvCb(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf, const struct sockaddr *addr,
-                                unsigned flags) {
+                           unsigned flags) {
     auto *conn = static_cast<ClientConn *>(handle->data);
-   if (nread > 0) {
+    if (nread > 0) {
 //       auto *addr4 = (const struct sockaddr_in*) addr;
 //       debug(LOG_ERR, "client, receive %d bytes from %s:%d", nread, inet_ntoa(addr4->sin_addr), ntohs(addr4->sin_port));
-       conn->onLocalRecv(nread, buf->base, addr);
+        conn->onLocalRecv(nread, buf->base, addr);
     } else if (nread < 0) {
         // todo: error processing
         debug(LOG_ERR, "udp error: %s", uv_strerror(nread));

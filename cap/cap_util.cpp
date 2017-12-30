@@ -14,8 +14,7 @@
 #include <sstream>
 #include "../thirdparty/debug.h"
 #include "cap_util.h"
-#include "../util/TextUtils.h"
-
+#include "../util/RPortList.h"
 
 int ipv4OfDev(const char *dev, char *ip_buf, char *err) {
     pcap_if_t *dev_list;
@@ -64,8 +63,8 @@ int ipv4OfDev(const char *dev, char *ip_buf, char *err) {
     return nret;
 }
 
-const std::string BuildFilterStr(const std::string &srcIp, const std::string &dstIp, const PortLists &srcPorts,
-                                 const PortLists &dstPorts) {
+const std::string BuildFilterStr(const std::string &srcIp, const std::string &dstIp, RPortList &srcPorts,
+                                 RPortList &dstPorts) {
     std::ostringstream out;
     bool ok = false;
     const auto ipFn = [&ok, &out](const std::string &ip, bool src) {
@@ -86,60 +85,42 @@ const std::string BuildFilterStr(const std::string &srcIp, const std::string &ds
     ipFn(srcIp, true);
     ipFn(dstIp, false);
 
-    const auto portFn = [&ok, &out](const PortLists &ports, bool src) -> bool {
+    const auto portFn = [&ok, &out](RPortList &ports, bool src) -> bool {
         if (!ports.empty()) {
-            auto vec = ports;
-            std::sort(vec.begin(), vec.end());
-            auto last = std::unique(vec.begin(), vec.end());
-            vec.erase(last, vec.end());
 
             std::ostringstream out2;
             if (ok) {
                 out2 << " and (";
             }
 
-            int cnt = 0;
-
-            for (int j = 0; j < vec.size();) {      // find single port or consecutive port range
-                if (vec[j] > 0) {
-                    int k = j + 1;
-                    for (; k < vec.size() && (vec[k] == (vec[j] + (k - j))); k++) {
-                    }
-                    if (k == j + 1) {
-                        if (src) {
-                            out2 << " or src port " << vec[j];
-                        } else {
-                            out2 << " or dst port " << vec[j];
-                        }
-                        cnt++;
-                        j++;
-                    } else {
-                        if (src) {
-                            out2 << " or src portrange ";
-                        } else {
-                            out2 << " or dst portrange ";
-                        }
-
-                        out2 << vec[j] << '-' << vec[k-1];
-                        cnt++;
-                        j = k;
-                    }
+            const auto &singles = ports.GetSinglePortList();
+            for (int j = 0; j < singles.size(); j++) {
+                if (src) {
+                    out2 << " or src port " << singles[j];
                 } else {
-                    j++;
+                    out2 << " or dst port " << singles[j];
                 }
             }
 
-            out2 << " )";
-            if (cnt == 0) { // no port or portrange
-                return false;
+            const auto &ranges = ports.GetPortRangeList();
+            for (int j = 0; j < ranges.size(); j++) {
+                if (src) {
+                    out2 << " or src portrange ";
+                } else {
+                    out2 << " or dst portrange ";
+                }
+
+                out2 << ranges[j].source << '-' << ranges[j].dest;
             }
+
+            out2 << " )";
 
             auto s = out2.str();
             auto pos = s.find("or");
             if (pos == std::string::npos) {
                 return false;
             }
-            s = s.replace(pos, 2, "");
+            s = s.replace(pos, 2, "");  // remove first or
             out << s;
             ok = true;
         }

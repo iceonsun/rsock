@@ -15,6 +15,6 @@
 using HashBufType = std::array<char, HASH_BUF_SIZE>;
 using IdBufType = std::array<char, ID_BUF_SIZE>;
 
-using PortLists = std::vector<uint16_t >;
+//using PortLists = std::vector<uint16_t >;
 
 #endif //RSOCK_RSTYPE_H

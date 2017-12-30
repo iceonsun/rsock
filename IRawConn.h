@@ -44,7 +44,8 @@ protected:
     static void pollCb(uv_poll_t *handle, int status, int events);;
 
     virtual int
-    cap2uv(const char *head_beg, size_t head_len, const struct sockaddr_in *target, const char *data, size_t data_len);
+    cap2uv(const char *head_beg, size_t head_len, const struct sockaddr_in *target, const char *data,
+               size_t data_len, IUINT16 dst_port);
 
 private:
     // mulithread. const var

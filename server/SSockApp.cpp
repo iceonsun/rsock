@@ -20,8 +20,7 @@ IRawConn *SSockApp::CreateBtmConn(RConfig &conf, libnet_t *l, uv_loop_t *loop, i
 IConn *SSockApp::CreateBridgeConn(RConfig &conf, IRawConn *btm, uv_loop_t *loop) {
     struct sockaddr_in target = {0};
     target.sin_family = AF_INET;
-    target.sin_port = htons(conf.param.targetCapPorts[0]);
+    target.sin_port = htons(conf.param.targetPort);
     inet_aton(conf.param.targetIp.c_str(), &target.sin_addr);
-    return new ServerGroupConn(conf.param.id, loop, btm, reinterpret_cast<const sockaddr *>(&target),
-                               conf.param.selfCapPorts);
+    return new ServerGroupConn(conf.param.id, loop, btm, reinterpret_cast<const sockaddr *>(&target));
 }

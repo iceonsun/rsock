@@ -8,11 +8,11 @@
 #include <string>
 #include <libnet.h>
 
-#include "cap/cap_util.h"
 #include "ktype.h"
 #include "rstype.h"
 #include "rscomm.h"
 #include "thirdparty/json11.hpp"
+#include "util/RPortList.h"
 
 struct RConfig {
 
@@ -44,19 +44,20 @@ struct RConfig {
         // after 0, 0, all are port range.
 
 #ifdef RSOCK_IS_SERVER_
-        PortLists selfCapPorts = {80, 443, 10010, 10011, 10012, 10013, 10014, 10015, 10016, 10017, 10018, 10019, 10020};
+        RPortList selfCapPorts = {{80, 0}, {443, 0}, {10010, 10020}};
 #else
-        PortLists selfCapPorts = {8090, 9090, 20000, 20001, 20002, 20003, 20004, 20005, 20006, 20007, 20008, 20009, 20010};
+        RPortList selfCapPorts = {{8090, 0}, {9090, 0}, {20000, 20010}};
 #endif
 
         std::string targetIp;
+        IUINT16 targetPort = 0;
 
         // only valid for client
         // for server. only element[0] is valid and it's used for target port for server
 #ifdef RSOCK_IS_SERVER_
-        PortLists targetCapPorts = {30010};    // if same machine this may not work
+        RPortList targetCapPorts;    // if same machine this may not work
 #else
-        PortLists targetCapPorts = {80, 443, 10010, 10011, 10012, 10013, 10014, 10015, 10016, 10017, 10018, 10019, 10020};
+        RPortList targetCapPorts = {{80, 0}, {443, 0}, {10010, 10020}};
 #endif
         IUINT16 interval = 20;
         IUINT32 selfCapInt = 0;
@@ -81,8 +82,6 @@ public:
     bool Inited();
 
     void SetInited(bool init);
-
-    static bool ParseUINT16(const std::string &s, PortLists &ports);
 
     static void CheckValidation(const RConfig &c);
 

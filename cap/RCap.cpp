@@ -10,13 +10,13 @@
 #include "../thirdparty/debug.h"
 
 
-RCap::RCap(const std::string &dev, const std::string &selfIp, const PortLists &selfPorts, const PortLists &srcPorts,
+RCap::RCap(const std::string &dev, const std::string &selfIp, const RPortList &selfPorts, const RPortList &srcPorts,
            const std::string &srcIp, int timeout_ms) : TIMEOUT(timeout_ms) {
     mDev = dev;
     mSrcIp = srcIp;
     mDstIp = selfIp;
-    mPorter.SetSrcPorts(srcPorts);
-    mPorter.SetDstPorts(selfPorts);
+    mSrc = srcPorts;
+    mDest = selfPorts;
 }
 
 
@@ -48,7 +48,7 @@ int RCap::Init() {
         }
     }
 
-    auto filterStr = BuildFilterStr(mSrcIp, mDstIp, mPorter.GetSrcPortLists(), mPorter.GetDstPortLists());
+    auto filterStr = BuildFilterStr(mSrcIp, mDstIp, mSrc, mDest);
     debug(LOG_ERR, "filter: %s", filterStr.c_str());
     if (filterStr.empty()) {
         debug(LOG_ERR, "failed to build capture filter");

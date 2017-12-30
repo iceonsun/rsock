@@ -11,9 +11,8 @@
 #include "util/TextUtils.h"
 
 // todo: change all these thing origin to uint32_t? if not consider support ipv6
-GroupConn::GroupConn(const IdBufType &groupId, uv_loop_t *loop, const struct sockaddr *target,
-                     const std::vector<IUINT16> &mSelfPorts, const struct sockaddr *origin, IUINT8 conn_type,
-                     IConn *btm)
+GroupConn::GroupConn(const IdBufType &groupId, uv_loop_t *loop, const struct sockaddr *target, const struct sockaddr *origin,
+                     IUINT8 conn_type, IConn *btm)
         : IGroupConn(groupId, btm) {
     mLoop = loop;
     mTarget = new_addr(target);
@@ -25,7 +24,6 @@ GroupConn::GroupConn(const IdBufType &groupId, uv_loop_t *loop, const struct soc
     mHead.UpdateDst(addr4->sin_addr.s_addr);
     mHead.UpdateGroupId(groupId);
     mHead.UpdateConnType(conn_type);
-    mPorter.SetSrcPorts(mSelfPorts);
 }
 
 int GroupConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
@@ -42,16 +40,13 @@ int GroupConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
     auto conn = ConnOfKey(key);
     if (!conn) {
         conn = newConn(head->Conv(), head->srcAddr);
-    }
+    } else {
 #ifndef NNDEBUG
-    else {
         debug(LOG_ERR, "old SConn, key: %s, conv: %d", conn->Key().c_str(), head->Conv());
+#endif
     }
 
-    debug(LOG_ERR, "add dst port: %d", head->SourcePort());
-    mPorter.AddDstPort(head->SourcePort());
-    debug(LOG_ERR, "dst port lists: %s", TextUtils::Vector2String(mPorter.GetDstPortLists()).c_str());
-#endif
+    mPorter.AddPortPair(head->DstPort(), head->SourcePort());
     return conn->Input(nread, rbuf);
 }
 
@@ -70,8 +65,9 @@ IConn *GroupConn::newConn(IUINT32 conv, const struct sockaddr *origin) {
 int GroupConn::Output(ssize_t nread, const rbuf_t &rbuf) {
     OHead *head = static_cast<OHead *>(rbuf.data);
     mHead.UpdateConv(head->Conv());
-    mHead.UpdateDstPort(mPorter.NextDstPort());
-    mHead.UpdateSourcePort(mPorter.NextSrcPort());
+    auto p = mPorter.NextPortPair();
+    mHead.UpdateDstPort(p.dest);
+    mHead.UpdateSourcePort(p.source);
 
     rbuf_t buf = {0};
     buf.base = rbuf.base;

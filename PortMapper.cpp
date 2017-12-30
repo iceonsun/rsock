@@ -6,83 +6,66 @@
 
 #include <algorithm>
 #include <syslog.h>
+#include <cassert>
+#include <sstream>
 #include "thirdparty/debug.h"
 #include "rscomm.h"
 
 #include "PortMapper.h"
 
-
-void PortMapper::AddDstPort(IUINT16 port) {
-    addFn(mDstPorts, port);
-}
-
-void PortMapper::RemoveDstPort(IUINT16 port) {
-    removeFn(mDstPorts, port);
-}
-
-IUINT16 PortMapper::NextDstPort() {
-    return nextFn(mDstPorts);
-}
-
-IUINT16 PortMapper::NextSrcPort() {
-    return nextFn(mSrcPorts);
-}
-
-void PortMapper::SetSrcPorts(const PortLists &ports) {
-    mSrcPorts = ports;
-}
-
-bool PortMapper::addFn(PortLists &vec, IUINT16 port) {
-    for (auto e: vec) {
-        if (e == port) {
-            debug(LOG_ERR, "port %d already in container");
-            return false;
+void PortMapper::AddPortPair(IUINT16 sp, IUINT16 dp) {
+    if (sp > 0 && dp > 0) {
+        PortPairList::value_type p = {sp, dp};
+        auto it = std::find(mPortPairs.begin(), mPortPairs.end(), p);
+        if (it == mPortPairs.end()) {
+            mPortPairs.push_back(p);
+#ifndef RSOCK_NNDEBUG
+            } else {
+                debug(LOG_ERR, "%d:%d already in table", sp, dp);
+#endif
         }
-    }
-    vec.push_back(port);
-    return true;
-}
-
-bool PortMapper::removeFn(PortLists &vec, IUINT16 port) {
-    auto it = std::find(std::begin(vec), std::end(vec), port);
-    if (it != std::end(vec)) {
-        vec.erase(it);
-        return true;
-    }
-
-    debug(LOG_ERR, "port %d not in container");
-    return false;
-}
-
-IUINT16 PortMapper::nextFn(const PortLists &vec) {
-    // todo: add srand in main
-    int now = rand();
-    if (!vec.empty()) {
-        int p = vec[now % vec.size()];
-        while (p < 20) {
-            p = vec[rand() % vec.size()];
-        }
-        return p;
-
-    } else {
-        // if not specified. use random port
-        auto p = static_cast<IUINT16>(now % 65536);
-        if (p < 20) {
-            p = OM_DEF_PORT;
-        }
-        debug(LOG_ERR, "port lists empty. choose random port: %d", p);
-        return p;
+#ifndef RSOCK_NNDEBUG
+        debug(LOG_ERR, "PortPair list: %s", ToString(*this).c_str());
+#endif
     }
 }
 
-void PortMapper::SetDstPorts(const PortLists &ports) {
-    mDstPorts = ports;
+const PortPair &PortMapper::NextPortPair() {
+    assert(!mPortPairs.empty());
+
+    long now = rand();
+    return mPortPairs[now % mPortPairs.size()];
 }
 
-PortMapper::PortLists &PortMapper::GetSrcPortLists() {
-    return mSrcPorts;
+PortMapper::PortMapper(const RPortList &src, const RPortList &dst) {
+    mSrc = src;
+    mDest = dst;
+    init();
 }
 
-PortMapper::PortLists &PortMapper::GetDstPortLists() {
-    return mDstPorts;
+void PortMapper::init() {
+    if (!mSrc.empty() && !mDest.empty()) {
+        mPortPairs.reserve(24);
+        for (auto source: mSrc.GetRawList()) {
+            for (auto dest: mDest.GetRawList()) {
+                mPortPairs.emplace_back(source, dest);
+            }
+        }
+    }
+
+#ifndef RSOCK_NNDEBUG
+    debug(LOG_ERR, "src: %s", RPortList::ToString(mSrc).c_str());
+    debug(LOG_ERR, "dst: %s", RPortList::ToString(mDest).c_str());
+    debug(LOG_ERR, "PortPair list: %s", ToString(*this).c_str());
+#endif
 }
+
+const std::string PortMapper::ToString(const PortMapper &mapper) {
+    std::ostringstream out;
+    for (auto &e: mapper.mPortPairs) {
+        out << "(" << e.source << "," << e.dest << "),";
+    }
+    return out.str();
+}
+
+

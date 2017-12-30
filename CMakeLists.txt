@@ -4,10 +4,10 @@ project(rSock)
 set(CMAKE_CXX_STANDARD 11)
 
 set(SOURCE_FILES ktype.h rcommon.c RConfig.cpp ISockApp.cpp IConn.cpp IGroupConn.cpp PortMapper.cpp IRawConn.cpp GroupConn.cpp OHead.cpp
-        util/enc.c util/rsutil.c util/FdUtil.cpp util/rhash.cpp util/RTimer.cpp util/TextUtils.h
+        util/enc.c util/rsutil.c util/FdUtil.cpp util/rhash.cpp util/RTimer.cpp util/TextUtils.h util/RPortList.cpp util/PortPair.cpp
         cap/cap_util.cpp cap/RCap.cpp
         server/SConn.cpp server/ServerGroupConn.cpp server/SSockApp.cpp server/ssock.cpp server/SRawConn.cpp
-        client/CRawConn.cpp client/RClient.cpp client/CConn.cpp client/csock.cpp client/ClientConn.cpp client/CSockApp.cpp client/csock.h
+        client/CRawConn.cpp client/RClient.cpp client/CConn.cpp client/csock.cpp client/ClientConn.cpp client/CSockApp.cpp
         thirdparty/md5.c thirdparty/debug.c thirdparty/json11.cpp
         )
 

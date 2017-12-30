@@ -13,8 +13,8 @@
 
 class ServerGroupConn : public IGroupConn {
 public:
-    explicit ServerGroupConn(const IdBufType &groupId, uv_loop_t *loop, IConn *btm, const struct sockaddr *targetAddr,
-                                 const PortLists &selfPorts);
+    explicit ServerGroupConn(const IdBufType &groupId, uv_loop_t *loop, IConn *btm,
+                                 const struct sockaddr *targetAddr);
 
     int OnRecv(ssize_t nread, const rbuf_t &rbuf) override;
 
@@ -25,7 +25,6 @@ private:
 private:
     struct sockaddr* mTargetAddr;
     uv_loop_t *mLoop = nullptr;
-    const PortLists mSelfPorts;
 };
 
 

@@ -27,6 +27,7 @@ IUINT8 OHead::ConnType() {
     return enc.conn_type;
 }
 
+// todo: don't convert to string
 void OHead::UpdateGroupId(const IdBufType &buf) {
 //    assert(sizeof(buf) == ID_BUF_SIZE); // this assert awayls fails
     enc.id_buf = buf;
