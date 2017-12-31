@@ -170,3 +170,11 @@ const std::string & OHead::GroupIdStr() {
 const IdBufType &OHead::GroupId() {
     return enc.id_buf;
 }
+
+IUINT32 OHead::Ack() {
+    return mAck;
+}
+
+void OHead::AddAck(IUINT32 len) {
+    mAck += len;
+}

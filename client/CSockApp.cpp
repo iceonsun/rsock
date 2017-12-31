@@ -18,5 +18,5 @@ IRawConn *CSockApp::CreateBtmConn(RConfig &conf, libnet_t *l, uv_loop_t *loop, i
 
 IConn *CSockApp::CreateBridgeConn(RConfig &conf, IRawConn *btm, uv_loop_t *loop) {
     return new ClientConn(conf.param.id, conf.param.selfUnPath, conf.param.localUdpIp, conf.param.localUdpPort, conf.param.selfCapPorts, conf.param.targetCapPorts,
-                          loop, btm, conf.param.targetCapInt);
+                          loop, btm, conf.param.targetCapInt, conf.param.type);
 }

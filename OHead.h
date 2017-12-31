@@ -56,6 +56,9 @@ public:
 
     IUINT32 Dst();
 
+    IUINT32 Ack();
+    void AddAck(IUINT32 len);
+
 //    IUINT32 Src();
 
 
@@ -100,6 +103,7 @@ private:
     IUINT16 mSourcePort = 0;
     IUINT16 mDstPort = 0;
     std::string mGroupId;
+    IUINT32 mAck = 0;
 };
 
 

@@ -12,7 +12,7 @@ using namespace std::placeholders;
 
 ClientConn::ClientConn(const IdBufType &groupId, const std::string &listenUnPath, const std::string &listenUdpIp,
                        IUINT16 listenUdpPort, const RPortList &sourcePorts, const RPortList &destPorts,
-                       uv_loop_t *loop, IConn *btm, uint32_t bigDst)
+                       uv_loop_t *loop, IConn *btm, uint32_t bigDst, int connType)
         : IGroupConn(groupId, btm), mPortMapper(sourcePorts, destPorts) {
     assert(loop != nullptr);
     if (!listenUdpIp.empty()) {
@@ -26,6 +26,7 @@ ClientConn::ClientConn(const IdBufType &groupId, const std::string &listenUnPath
 
     mHead.UpdateDst(bigDst);
     mHead.UpdateGroupId(groupId);
+    mHead.UpdateConnType(connType);
     mLoop = loop;
 }
 
