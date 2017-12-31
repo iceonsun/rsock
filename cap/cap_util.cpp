@@ -66,51 +66,48 @@ int ipv4OfDev(const char *dev, char *ip_buf, char *err) {
 const std::string BuildFilterStr(const std::string &srcIp, const std::string &dstIp, RPortList &srcPorts,
                                  RPortList &dstPorts) {
     std::ostringstream out;
-    bool ok = false;
-    const auto ipFn = [&ok, &out](const std::string &ip, bool src) {
+    out << "(tcp or udp) ";
+//    bool ok = true;
+    const auto ipFn = [&out](const std::string &ip, bool src) {
         if (!ip.empty()) {
-            if (ok) {
-                out << " and ";
-            }
+            out << " and ";
             if (src) {
                 out << " (ip src ";
             } else {
                 out << " (ip dst ";
             }
             out << ip << ")";
-            ok = true;
         }
     };
 
     ipFn(srcIp, true);
     ipFn(dstIp, false);
 
-    const auto portFn = [&ok, &out](RPortList &ports, bool src) -> bool {
+    const auto portFn = [&out](RPortList &ports, bool src) -> bool {
         if (!ports.empty()) {
+            out << " and ";
 
             std::ostringstream out2;
-            if (ok) {
-                out2 << " and (";
-            }
+            out2 << "(";
 
             const auto &singles = ports.GetSinglePortList();
-            for (int j = 0; j < singles.size(); j++) {
+            for (auto single : singles) {
                 if (src) {
-                    out2 << " or src port " << singles[j];
+                    out2 << " or src port " << single;
                 } else {
-                    out2 << " or dst port " << singles[j];
+                    out2 << " or dst port " << single;
                 }
             }
 
             const auto &ranges = ports.GetPortRangeList();
-            for (int j = 0; j < ranges.size(); j++) {
+            for (auto &range : ranges) {
                 if (src) {
                     out2 << " or src portrange ";
                 } else {
                     out2 << " or dst portrange ";
                 }
 
-                out2 << ranges[j].source << '-' << ranges[j].dest;
+                out2 << range.source << '-' << range.dest;
             }
 
             out2 << " )";
@@ -122,7 +119,6 @@ const std::string BuildFilterStr(const std::string &srcIp, const std::string &ds
             }
             s = s.replace(pos, 2, "");  // remove first or
             out << s;
-            ok = true;
         }
         return true;
     };
