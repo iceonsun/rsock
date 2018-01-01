@@ -23,7 +23,7 @@ struct RConfig {
 #ifdef RSOCK_IS_SERVER_
         std::string dev = "eth0";       // server
 #elif __APPLE__
-        std::string dev = "en0";        // macbook wifi
+        std::string dev = "en0";        // macos wifi
 #else
         std::string dev = "wlan0";      // other notebooks wifi
 #endif
@@ -69,12 +69,11 @@ struct RConfig {
         int type = OM_PIPE_ALL;
     };
 
-    // todo: add log_level parse
     plog::Severity log_level = plog::debug;
     std::string log_path = RLOG_FILE_PATH;
 
     bool isServer = false;
-    bool isDaemon = false;  // todo: print conf when daemon. current no output
+    bool isDaemon = false;
     RParam param;
 private:
     bool mInited = false;

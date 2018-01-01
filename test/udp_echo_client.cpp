@@ -107,7 +107,7 @@ int main(int argc, char** argv) {
 
     uv_timer_t timer;
     uv_timer_init(LOOP, &timer);
-    uv_timer_start(&timer, timer_cb, 500, 20);
+    uv_timer_start(&timer, timer_cb, 500, 1000);
     timer.data = &udp;
 
     fprintf(stderr, "client, target: %s:%d\n", ip, port);

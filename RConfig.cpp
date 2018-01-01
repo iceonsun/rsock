@@ -49,7 +49,8 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
                                         "3 for udp up and tcp down. 4 for udp up and down. (Only valid for client.)",
                                 {"type"});
     args::ValueFlag<int> daemon(opt, "daemon", "1 for running as daemon, 0 for not. (default as daemon)",
-                                {"daemon"});
+                                {"daemon", 'd'});
+    args::Flag verbose(opt, "verbose", "flag to indicate if log in verbose", {'v'});
 
     try {
         parser.ParseCLI(argc, argv);
@@ -115,8 +116,12 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
             if (type) {
                 param.type = typeOfStr(type.Get());
                 if (param.type == 0) {
-                    throw args::Error("unable to parse " + type.Get());
+                    throw args::Error("unable to parse type: " + type.Get());
                 }
+            }
+
+            if (verbose) {
+                this->log_level = plog::verbose;
             }
 
             if (daemon) {
@@ -218,6 +223,11 @@ void RConfig::ParseJsonString(RConfig &c, const std::string &content, std::strin
         c.isDaemon = (json["daemon"].int_value() != 0);
     }
 
+    if (json["verbose"].is_bool()) {
+        bool verbose = json["verbose"].bool_value();
+        c.log_level = verbose ? plog::verbose : plog::debug;
+    }
+
     if (json["param"].is_object()) {
         auto o = json["param"].object_items();
 
@@ -233,7 +243,7 @@ void RConfig::ParseJsonString(RConfig &c, const std::string &content, std::strin
                 throw args::Error("Unable to parse self capture ports: " + s);
             }
         } else {
-            LOGV << "use default ports: " <<  RPortList::ToString(p.selfCapPorts);
+            LOGV << "use default ports: " << RPortList::ToString(p.selfCapPorts);
         }
 
         if (o["unPath"].is_string()) {
@@ -277,9 +287,11 @@ void RConfig::ParseJsonString(RConfig &c, const std::string &content, std::strin
 
 json11::Json RConfig::to_json() const {
     auto j = Json::object {
-            {"daemon", isDaemon},
-            {"server", isServer},
-            {"param",  Json::object {
+            {"daemon",  isDaemon},
+            {"server",  isServer},
+            {"verbose", log_level == plog::verbose},
+            {
+             "param",   Json::object {
                     {"dev",       param.dev},
                     {"unPath",    param.selfUnPath},
                     {"ludp",      isServer ? param.localUdpIp :
@@ -292,7 +304,8 @@ json11::Json RConfig::to_json() const {
                     {"duration",  (int) param.interval},
                     {"type",      strOfType(param.type)},
                     {"hash",      param.hashKey},
-            }},
+            }
+            },
     };
     return j;
 }
@@ -353,5 +366,3 @@ bool RConfig::Inited() {
 void RConfig::SetInited(bool init) {
     mInited = init;
 }
-
-

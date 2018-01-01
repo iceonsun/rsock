@@ -40,7 +40,7 @@ int ClientConn::Init() {
         if (nret) {
             return nret;
         }
-        LOGI << "client, listening on udp: " << inet_ntoa(mUdpAddr->sin_addr) << ":" << ntohs(mUdpAddr->sin_port);
+        LOGD << "client, listening on udp: " << inet_ntoa(mUdpAddr->sin_addr) << ":" << ntohs(mUdpAddr->sin_port);
     }
 
     if (mUnAddr) {

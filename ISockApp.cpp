@@ -81,7 +81,7 @@ int ISockApp::doInit() {
     }
 
     mTimer = new RTimer(mLoop);
-    LOGV << "conf: " << mConf.to_json().dump();
+    LOGD << "conf: " << mConf.to_json().dump();
     mCap = CreateCap(mConf);
     if (!mCap || mCap->Init()) {
         return -1;
@@ -109,7 +109,6 @@ int ISockApp::doInit() {
     srand(time(NULL));
     return 0;
 }
-
 
 int ISockApp::initLog() {
     if (mConf.log_path.empty()) {
@@ -173,7 +172,6 @@ void ISockApp::Close() {
 void ISockApp::StartTimer(IUINT32 timeout_ms, IUINT32 repeat_ms) {
     auto fn = std::bind(&ISockApp::Flush, this, std::placeholders::_1);
     mTimer->Start(timeout_ms, repeat_ms, fn);
-//    mTimer.Start(timeout_ms, repeat_ms, fn);
 }
 
 int ISockApp::makeDaemon(bool d) {
