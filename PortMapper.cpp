@@ -2,13 +2,14 @@
 // Created on 12/17/17.
 //
 
+#include <cassert>
 #include <cstdlib>
 
 #include <algorithm>
-#include <syslog.h>
-#include <cassert>
 #include <sstream>
-#include "thirdparty/debug.h"
+
+#include "plog/Log.h"
+
 #include "rscomm.h"
 
 #include "PortMapper.h"
@@ -19,14 +20,8 @@ void PortMapper::AddPortPair(IUINT16 sp, IUINT16 dp) {
         auto it = std::find(mPortPairs.begin(), mPortPairs.end(), p);
         if (it == mPortPairs.end()) {
             mPortPairs.push_back(p);
-#ifndef RSOCK_NNDEBUG
-            } else {
-                debug(LOG_ERR, "%d:%d already in table", sp, dp);
-#endif
         }
-#ifndef RSOCK_NNDEBUG
-        debug(LOG_ERR, "PortPair list: %s", ToString(*this).c_str());
-#endif
+        LOGV << "PortPair list: " << ToString(*this);
     }
 }
 
@@ -53,11 +48,9 @@ void PortMapper::init() {
         }
     }
 
-#ifndef RSOCK_NNDEBUG
-    debug(LOG_ERR, "src: %s", RPortList::ToString(mSrc).c_str());
-    debug(LOG_ERR, "dst: %s", RPortList::ToString(mDest).c_str());
-    debug(LOG_ERR, "PortPair list: %s", ToString(*this).c_str());
-#endif
+    LOGV << "src port list: " << RPortList::ToString(mSrc);
+    LOGV << "dst port list: " << RPortList::ToString(mDest);
+    LOGV << "PortPair list: " << ToString(*this);
 }
 
 const std::string PortMapper::ToString(const PortMapper &mapper) {

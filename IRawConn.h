@@ -51,8 +51,10 @@ private:
     // mulithread. const var
     IUINT32 mSelf;    // little endian
     in_addr_t mSelfNetEndian;    // network endian
+    char mSelfStr[64] = {0};
     IUINT32 mTarget;    // little endian
     in_addr_t mTargetNetEndian;    // network endian
+    char mTargetStr[64] = {0};
     const int mDatalink = DLT_EN10MB;   // default ethernet
     const bool mIsServer;    // const for multithread
 

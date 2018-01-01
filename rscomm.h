@@ -45,6 +45,10 @@ extern "C" {
 #define HASH_BUF_SIZE 8
 #define ID_BUF_SIZE 8
 
+#ifndef RLOG_FILE_PATH
+#define RLOG_FILE_PATH "/var/log/rsock/rsock.log"
+#endif
+
 #ifdef __cplusplus
 }
 #endif

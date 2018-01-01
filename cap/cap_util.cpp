@@ -5,14 +5,14 @@
 #include <cstring>
 
 #include <algorithm>
+#include <sstream>
 
-#include <sys/socket.h>
 #include <arpa/inet.h>
-#include <syslog.h>
 
 #include <pcap.h>
-#include <sstream>
-#include "../thirdparty/debug.h"
+
+#include "plog/Log.h"
+
 #include "cap_util.h"
 #include "../util/RPortList.h"
 
@@ -31,9 +31,7 @@ int ipv4OfDev(const char *dev, char *ip_buf, char *err) {
         pcap_if_t *anIf = nullptr;
         bool ok = false;
         for (anIf = dev_list; anIf != nullptr && !ok; anIf = anIf->next) {
-#ifndef NNDEBUG
-            debug(LOG_ERR, "dev_name: %s", anIf->name);
-#endif
+            LOGV << "dev_name: " << anIf->name;
             if (!strcmp(dev, anIf->name)) {
                 struct pcap_addr *addr = nullptr;
                 for (addr = anIf->addresses; addr != nullptr; addr = addr->next) {
@@ -41,7 +39,7 @@ int ipv4OfDev(const char *dev, char *ip_buf, char *err) {
                     if (a->sa_family == AF_INET) {
                         struct sockaddr_in *addr4 = reinterpret_cast<struct sockaddr_in *>(a);
                         sprintf(ip_buf, "%s", inet_ntoa(addr4->sin_addr));
-                        debug(LOG_ERR, "dev %s, ipv4: %s", dev, ip_buf);
+                        LOGV << "dev: " << dev << ", ipv4: " << ip_buf;
                         ok = true;
                         break;
                     }
@@ -175,9 +173,8 @@ u_int32_t hostIntOfIp(const std::string &ip) {
     in_addr addr = {0};
     int nret = inet_aton(ip.c_str(), &addr);
     if (!nret) {
-        debug(LOG_ERR, "inet_aton failed, nret %d:%s", nret, strerror(errno));
+        LOGE << "inet_aton failed, nret " << nret << ": " << strerror(errno);
         return 0;
     }
     return ntohl(addr.s_addr);
-//    return addr.s_addr;
 }

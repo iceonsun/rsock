@@ -3,15 +3,14 @@
 //
 
 #include <cassert>
-#include <syslog.h>
+
+#include "plog/Log.h"
+
 #include "SConn.h"
 #include "../util/rsutil.h"
-#include "../thirdparty/debug.h"
 
 SConn::SConn(uv_loop_t *loop, const struct sockaddr *origin, const struct sockaddr *target, IUINT32 conv) : IConn(
         OHead::BuildKey(origin, conv)) {
-
-    debug(LOG_ERR, "");
     assert(target->sa_family == AF_INET);
 
     mTarget = reinterpret_cast<sockaddr_in *>(new_addr(target));
@@ -44,15 +43,15 @@ SConn::udpRecvCb(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf, const str
     SConn *conn = static_cast<SConn *>(handle->data);
     if (nread > 0) {
         if (nullptr == conn->mSelfAddr) {
-            int socklen = sizeof(struct sockaddr_in*);
+            int socklen = sizeof(struct sockaddr_in);
             conn->mSelfAddr = static_cast<sockaddr_in *>(malloc(sizeof(struct sockaddr_in)));
             memset(conn->mSelfAddr, 0, sizeof(struct sockaddr_in));
             int err = uv_udp_getsockname(handle, reinterpret_cast<sockaddr *>(conn->mSelfAddr), &socklen);
             if (err) {
-                debug(LOG_ERR, "getsockname failed, err: %s", err, strerror(errno));
+                LOGE << "getsockname failed, err " << err << ": " << strerror(errno);
                 assert(0);
             }
-            debug(LOG_ERR, "sconn addr: %s:%d", inet_ntoa(conn->mSelfAddr->sin_addr), ntohs(conn->mSelfAddr->sin_port));
+            LOGV << "sconn addr: " << inet_ntoa(conn->mSelfAddr->sin_addr) << ":" << ntohs(conn->mSelfAddr->sin_port);
         }
         rbuf_t rbuf = {0};
         rbuf.len = nread;
@@ -60,7 +59,7 @@ SConn::udpRecvCb(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf, const str
         rbuf.data = &conn->mHead;
         conn->Send(nread, rbuf);
     } else if (nread < 0) {
-//        todo
+        LOGE << "receive error: " << uv_strerror(nread);
     }
 }
 
@@ -72,7 +71,8 @@ int SConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
         memcpy(udp_send->buf.base, rbuf.base, nread);
         udp_send->buf.len = nread;
         udp_send->udp_send.data = this;
-        uv_udp_send(reinterpret_cast<uv_udp_send_t *>(udp_send), mUdp, &udp_send->buf, 1, reinterpret_cast<const sockaddr *>(mTarget), sendCb);
+        uv_udp_send(reinterpret_cast<uv_udp_send_t *>(udp_send), mUdp, &udp_send->buf, 1,
+                    reinterpret_cast<const sockaddr *>(mTarget), sendCb);
     }
     return nread;
 }
@@ -80,14 +80,13 @@ int SConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
 void SConn::sendCb(uv_udp_send_t *req, int status) {
     rudp_send_t *udp = reinterpret_cast<rudp_send_t *>(req);
     SConn *conn = static_cast<SConn *>(udp->udp_send.data);
-    debug(LOG_ERR, "sending %d bytes to %s:%d, status: %d", udp->buf.len, inet_ntoa(conn->mTarget->sin_addr), htons(conn->mTarget->sin_port), status);
+    LOGV << "sending " << udp->buf.len << " bytes to " << inet_ntoa(conn->mTarget->sin_addr) << ":"
+         << htons(conn->mTarget->sin_port);
     if (status) {
 //        todo: add err processing
-        debug(LOG_ERR, "udp send error, err %d: %s", status, uv_strerror(status));
+        LOGE << "udp send error, err " << status << ": " << uv_strerror(status);
 #ifndef NNDEBUG
         assert(0);
-#else
-//        todo: add error
 #endif
     }
 

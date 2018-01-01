@@ -3,10 +3,9 @@
 //
 
 #include <cassert>
-#include <syslog.h>
+#include "plog/Log.h"
 #include "ClientConn.h"
 #include "../util/rsutil.h"
-#include "../thirdparty/debug.h"
 
 using namespace std::placeholders;
 
@@ -41,7 +40,7 @@ int ClientConn::Init() {
         if (nret) {
             return nret;
         }
-        debug(LOG_ERR, "client, listening on udp: %s:%d", inet_ntoa(mUdpAddr->sin_addr), ntohs(mUdpAddr->sin_port));
+        LOGI << "client, listening on udp: " << inet_ntoa(mUdpAddr->sin_addr) << ":" << ntohs(mUdpAddr->sin_port);
     }
 
     if (mUnAddr) {
@@ -50,7 +49,7 @@ int ClientConn::Init() {
             return nret;
         }
         mUnSock = nret;
-        debug(LOG_ERR, "client, listening on unix socket: %s", mUnAddr->sun_path);
+        LOGE << "client, listening on unix socket: " << mUnAddr->sun_path;
     }
     return 0;
 }
@@ -89,7 +88,7 @@ int ClientConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
         if (it != mConvMap.end()) {
             return it->second->Input(nread, rbuf);
         } else {
-            debug(LOG_ERR, "no such conn: %d", conv);
+            LOGE << "no such conn: " << conv;
             return 0;
         }
     }
@@ -102,8 +101,6 @@ int ClientConn::send2Origin(ssize_t nread, const rbuf_t &rbuf, const sockaddr *a
         return unSendOrigin(nread, rbuf, (sockaddr_un *) addr);
     }
 
-//    const struct sockaddr_in* addr4 = reinterpret_cast<const sockaddr_in *>(addr);
-//    debug(LOG_ERR, "send %d bytes to origin %s:%d\n", nread, inet_ntoa(addr4->sin_addr), ntohs(addr4->sin_port));
     rudp_send_t *snd = static_cast<rudp_send_t *>(malloc(sizeof(rudp_send_t)));
     memset(snd, 0, sizeof(rudp_send_t));
     snd->buf.base = static_cast<char *>(malloc(nread));
@@ -119,7 +116,7 @@ int ClientConn::unSendOrigin(ssize_t nread, const rbuf_t &rbuf, struct sockaddr_
     socklen_t socklen = sizeof(struct sockaddr_un);
     ssize_t n = sendto(mUnSock, rbuf.base, nread, 0, reinterpret_cast<const sockaddr *>(&addr), socklen);
     if (n <= 0) {
-        debug(LOG_ERR, "error write to unix listen sock. err %d: %s", errno, strerror(errno));
+        LOGE << "error write to unix listen sock. err " << n << ": " << strerror(errno);
     }
     return n;
 }
@@ -129,7 +126,7 @@ void ClientConn::send_cb(uv_udp_send_t *req, int status) {
 //ClientConn *conn = static_cast<ClientConn *>(req->data);
     if (status) {
         // todo: error processing
-        debug(LOG_ERR, "udp send error: %s", uv_strerror(status));
+        LOGE << "udp send error: " << uv_strerror(status);
 #ifndef NNDEBUG
         assert(0);
 #endif
@@ -141,12 +138,10 @@ void ClientConn::udpRecvCb(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf,
                            unsigned flags) {
     auto *conn = static_cast<ClientConn *>(handle->data);
     if (nread > 0) {
-//       auto *addr4 = (const struct sockaddr_in*) addr;
-//       debug(LOG_ERR, "client, receive %d bytes from %s:%d", nread, inet_ntoa(addr4->sin_addr), ntohs(addr4->sin_port));
         conn->onLocalRecv(nread, buf->base, addr);
     } else if (nread < 0) {
         // todo: error processing
-        debug(LOG_ERR, "udp error: %s", uv_strerror(nread));
+        LOGE << "udp error: " << uv_strerror(nread);
 #ifndef NNDEBUG
         assert(0);
 #endif
@@ -158,7 +153,7 @@ void ClientConn::udpRecvCb(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf,
 void ClientConn::pollCb(uv_poll_t *handle, int status, int events) {
     ClientConn *conn = static_cast<ClientConn *>(handle->data);
     if (status) {
-        debug(LOG_ERR, "unix listen sock error: %s", uv_strerror(status));
+        LOGE << "unix listen sock error: " << uv_strerror(status);
         return;
     }
     if (events & UV_READABLE) {
@@ -167,13 +162,13 @@ void ClientConn::pollCb(uv_poll_t *handle, int status, int events) {
         socklen_t socklen = sizeof(addr);
         ssize_t nread = recvfrom(conn->mUnSock, buf, OM_MAX_PKT_SIZE, 0, reinterpret_cast<sockaddr *>(&addr), &socklen);
         if (strlen(addr.sun_path) == 0) {
-            debug(LOG_ERR, "failed to get client unix domain socket path");
+            LOGE << "failed to get client unix domain socket path";
             return;
         }
 
 //        todo: just close conn
         if (nread < 0) {
-            debug(LOG_ERR, "read error on listened unix domain sock, %d: %s", errno, strerror(errno));
+            LOGE << "read error on listened unix domain sock, " << nread << ": " << strerror(errno);
 #ifndef NNDEBUG
             assert(0);
 #endif
@@ -224,7 +219,7 @@ void ClientConn::onLocalRecv(ssize_t nread, const char *base, const struct socka
 }
 
 CConn *ClientConn::newConn(const std::string &key, const struct sockaddr *addr, IUINT32 conv) {
-    debug(LOG_ERR, "new cconn: %s", key.c_str());
+    LOGD << "new cconn:" << key;
     CConn *conn = new CConn(key, addr, conv);
     auto outfn = std::bind(&IConn::Send, this, _1, _2);
     auto recvfn = std::bind(&ClientConn::subconnRecv, this, _1, _2);

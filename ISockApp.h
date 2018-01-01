@@ -17,6 +17,10 @@ class IRawConn;
 
 class IConn;
 
+namespace plog {
+    class IAppender;
+}
+
 class ISockApp {
 public:
     ISockApp(bool is_server, uv_loop_t *loop);
@@ -27,6 +31,8 @@ public:
     virtual int Init();
 
     virtual int Init(RConfig &conf);
+
+    virtual int Init(const std::string &json_content);
 
     virtual int Start();
 
@@ -43,8 +49,15 @@ public:
     virtual IConn *CreateBridgeConn(RConfig &conf, IRawConn *btm, uv_loop_t *loop) = 0;
 
 private:
+    int doInit();
     int makeDaemon(bool d);
+    int initLog();
+
 private:
+    // even app is deleted. don't delete IAppender object. because single process has only one ISockApp instance.
+    plog::IAppender *mFileAppender;
+    plog::IAppender *mConsoleAppender;
+
     uv_loop_t *mLoop = nullptr;
     RTimer *mTimer;
     bool mServer;

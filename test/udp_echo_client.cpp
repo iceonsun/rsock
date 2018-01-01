@@ -5,32 +5,38 @@
 
 #include <uv.h>
 #include <cstdlib>
-#include <syslog.h>
-#include <getopt.h>
-#include "../thirdparty/debug.h"
 #include "../rcommon.h"
 
-#define DEF_IP "127.0.0.1"
+#define DEF_IP "127.0.0.2"
 #define DEF_PORT 30000
 
 //const char *ip = "127.0.0.1";
 //const int port = 30000;
 struct sockaddr_in target = {0};
 
+int next = 0;
+const char *DELIM = "hello world ";
 
 void recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf, const struct sockaddr* addr, unsigned flags) {
     if (nread > 0) {
         const auto *addr4 = reinterpret_cast<const sockaddr_in *>(addr);
-        debug(LOG_ERR, "receive %d bytes: %.*s  from %s:%d", nread, nread, buf->base, inet_ntoa(addr4->sin_addr), ntohs(addr4->sin_port));
+        fprintf(stderr, "receive %d bytes: %.*s  from %s:%d\n", nread, nread, buf->base, inet_ntoa(addr4->sin_addr), ntohs(addr4->sin_port));
+        next++;
+        auto p = strstr(buf->base, DELIM);
+        int n = atoi(p + strlen(DELIM));
+        if (n != next) {
+            fprintf(stderr, "not equal. n: %d, next: %d\n", n, next);
+        }
+
     } else if (nread < 0) {
-        debug(LOG_ERR, "recv_cb error: %s", uv_strerror(nread));
+        fprintf(stderr, "recv_cb error: %s\n", uv_strerror(nread));
     }
     free(buf->base);
 }
 
 void send_cb(uv_udp_send_t* req, int status) {
     if (status) {
-        debug(LOG_ERR, "send_cb error: %s", uv_strerror(status));
+        fprintf(stderr, "send_cb error: %s\n", uv_strerror(status));
     }
 
     free_rudp_send(reinterpret_cast<rudp_send_t *>(req));
@@ -71,7 +77,7 @@ int parse_ip( const char *str, char *ip, int *port) {
 // todo: add a test shell script
 int main(int argc, char** argv) {
     if (argc > 2) {
-        fprintf(stderr, "usage example: ./%s 127.0.0.1:30000", argv[0]);
+        fprintf(stderr, "usage example: ./%s 127.0.0.1:30000\n", argv[0]);
         exit(0);
     }
 
@@ -80,7 +86,7 @@ int main(int argc, char** argv) {
 
     if (argc == 2) {
         if (parse_ip(argv[1], ip, &port)) {
-            fprintf(stderr, "usage example: ./%s 127.0.0.1:30000", argv[0]);
+            fprintf(stderr, "usage example: ./%s 127.0.0.1:30000\n", argv[0]);
             exit(1);
         }
     } else {
@@ -90,7 +96,7 @@ int main(int argc, char** argv) {
 
     int nret = uv_ip4_addr(ip, port, &target);
     if (nret) {
-        fprintf(stderr, "failed to parse %s:%d", ip, port);
+        fprintf(stderr, "failed to parse %s:%d\n", ip, port);
         exit(1);
     }
 
@@ -101,10 +107,10 @@ int main(int argc, char** argv) {
 
     uv_timer_t timer;
     uv_timer_init(LOOP, &timer);
-    uv_timer_start(&timer, timer_cb, 500, 2000);
+    uv_timer_start(&timer, timer_cb, 500, 20);
     timer.data = &udp;
 
-    debug(LOG_ERR, "client, target: %s:%d", ip, port);
+    fprintf(stderr, "client, target: %s:%d\n", ip, port);
     uv_run(LOOP, UV_RUN_DEFAULT);
     return 0;
 }

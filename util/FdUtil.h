@@ -5,6 +5,8 @@
 #ifndef RPIPE_UTIL_H
 #define RPIPE_UTIL_H
 
+#include <string>
+
 class FdUtil {
 public:
     static void CheckDgramFd(int fd);
@@ -16,6 +18,12 @@ public:
     static void SetBlocking(int &fd);
 
     static bool FileExists(const char *fName);
+
+    static int CreateFile(const std::string &fName, int mode = 0644);
+
+    static int IsDir(const std::string &dirName);
+
+    static int CreateDir(const std::string &dirName, int mode = 0755);
 
 private:
     static void checkFdType(int fd, int type);

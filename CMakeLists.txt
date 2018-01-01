@@ -3,12 +3,14 @@ project(rSock)
 
 set(CMAKE_CXX_STANDARD 11)
 
+include_directories(./include)
+
 set(SOURCE_FILES ktype.h rcommon.c RConfig.cpp ISockApp.cpp IConn.cpp IGroupConn.cpp PortMapper.cpp IRawConn.cpp GroupConn.cpp OHead.cpp
-        util/enc.c util/rsutil.c util/FdUtil.cpp util/rhash.cpp util/RTimer.cpp util/TextUtils.h util/RPortList.cpp util/PortPair.cpp
+        util/enc.c util/rsutil.cpp util/FdUtil.cpp util/rhash.cpp util/RTimer.cpp util/TextUtils.h util/RPortList.cpp util/PortPair.cpp
         cap/cap_util.cpp cap/RCap.cpp
         server/SConn.cpp server/ServerGroupConn.cpp server/SSockApp.cpp server/ssock.cpp server/SRawConn.cpp
         client/CRawConn.cpp client/RClient.cpp client/CConn.cpp client/csock.cpp client/ClientConn.cpp client/CSockApp.cpp
-        thirdparty/md5.c thirdparty/debug.c thirdparty/json11.cpp
+        thirdparty/md5.c thirdparty/json11.cpp
         )
 
 add_executable(ssock ${SOURCE_FILES} server/main.cpp)
@@ -34,11 +36,11 @@ set_target_properties(
 
 add_executable(test_client ${SOURCE_FILES} test/test_client.cpp)
 add_executable(test_conf ${SOURCE_FILES} test/test_conf.cpp)
-add_executable(echo_server thirdparty/debug.c rcommon.c test/udp_echo_server.cpp)
-add_executable(echo_client thirdparty/debug.c rcommon.c test/udp_echo_client.cpp)
-add_executable(test_cap ${SOURCE_FILES} test/test_cap.cpp)
+add_executable(echo_server rcommon.c test/udp_echo_server.cpp)
+add_executable(echo_client rcommon.c test/udp_echo_client.cpp)
 
 add_definitions(-Wall)
+#add_definitions(-DRLOG_FILE_PATH="/var/log/rsock/rsock.log")
 
 # library
 add_library(rawsock ${SOURCE_FILES})
@@ -65,7 +67,6 @@ target_link_libraries(rawsock ${libs})
 target_link_libraries(ssock ${libs})
 target_link_libraries(csock ${libs})
 
-target_link_libraries(test_cap ${libs})
 target_link_libraries(test_server ${libs})
 target_link_libraries(test_client ${libs})
 target_link_libraries(test_conf ${libs})

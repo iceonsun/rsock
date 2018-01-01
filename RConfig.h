@@ -14,6 +14,8 @@
 #include "thirdparty/json11.hpp"
 #include "util/RPortList.h"
 
+#include "plog/Severity.h"
+
 struct RConfig {
 
     struct RParam {
@@ -67,6 +69,10 @@ struct RConfig {
         int type = OM_PIPE_ALL;
     };
 
+    // todo: add log_level parse
+    plog::Severity log_level = plog::verbose;
+    std::string log_path = RLOG_FILE_PATH;
+
     bool isServer = false;
     bool isDaemon = false;  // todo: print conf when daemon. current no output
     RParam param;
@@ -83,6 +89,8 @@ public:
 
     void SetInited(bool init);
 
+    RConfig &operator=(const RConfig &conf) = default;
+
     static void CheckValidation(const RConfig &c);
 
     static void ParseJsonFile(RConfig &conf, const std::string &fName, std::string &err);
@@ -92,8 +100,6 @@ public:
 private:
     static inline bool parseAddr(const std::string &addr, std::string &ip, IUINT16 &port, bool usePort);
 
-//    static inline int typeOfInt(int t);
-//    static inline int intOfType(int type);
     static inline int typeOfStr(const std::string &str);
 
     static inline std::string strOfType(int type);

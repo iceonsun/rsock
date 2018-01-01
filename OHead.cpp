@@ -39,7 +39,7 @@ void OHead::UpdateDst(IUINT32 dst) {
 }
 
 int OHead::GetEncBufSize() {
-    return enc_head_t::GetEncBufSize();
+    return EncHead::GetEncBufSize();
 }
 
 IUINT8 *OHead::Enc2Buf(IUINT8 *ptr, int len) {
@@ -59,7 +59,7 @@ IUINT8 *OHead::Enc2Buf(IUINT8 *ptr, int len) {
 
 const char *OHead::DecodeBuf(OHead &head, const char *p, int len) {
     if (p && len >= GetEncBufSize()) {
-        enc_head_t &e = head.enc;
+        EncHead &e = head.enc;
         p = decode_uint8(&e.len, p);
         p = decode_uint8(&e.resereved, p);
         p = decode_uint8(&e.conn_type, p);

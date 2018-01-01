@@ -3,11 +3,10 @@
 //
 
 #include <cassert>
-#include <syslog.h>
 #include <sstream>
 #include <regex>
+#include "plog/Log.h"
 #include "RPortList.h"
-#include "../thirdparty/debug.h"
 
 RPortList::RPortList(const std::initializer_list<PortPair> &list) {
     buildRPortList(list);
@@ -20,7 +19,7 @@ void RPortList::AddPort(uint16_t port) {
 
 void RPortList::AddPortRange(uint16_t start, uint16_t end) {
     if (start >= end) {
-        debug(LOG_ERR, "start > end");
+        LOGE << "start > end: " << start << ">" << end;
 #ifndef RSOCK_NNDEBUG
         assert(0);
 #endif
@@ -133,17 +132,15 @@ bool RPortList::FromString(RPortList &list, const std::string &s) {
         }
     }
 
-
     std::string str = s;
     const std::regex re(R"(((\d+-\d+)|(\d+)))");
     std::smatch sm;
-//    PortLists range(2);
     while (std::regex_search(str, sm, re)) {
         auto t = sm[0].str();
         auto pos = t.find('-');
         if (pos == std::string::npos) {
             int p = std::stoi(t);
-            debug(LOG_ERR, "port: %d", p);
+            LOGV << "port: " << p;
             single.push_back(p);
         } else {
             int start = std::stoi(t.substr(0, pos));
@@ -151,11 +148,11 @@ bool RPortList::FromString(RPortList &list, const std::string &s) {
             if (start >= end || !start || !end) {
                 single.clear();
                 valentines.clear();
-                debug(LOG_ERR, "%s wrong format.", t.c_str());
+                LOGV << t << " wrong format ";
                 return false;
             }
 
-            debug(LOG_ERR, "port range: %d-%d", start, end);
+            LOGV << "port range: " << start << "-" << end;
             valentines.emplace_back(start, end);
         }
         str = sm.suffix();

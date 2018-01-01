@@ -5,15 +5,16 @@
 #include <cstdlib>
 #include <ctime>
 
-#include <syslog.h>
-#include <cassert>
+#include <string>
+
 #include "uv.h"
 
 #include "ISockApp.h"
 #include "IConn.h"
 #include "IRawConn.h"
-#include "thirdparty/debug.h"
-//#include "RConfig.h"
+#include "plog/Log.h"
+#include "plog/Appenders/ConsoleAppender.h"
+#include "util/FdUtil.h"
 
 ISockApp::ISockApp(bool is_server, uv_loop_t *loop) : mServer(is_server) {
     mLoop = loop;
@@ -22,7 +23,7 @@ ISockApp::ISockApp(bool is_server, uv_loop_t *loop) : mServer(is_server) {
 
 int ISockApp::Init(RConfig &conf) {
     if (!conf.Inited()) {
-        debug(LOG_ERR, "conf must be inited");
+        fprintf(stderr, "conf must be inited\n");
 #ifndef NNDEBUG
         assert(0);
 #endif
@@ -32,6 +33,17 @@ int ISockApp::Init(RConfig &conf) {
     return Init();
 }
 
+
+int ISockApp::Init(const std::string &json_content) {
+    std::string err;
+    mConf.ParseJsonString(mConf, json_content, err);
+    if (err.empty()) {
+        return Init();
+    }
+    return -1;
+}
+
+
 int ISockApp::Parse(int argc, const char *const *argv) {
     assert(argv != nullptr);
     int nret = mConf.Parse(mServer, argc, argv);
@@ -40,12 +52,24 @@ int ISockApp::Parse(int argc, const char *const *argv) {
 
 int ISockApp::Init() {
     if (!mConf.Inited()) {
-        debug(LOG_ERR, "configuration not inited.");
+        fprintf(stderr, "configuration not inited.\n");
 #ifndef NNDEBUG
         assert(0);
 #else
         return -1;
 #endif
+    }
+    return doInit();
+}
+
+int ISockApp::doInit() {
+    assert(mConf.Inited());
+    fprintf(stdout, "log file path: %s\n", RLOG_FILE_PATH);
+
+    int nret = initLog();
+    if (nret) {
+        fprintf(stderr, "failed to init logger, nret: %d\n", nret);
+        return -1;
     }
 
     makeDaemon(mConf.isDaemon);
@@ -57,7 +81,7 @@ int ISockApp::Init() {
     }
 
     mTimer = new RTimer(mLoop);
-    debug(LOG_ERR, "conf: \n%s", mConf.to_json().dump().c_str());
+    LOGV << "conf: " << mConf.to_json().dump();
     mCap = CreateCap(mConf);
     if (!mCap || mCap->Init()) {
         return -1;
@@ -66,7 +90,7 @@ int ISockApp::Init() {
     char err[LIBNET_ERRBUF_SIZE] = {0};
     mLibnet = libnet_init(LIBNET_RAW4, mConf.param.dev.c_str(), err);
     if (nullptr == mLibnet) {
-        debug(LOG_ERR, "failed to init libnet: %s", err);
+        LOGE << "failed to init libnet: " << err;
         return -1;
     }
 
@@ -86,12 +110,31 @@ int ISockApp::Init() {
     return 0;
 }
 
+
+int ISockApp::initLog() {
+    if (mConf.log_path.empty()) {
+        fprintf(stderr, "log path empty\n");
+        return -1;
+    }
+
+    if (!FdUtil::FileExists(mConf.log_path.c_str())) {
+        int nret = FdUtil::CreateFile(mConf.log_path);
+        if (nret < 0) {
+            return nret;
+        }
+    }
+
+    mFileAppender = new plog::RollingFileAppender<plog::TxtFormatter>(RLOG_FILE_PATH, 100000, 5);
+    mConsoleAppender = new plog::ConsoleAppender<plog::TxtFormatter>();
+    plog::init(mConf.log_level, mFileAppender).addAppender(mConsoleAppender);
+
+    return 0;
+}
+
 int ISockApp::Start() {
     assert(mInited);
     mCap->Start(IRawConn::CapInputCb, reinterpret_cast<u_char *>(mBtmConn)); // starts the thread
     StartTimer(mConf.param.interval * 1000 * 2, mConf.param.interval * 1000);
-
-//    makeDaemon(mConf.isDaemon);
 
     return uv_run(mLoop, UV_RUN_DEFAULT);
 }
@@ -122,6 +165,7 @@ void ISockApp::Close() {
 
     if (mLoop) {
         uv_stop(mLoop);
+        uv_loop_delete(mLoop);
         mLoop = nullptr;
     }
 }
@@ -139,17 +183,13 @@ int ISockApp::makeDaemon(bool d) {
         if (nret == 0) {
             int n = setsid();
             if (-1 == n) {
-                debug(LOG_ERR, "make daemon failed. setsid failed %s", strerror(errno));
+                LOGE << "make daemon failed. setsid failed " << strerror(errno);
                 exit(1);
             }
-            debug(LOG_ERR, "Run in background. pid: %d", getpid());
-//            if (fork()) {
-//                exit(0);
-//            }
-//            debug(LOG_ERR, "getpid() %d", getpid());
+            LOGI << "Run in background. pid: " << getpid();
             umask(0);
             if (chdir("/") < 0) {
-                debug(LOG_ERR, "chdir failed: %s", strerror(errno));
+                LOGE << "chdir failed: " << strerror(errno);
                 exit(-1);
             }
             for (auto f: {STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO}) {
@@ -161,7 +201,7 @@ int ISockApp::makeDaemon(bool d) {
         } else if (nret > 0) {
             exit(0);    // parent;
         } else {
-            debug(LOG_ERR, "make process daemon failed: %s", strerror(errno));
+            LOGE << "make process daemon failed: " << strerror(errno);
             exit(-1);
         }
     }

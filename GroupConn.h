@@ -28,9 +28,6 @@ private:
 private:
     uv_loop_t *mLoop;
     struct sockaddr* mTarget;
-
-//    struct sockaddr* mSelf = nullptr;
-//    struct sockaddr *mOrigin = nullptr;
     OHead mHead;
     PortMapper mPorter;
 };

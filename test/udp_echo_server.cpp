@@ -4,8 +4,6 @@
 
 #include <uv.h>
 #include <cstdlib>
-#include <syslog.h>
-#include "../thirdparty/debug.h"
 #include "../rcommon.h"
 
 #define DEF_IP "127.0.0.1"
@@ -13,7 +11,7 @@
 
 void send_cb(uv_udp_send_t* req, int status) {
     if (status) {
-        debug(LOG_ERR, "send err: %s", uv_strerror(status));
+        fprintf(stderr, "send err: %s\n", uv_strerror(status));
     }
     auto * rudp = reinterpret_cast<rudp_send_t *>(req);
     free_rudp_send(rudp);
@@ -25,11 +23,11 @@ void recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf, const struct 
         memset(rudp, 0, sizeof(rudp_send_t));
         rudp->buf = uv_buf_init(buf->base, nread);
         struct sockaddr_in *addr4 = (sockaddr_in *) addr;
-        debug(LOG_ERR, "receive %d bytes: %.*s  from %s:%d", nread, nread, buf->base, inet_ntoa(addr4->sin_addr), ntohs(addr4->sin_port));
+        fprintf(stderr, "receive %d bytes: %.*s  from %s:%d\n", nread, nread, buf->base, inet_ntoa(addr4->sin_addr), ntohs(addr4->sin_port));
         uv_udp_send(reinterpret_cast<uv_udp_send_t *>(rudp), handle, &rudp->buf, 1, addr, send_cb);
     }  else  {
         if (nread < 0) {
-            debug(LOG_ERR, "err: %s", uv_strerror(nread));
+            fprintf(stderr, "err: %s\n", uv_strerror(nread));
         }
         free(buf->base);
     }
@@ -50,7 +48,7 @@ int parse_ip( const char *str, char *ip, int *port) {
 
 int main(int argc, char **argv) {
     if (argc > 2) {
-        fprintf(stderr, "usage example: ./%s 127.0.0.1:30000", argv[0]);
+        fprintf(stderr, "usage example: ./%s 127.0.0.1:30000\n", argv[0]);
         exit(0);
     }
 
@@ -59,7 +57,7 @@ int main(int argc, char **argv) {
 
     if (argc == 2) {
         if (parse_ip(argv[1], ip, &port)) {
-            fprintf(stderr, "usage example: ./%s 127.0.0.1:30000", argv[0]);
+            fprintf(stderr, "usage example: ./%s 127.0.0.1:30000\n", argv[0]);
             exit(1);
         }
     } else {
@@ -70,7 +68,7 @@ int main(int argc, char **argv) {
     struct sockaddr_in addr = {0};
     int nret = uv_ip4_addr(ip, port, &addr);
     if (nret) {
-        fprintf(stderr, "failed to parse %s:%d", ip, port);
+        fprintf(stderr, "failed to parse %s:%d\n", ip, port);
         exit(1);
     }
 
@@ -79,7 +77,7 @@ int main(int argc, char **argv) {
     uv_udp_init(LOOP, &udp);
     uv_udp_bind(&udp, reinterpret_cast<const sockaddr *>(&addr), 0);
     uv_udp_recv_start(&udp, alloc_buf, recv_cb);
-    debug(LOG_ERR, "server, listening on %s:%d", ip, port);
+    fprintf(stderr, "server, listening on %s:%d\n", ip, port);
 
     uv_run(LOOP, UV_RUN_DEFAULT);
     return 0;

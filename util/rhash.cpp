@@ -4,15 +4,14 @@
 
 #include <cstring>
 #include <cassert>
+#include <algorithm>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
 #include "rhash.h"
 #include "../thirdparty/md5.h"
 #include "../rscomm.h"
-#include "../rstype.h"
-#include "../thirdparty/debug.h"
-#include <algorithm>
-#include <syslog.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
+
 
 using u_char = unsigned char;
 

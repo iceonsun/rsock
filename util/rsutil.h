@@ -5,11 +5,6 @@
 #ifndef RSOCK_RSUTIL_H
 #define RSOCK_RSUTIL_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-
 struct sockaddr;
 
 struct sockaddr_in *new_addr4(const char *ip, int port);
@@ -29,9 +24,5 @@ uv_udp_t *om_listen_udp_addr(const struct sockaddr_in *addr, uv_loop_t *loop, uv
 uv_poll_t *
 om_listen_unix_dgram(const struct sockaddr_un *addr, uv_loop_t *loop, uv_poll_cb cb, void *arg, int *err);
 uv_udp_t *om_new_udp(uv_loop_t *loop, void *arg, uv_udp_recv_cb cb);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif //RSOCK_RSUTIL_H

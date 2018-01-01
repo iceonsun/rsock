@@ -3,12 +3,11 @@
 //
 
 #include <cassert>
-#include <syslog.h>
+#include "plog/Log.h"
+
 #include "GroupConn.h"
 #include "server/SConn.h"
 #include "util/rsutil.h"
-#include "thirdparty/debug.h"
-#include "util/TextUtils.h"
 
 // todo: change all these thing origin to uint32_t? if not consider support ipv6
 GroupConn::GroupConn(const IdBufType &groupId, uv_loop_t *loop, const struct sockaddr *target, const struct sockaddr *origin,
@@ -16,8 +15,6 @@ GroupConn::GroupConn(const IdBufType &groupId, uv_loop_t *loop, const struct soc
         : IGroupConn(groupId, btm) {
     mLoop = loop;
     mTarget = new_addr(target);
-//    mSelf = new_addr(machineAddr);
-//    mOrigin = new_addr(origin);
     assert(origin->sa_family == AF_INET);
 
     struct sockaddr_in *addr4 = (sockaddr_in *) origin;
@@ -40,10 +37,7 @@ int GroupConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
     auto conn = ConnOfKey(key);
     if (!conn) {
         conn = newConn(head->Conv(), head->srcAddr);
-    } else {
-#ifndef NNDEBUG
-        debug(LOG_ERR, "old SConn, key: %s, conv: %d", conn->Key().c_str(), head->Conv());
-#endif
+    
     }
 
     mPorter.AddPortPair(head->DstPort(), head->SourcePort());
@@ -53,10 +47,7 @@ int GroupConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
 IConn *GroupConn::newConn(IUINT32 conv, const struct sockaddr *origin) {
     IConn *conn = new SConn(mLoop, origin, mTarget, conv);
     AddConn(conn);
-#ifndef NNDEBUG
-    debug(LOG_ERR, "new SConn, key: %s, conv: %d", conn->Key().c_str(), conv);
-#endif
-
+    LOGV << "new SConn, key: " << conn->Key() << " conv: " << conv;
     int nret = conn->Init();
     assert(nret == 0);
     return conn;

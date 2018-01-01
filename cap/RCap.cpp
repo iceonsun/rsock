@@ -4,10 +4,9 @@
 
 #include <string>
 #include <cassert>
-#include <syslog.h>
-#include <uv-unix.h>
+#include "uv.h"
+#include "plog/Log.h"
 #include "RCap.h"
-#include "../thirdparty/debug.h"
 
 
 RCap::RCap(const std::string &dev, const std::string &selfIp, const RPortList &selfPorts, const RPortList &srcPorts,
@@ -22,7 +21,7 @@ RCap::RCap(const std::string &dev, const std::string &selfIp, const RPortList &s
 
 int RCap::initDevAndIp() {
     if (mDev.empty()) {
-        debug(LOG_ERR, "you must specify dev to work");
+        LOGE << "you must specify dev to work";
         return -1;
     }
 
@@ -30,7 +29,7 @@ int RCap::initDevAndIp() {
     char err[PCAP_ERRBUF_SIZE] = {0};
     int nret = ipv4OfDev(mDev.c_str(), ip4buf, err);
     if (nret) {
-        debug(LOG_ERR, "failed to find ip for dev %s, err: %s", mDev.c_str(), err);
+        LOGE << "failed to find ip for dev " << mDev << ", err: " << err;
         return nret;
     }
     mDstIp = ip4buf;
@@ -39,7 +38,6 @@ int RCap::initDevAndIp() {
 
 int RCap::Init() {
     assert(mInited == false);
-//    todo: change:
     int nret = 0;
     if (mDstIp.empty()) {
         nret = initDevAndIp();
@@ -49,9 +47,9 @@ int RCap::Init() {
     }
 
     auto filterStr = BuildFilterStr(mSrcIp, mDstIp, mSrc, mDest);
-    debug(LOG_ERR, "filter: %s", filterStr.c_str());
+    LOGD << "filter : " << filterStr;
     if (filterStr.empty()) {
-        debug(LOG_ERR, "failed to build capture filter");
+        LOGE << "failed to build capture filter";
         return -1;
     }
 
@@ -81,14 +79,14 @@ int RCap::Init() {
         }
         if (datalink == DLT_EN10MB) {   // if DLT_NULL, setting PCAP_D_IN will not work.
             if (-1 == (nret = pcap_setdirection(mCap, PCAP_D_IN))) {
-                debug(LOG_ERR, "setdirection: %d", PCAP_D_IN);
+                LOGE << "pcap_setdirection failed, direction:" << PCAP_D_IN << ", error: " << pcap_geterr(mCap);
                 break;
             }
         }
     } while (false);
 
     if (nret) {
-        debug(LOG_ERR, "init failed: %s", pcap_geterr(mCap));
+        LOGE << "init failed: " << pcap_geterr(mCap);
         return nret;
     }
     mInited = true;
@@ -103,7 +101,6 @@ void RCap::Run(pcap_handler handler, u_char *args) {
     pcap_loop(mCap, -1, capHandler, reinterpret_cast<u_char *>(this));
 }
 
-// todo:
 uv_thread_t RCap::Start(pcap_handler handler, u_char *args) {
     uv_thread_t thread;
     CapThreadArgs *threadArgs = new CapThreadArgs();
@@ -111,7 +108,7 @@ uv_thread_t RCap::Start(pcap_handler handler, u_char *args) {
     threadArgs->handler = handler;
     threadArgs->args = args;
     uv_thread_create(&thread, threadCb, threadArgs);
-    return 0;
+    return thread;
 }
 
 void RCap::capHandler(u_char *args, const struct pcap_pkthdr *hdr, const u_char *pkt) {
@@ -149,7 +146,7 @@ void RCap::HandlePkt(u_char *args, const struct pcap_pkthdr *hdr, const u_char *
     assert(mHandler != nullptr);
 #else
     if (!mHandler) {
-        debug(LOG_ERR, "handler cannot be null");
+        LOGE << "handler cannot be null";
         return;
     }
 #endif

@@ -3,12 +3,10 @@
 //
 
 #include <cassert>
-#include <syslog.h>
+#include "plog/Log.h"
 #include "ServerGroupConn.h"
 #include "../GroupConn.h"
 #include "../util/rsutil.h"
-#include "../thirdparty/debug.h"
-#include "../cap/cap_util.h"
 
 using namespace std::placeholders;
 
@@ -30,14 +28,8 @@ int ServerGroupConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
         std::string groupId = head->GroupIdStr();
         auto group = ConnOfKey(groupId);
         if (nullptr == group) {
-            // bug. groupid != enc.id_buf
             group = newGroup(head->GroupId(), head->srcAddr, head->ConnType());
         }
-#ifndef NNDEBUG
-        else {
-            debug(LOG_ERR, "input %d bytes to. old group: %s", nread, group->Key().c_str());
-        }
-#endif
 
         return group->Input(nread, rbuf);
     }
@@ -48,8 +40,6 @@ int ServerGroupConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
 IGroupConn *ServerGroupConn::newGroup(const IdBufType &conn_id, const struct sockaddr *origin, IUINT8 conn_type) {
     IGroupConn *group = new GroupConn(conn_id, mLoop, mTargetAddr, origin, conn_type, nullptr);
     AddConn(group);
-#ifndef NNDEBUG
-    debug(LOG_ERR, "new group, key: %s", group->Key().c_str());
-#endif
+    LOGV << "new group, key: " << group->Key();
     return group;
 }

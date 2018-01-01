@@ -2,14 +2,16 @@
 // Created by System Administrator on 12/25/17.
 //
 
+#include <cassert>
+
 #include <iostream>
 #include <regex>
-#include <syslog.h>
-#include <cassert>
 #include <fstream>
+
+#include "plog/Log.h"
+
 #include "RConfig.h"
 #include "thirdparty/args.hxx"
-#include "thirdparty/debug.h"
 #include "util/rhash.h"
 #include "util/FdUtil.h"
 #include "cap/cap_util.h"
@@ -53,6 +55,7 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
         parser.ParseCLI(argc, argv);
         do {
             if (json) {
+                LOGV << "json file path: " << json.Get();
                 std::string err;
                 ParseJsonFile(*this, json.Get(), err);
                 if (!err.empty()) {
@@ -63,7 +66,7 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
             if (dev) {
                 param.dev = dev.Get();
             } else {
-                debug(LOG_ERR, "use default device: %s", param.dev.c_str());
+                LOGI << "use default device: ", param.dev.c_str();
             }
 
             if (selfCapIp) {
@@ -75,9 +78,7 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
                     throw args::Error("Unable to parse self capture ports: " + selfCapPorts.Get());
                 }
             } else {
-#ifndef RSOCK_NNDEBUG
-                debug(LOG_ERR, "use default ports. %s", RPortList::ToString(param.selfCapPorts).c_str());
-#endif
+                LOGV << "use default ports: " << RPortList::ToString(param.selfCapPorts);
             }
 
             if (localUn) {
@@ -232,7 +233,7 @@ void RConfig::ParseJsonString(RConfig &c, const std::string &content, std::strin
                 throw args::Error("Unable to parse self capture ports: " + s);
             }
         } else {
-            debug(LOG_ERR, "use default ports. 80,443,10010-10020");
+            LOGV << "use default ports: " <<  RPortList::ToString(p.selfCapPorts);
         }
 
         if (o["unPath"].is_string()) {
@@ -311,33 +312,6 @@ bool RConfig::parseAddr(const std::string &addr, std::string &ip, IUINT16 &port,
 
     return true;
 }
-
-//int RConfig::typeOfInt(int t) {
-//    if (t == 1) {
-//        return OM_PIPE_TCP;
-//    } else if (t == 2) {
-//        return OM_PIPE_TCP_SEND | OM_PIPE_UDP_RECV;
-//    } else if (t == 3) {
-//        return OM_PIPE_UDP_SEND | OM_PIPE_TCP_RECV;
-//    } else if (t == 4) {
-//        return OM_PIPE_UDP;
-//    }
-//    return OM_PIPE_TCP;
-//}
-//
-//int RConfig::intOfType(int type) {
-//    if (OM_PIPE_TCP == type) {
-//        return 1;
-//    } else if ((OM_PIPE_TCP_SEND | OM_PIPE_UDP_RECV) == type) {
-//        return 2;
-//    } else if ((OM_PIPE_UDP_SEND | OM_PIPE_TCP_RECV) == type) {
-//        return 3;
-//    } else if ((OM_PIPE_UDP == type)) {
-//        return 4;
-//    } else {
-//        return 1;
-//    }
-//}
 
 int RConfig::typeOfStr(const std::string &str) {
     if (str == "tcp") {
