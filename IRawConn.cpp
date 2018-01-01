@@ -144,7 +144,7 @@ int IRawConn::RawInput(u_char *args, const pcap_pkthdr *hdr, const u_char *packe
         // the link layer header is a 4-byte field, in host byte order, containing a value of 2 for IPv4 packets
         // https://www.tcpdump.org/linktypes.html
         if (2 != type) {
-            LOGE << "loopback. only ipv4 protocol is supported. proto: ", type;
+            LOGE << "loopback. only ipv4 protocol is supported. proto: " << type;
             return 0;
         }
         ip = (struct ip *) (packet + 4);
@@ -199,7 +199,7 @@ int IRawConn::RawInput(u_char *args, const pcap_pkthdr *hdr, const u_char *packe
         hashhead = (const char *) tcp + (tcp->th_off << 2);
     } else if (proto == IPPROTO_UDP) {
         if (!(mConnType & OM_PIPE_UDP_RECV)) {  // check incomming packets
-            LOGE << "conn type " << mConnType << ", but receive udp packet", mConnType;
+            LOGE << "conn type " << mConnType << ", but receive udp packet" << mConnType;
             return 0;
         }
 

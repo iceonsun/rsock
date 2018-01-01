@@ -4,6 +4,7 @@
 
 #include <uv.h>
 #include <cstdlib>
+#include <cstring>
 #include "../rcommon.h"
 
 #define DEF_IP "127.0.0.1"

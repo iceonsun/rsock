@@ -7,7 +7,7 @@
 #include <cstdlib>
 #include "../rcommon.h"
 
-#define DEF_IP "127.0.0.2"
+#define DEF_IP "127.0.0.1"
 #define DEF_PORT 30000
 
 //const char *ip = "127.0.0.1";

@@ -70,7 +70,7 @@ struct RConfig {
     };
 
     // todo: add log_level parse
-    plog::Severity log_level = plog::verbose;
+    plog::Severity log_level = plog::debug;
     std::string log_path = RLOG_FILE_PATH;
 
     bool isServer = false;
