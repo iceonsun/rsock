@@ -112,9 +112,9 @@ int IRawConn::Output(ssize_t nread, const rbuf_t &rbuf) {
         }
 
         if (conn_type & OM_PIPE_TCP_SEND) {
-            return SendRawTcp(mNet, mSelf, sp, dst, dp, seq, ack, buf, len, ipid, mTcp, mIp);
+            return SendRawTcp(mNet, mSelf, sp, dst, dp, seq, ack, buf, len, ipid, mTcp, mIpForTcp);
         } else {
-            return SendRawUdp(mNet, mSelf, sp, dst, dp, buf, len, ipid, mUdp, mIp);
+            return SendRawUdp(mNet, mSelf, sp, dst, dp, buf, len, ipid, mUdp, mIpForUdp);
         }
     }
 
