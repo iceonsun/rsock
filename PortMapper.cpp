@@ -41,11 +41,17 @@ PortMapper::PortMapper(const RPortList &src, const RPortList &dst) {
 void PortMapper::init() {
     if (!mSrc.empty() && !mDest.empty()) {
         mPortPairs.reserve(24);
-        for (auto source: mSrc.GetRawList()) {
-            for (auto dest: mDest.GetRawList()) {
-                mPortPairs.emplace_back(source, dest);
-            }
+        const auto &src = mSrc.GetRawList();
+        const auto &dst = mSrc.GetRawList();
+        ssize_t n = src.size() < dst.size() ? src.size() : dst.size();
+        for (ssize_t i = 0; i < n; i++) {
+            mPortPairs.emplace_back(src[i], dst[i]);
         }
+//        for (auto source: mSrc.GetRawList()) {
+//            for (auto dest: mDest.GetRawList()) {
+//                mPortPairs.emplace_back(source, dest);
+//            }
+//        }
     }
 
     LOGV << "src port list: " << RPortList::ToString(mSrc);

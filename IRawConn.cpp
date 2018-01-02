@@ -252,6 +252,7 @@ int IRawConn::RawInput(u_char *args, const pcap_pkthdr *hdr, const u_char *packe
     src.sin_family = AF_INET;
     src.sin_port = src_port;
     src.sin_addr.s_addr = ip->ip_src.s_addr;
+    LOGD << "pkt.len: " << hdr->len << ", lenWithHash: " << lenWithHash << ", oheadLen: " << oheadLen;
     return cap2uv(ohead, oheadLen, &src, data, data_len, dst_port);
 }
 
@@ -320,7 +321,10 @@ void IRawConn::pollCb(uv_poll_t *handle, int status, int events) {
 
 int IRawConn::cap2uv(const char *head_beg, size_t head_len, const struct sockaddr_in *target, const char *data,
                      size_t data_len, IUINT16 dst_port) {
-    assert(data_len + sizeof(struct sockaddr_in) + head_len <= OM_MAX_PKT_SIZE);
+    if (data_len + sizeof(struct sockaddr_in) + head_len + sizeof(dst_port) >= OM_MAX_PKT_SIZE) {
+        LOGE << "data_len: " << data_len << ", sizeof(struct sockaddr_in): " << sizeof(struct sockaddr_in) << ", head_len: " << head_len;
+        assert(data_len + sizeof(struct sockaddr_in) + head_len + sizeof(dst_port) <= OM_MAX_PKT_SIZE);
+    }
 
     char buf[OM_MAX_PKT_SIZE] = {0};
     memcpy(buf, head_beg, head_len);
