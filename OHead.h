@@ -55,6 +55,7 @@ public:
     IUINT32 Dst();
 
     IUINT32 Ack();
+    IUINT32 IncAck();
 
     void SetAck(IUINT32 ack);
 

@@ -174,3 +174,7 @@ IUINT32 OHead::Ack() {
 void OHead::SetAck(IUINT32 ack) {
     mAck = ack;
 }
+
+IUINT32 OHead::IncAck() {
+    return mAck++;
+}

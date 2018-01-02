@@ -103,7 +103,7 @@ int IRawConn::Output(ssize_t nread, const rbuf_t &rbuf) {
         assert(sp != 0);
         IUINT16 len = p - buf;
         IUINT32 seq = oh->IncSeq(len);
-        IUINT32 ack = oh->Ack();
+        IUINT32 ack = oh->IncAck();
         IUINT16 ipid = mIpId++;
         IUINT32 dst = oh->Dst();
         int conn_type = mIsServer ? oh->ConnType() : mConnType;
@@ -256,7 +256,6 @@ int IRawConn::RawInput(u_char *args, const pcap_pkthdr *hdr, const u_char *packe
     src.sin_family = AF_INET;
     src.sin_port = src_port;
     src.sin_addr.s_addr = ip->ip_src.s_addr;
-    LOGD << "pkt.len: " << hdr->len << ", lenWithHash: " << lenWithHash << ", oheadLen: " << oheadLen;
     return cap2uv(ohead, oheadLen, &src, data, data_len, dst_port, cmd, ackForPeer);
 }
 

@@ -83,7 +83,6 @@ private:
     libnet_ptag_t mUdp = 0;
     libnet_ptag_t mIpForTcp = 0;
     libnet_ptag_t mIpForUdp = 0;
-//    libnet_ptag_t mIp = 0;
 };
 
 #endif //RSOCK_RAWCONN_H
