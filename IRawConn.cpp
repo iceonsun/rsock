@@ -103,9 +103,8 @@ int IRawConn::Output(ssize_t nread, const rbuf_t &rbuf) {
         assert(sp != 0);
         IUINT16 len = p - buf;
         IUINT32 seq = oh->IncSeq(len);
-        static IUINT16 ipid = 0;
-        ipid++;
-//        IUINT16 ipid = oh->IncIpId();
+        IUINT32 ack = oh->Ack();
+        IUINT16 ipid = mIpId++;
         IUINT32 dst = oh->Dst();
         int conn_type = mIsServer ? oh->ConnType() : mConnType;
         if (!conn_type) {
@@ -113,9 +112,9 @@ int IRawConn::Output(ssize_t nread, const rbuf_t &rbuf) {
         }
 
         if (conn_type & OM_PIPE_TCP_SEND) {
-            return SendRawTcp(mNet, mSelf, sp, dst, dp, seq, buf, (len), ipid, mTcp, mIp);
+            return SendRawTcp(mNet, mSelf, sp, dst, dp, seq, ack, buf, len, ipid, mTcp, mIp);
         } else {
-            return SendRawUdp(mNet, mSelf, sp, dst, dp, buf, (len), ipid, mUdp, mIp);
+            return SendRawUdp(mNet, mSelf, sp, dst, dp, buf, len, ipid, mUdp, mIp);
         }
     }
 
@@ -186,6 +185,8 @@ int IRawConn::RawInput(u_char *args, const pcap_pkthdr *hdr, const u_char *packe
     in_port_t dst_port = 0;
     const char *hashhead = nullptr;
 
+    CMD_TYPE cmd = 0;
+    IUINT32 ackForPeer = 0;
     if (proto == IPPROTO_TCP) {
         // todo: remove check. pcap filter it??
         if (!(mConnType & OM_PIPE_TCP_RECV)) {  // check incomming packets
@@ -197,6 +198,8 @@ int IRawConn::RawInput(u_char *args, const pcap_pkthdr *hdr, const u_char *packe
         src_port = (tcp->th_sport);
         dst_port = tcp->th_dport;
         hashhead = (const char *) tcp + (tcp->th_off << 2);
+        cmd = CMD_TCP;
+        ackForPeer = ntohl(tcp->th_seq) + (hdr->len - ((const u_char *) hashhead - packet));
     } else if (proto == IPPROTO_UDP) {
         if (!(mConnType & OM_PIPE_UDP_RECV)) {  // check incomming packets
             LOGE << "conn type " << mConnType << ", but receive udp packet" << mConnType;
@@ -207,6 +210,7 @@ int IRawConn::RawInput(u_char *args, const pcap_pkthdr *hdr, const u_char *packe
         src_port = (udp->uh_sport);
         dst_port = udp->uh_dport;
         hashhead = (const char *) udp + LIBNET_UDP_H;
+        cmd = CMD_UDP;
     }
 
 //    const int len = hdr->len - ((const u_char *) hashhead - packet);
@@ -253,7 +257,7 @@ int IRawConn::RawInput(u_char *args, const pcap_pkthdr *hdr, const u_char *packe
     src.sin_port = src_port;
     src.sin_addr.s_addr = ip->ip_src.s_addr;
     LOGD << "pkt.len: " << hdr->len << ", lenWithHash: " << lenWithHash << ", oheadLen: " << oheadLen;
-    return cap2uv(ohead, oheadLen, &src, data, data_len, dst_port);
+    return cap2uv(ohead, oheadLen, &src, data, data_len, dst_port, cmd, ackForPeer);
 }
 
 void IRawConn::Close() {
@@ -277,6 +281,7 @@ void IRawConn::pollCb(uv_poll_t *handle, int status, int events) {
         IRawConn *conn = static_cast<IRawConn *>(handle->data);
         char buf[OM_MAX_PKT_SIZE] = {0};
         ssize_t nread = read(conn->mReadFd, buf, OM_MAX_PKT_SIZE);
+
         if (nread <= OHead::GetEncBufSize()) {
             LOGV << "read broken msg. nread: " << nread << ", minumum required: " << OHead::GetEncBufSize();
 #ifndef NNDEBUG
@@ -286,8 +291,15 @@ void IRawConn::pollCb(uv_poll_t *handle, int status, int events) {
 #endif
         }
 
+        CMD_TYPE cmd = 0;
+        const char *p = decodeCmd(&cmd, buf);
+        IUINT32 ackForPeer = 0;
+        if (cmd == CMD_TCP) {
+            p = decode_uint32(&ackForPeer, p);
+        }
+
         OHead head;
-        const char *p = OHead::DecodeBuf(head, buf, nread);
+        p = OHead::DecodeBuf(head, p, nread - (p - buf));
         if (!p) {
             LOGV << "failed to decode buf";
 #ifndef NNDEBUG
@@ -304,6 +316,7 @@ void IRawConn::pollCb(uv_poll_t *handle, int status, int events) {
         p = decode_uint16(&dst_port, p);
         head.UpdateSourcePort(ntohs(addr.sin_port));
         head.UpdateDstPort(ntohs(dst_port));
+        head.SetAck(ackForPeer);
 
         int len = nread - (p - buf);
         if (len > 0) {
@@ -320,15 +333,21 @@ void IRawConn::pollCb(uv_poll_t *handle, int status, int events) {
 }
 
 int IRawConn::cap2uv(const char *head_beg, size_t head_len, const struct sockaddr_in *target, const char *data,
-                     size_t data_len, IUINT16 dst_port) {
-    if (data_len + sizeof(struct sockaddr_in) + head_len + sizeof(dst_port) >= OM_MAX_PKT_SIZE) {
-        LOGE << "data_len: " << data_len << ", sizeof(struct sockaddr_in): " << sizeof(struct sockaddr_in) << ", head_len: " << head_len;
-        assert(data_len + sizeof(struct sockaddr_in) + head_len + sizeof(dst_port) <= OM_MAX_PKT_SIZE);
+                     size_t data_len, IUINT16 dst_port, CMD_TYPE cmd, IUINT32 ackForPeer) {
+    if (data_len + sizeof(struct sockaddr_in) + head_len + sizeof(dst_port) + sizeof(CMD_TYPE) > OM_MAX_PKT_SIZE) {
+        LOGE << "data_len: " << data_len << ", sizeof(struct sockaddr_in): " << sizeof(struct sockaddr_in)
+             << ", head_len: " << head_len;
+        assert(data_len + sizeof(struct sockaddr_in) + head_len + sizeof(dst_port) + sizeof(CMD_TYPE) <=
+               OM_MAX_PKT_SIZE);
     }
 
     char buf[OM_MAX_PKT_SIZE] = {0};
-    memcpy(buf, head_beg, head_len);
-    char *p = buf + head_len;
+    char *p = encodeCmd(cmd, buf);
+    if (cmd == CMD_TCP) {
+        p = encode_uint32(ackForPeer, p);
+    }
+    memcpy(p, head_beg, head_len);
+    p += head_len;
     p = encode_sockaddr4(p, target);
     p = encode_uint16(dst_port, p);
     memcpy(p, data, data_len);
@@ -338,16 +357,16 @@ int IRawConn::cap2uv(const char *head_beg, size_t head_len, const struct sockadd
 }
 
 // todo: send ack number too.
-int
-IRawConn::SendRawTcp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT16 dp, IUINT32 seq, const IUINT8 *payload,
-                     IUINT16 payload_len, IUINT16 ip_id, libnet_ptag_t &tcp, libnet_ptag_t &ip) {
+int IRawConn::SendRawTcp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT16 dp, IUINT32 seq, IUINT32 ack,
+                         const IUINT8 *payload, IUINT16 payload_len, IUINT16 ip_id, libnet_ptag_t &tcp,
+                         libnet_ptag_t &ip) {
     const int DUMY_WIN_SIZE = 1000;
 
     tcp = libnet_build_tcp(
             sp,              // source port
             dp,              // dst port
             seq,             // seq
-            0,               // ack number
+            ack,               // ack number
 //            TH_FIN,               // control flag
 //            TH_RST,               // control flag
 //            TH_SYN | TH_PUSH,               // control flag
@@ -467,3 +486,10 @@ int IRawConn::SendRawUdp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUIN
     return payload_len;
 }
 
+const char *IRawConn::decodeCmd(IRawConn::CMD_TYPE *cmd, const char *p) {
+    return decode_uint8(cmd, p);
+}
+
+char *IRawConn::encodeCmd(IRawConn::CMD_TYPE cmd, char *p) {
+    return encode_uint8(cmd, p);
+}

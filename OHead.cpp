@@ -12,26 +12,26 @@
 #include "rstype.h"
 
 void OHead::UpdateConv(IUINT32 conv) {
-    enc.conv = conv;
+    mEncHead.conv = conv;
 }
 
 IUINT32 OHead::Conv() {
-    return enc.conv;
+    return mEncHead.conv;
 }
 
 void OHead::UpdateConnType(IUINT8 type) {
-    enc.conn_type = type;
+    mEncHead.conn_type = type;
 }
 
 IUINT8 OHead::ConnType() {
-    return enc.conn_type;
+    return mEncHead.conn_type;
 }
 
 // todo: don't convert to string
 void OHead::UpdateGroupId(const IdBufType &buf) {
 //    assert(sizeof(buf) == ID_BUF_SIZE); // this assert awayls fails
-    enc.id_buf = buf;
-    mGroupId = std::string(std::begin(enc.id_buf), std::end(enc.id_buf));
+    mEncHead.id_buf = buf;
+    mGroupId = std::string(std::begin(mEncHead.id_buf), std::end(mEncHead.id_buf));
 }
 
 void OHead::UpdateDst(IUINT32 dst) {
@@ -46,12 +46,12 @@ IUINT8 *OHead::Enc2Buf(IUINT8 *ptr, int len) {
     if (ptr && len >= GetEncBufSize()) {
         auto *p = reinterpret_cast<char *>(ptr);
 //        p += sizeof(HashBufType);
-        p = encode_uint8(enc.len, p);                   // len
-        p = encode_uint8(enc.resereved, p);             // reserved
-        p = encode_uint8(enc.conn_type, p);             // conn_type
-        std::copy(enc.id_buf.begin(), enc.id_buf.end(), p);
-        p += enc.id_buf.size();
-        p = encode_uint32(enc.conv, p);                 // conv
+        p = encode_uint8(mEncHead.len, p);                   // len
+        p = encode_uint8(mEncHead.resereved, p);             // reserved
+        p = encode_uint8(mEncHead.conn_type, p);             // conn_type
+        std::copy(mEncHead.id_buf.begin(), mEncHead.id_buf.end(), p);
+        p += mEncHead.id_buf.size();
+        p = encode_uint32(mEncHead.conv, p);                 // conv
         return reinterpret_cast<IUINT8 *>(p);
     }
     return nullptr;
@@ -59,7 +59,7 @@ IUINT8 *OHead::Enc2Buf(IUINT8 *ptr, int len) {
 
 const char *OHead::DecodeBuf(OHead &head, const char *p, int len) {
     if (p && len >= GetEncBufSize()) {
-        EncHead &e = head.enc;
+        EncHead &e = head.mEncHead;
         p = decode_uint8(&e.len, p);
         p = decode_uint8(&e.resereved, p);
         p = decode_uint8(&e.conn_type, p);
@@ -150,13 +150,9 @@ void OHead::UpdateDstPort(IUINT16 dp) {
 }
 
 IUINT32 OHead::IncSeq(IUINT32 len) {
-    IUINT32 n = seq;
-    seq += len;
+    IUINT32 n = mSeq;
+    mSeq += len;
     return n;
-}
-
-IUINT16 OHead::IncIpId() {
-    return ipid++;
 }
 
 IUINT32 OHead::Dst() {
@@ -168,13 +164,13 @@ const std::string & OHead::GroupIdStr() {
 }
 
 const IdBufType &OHead::GroupId() {
-    return enc.id_buf;
+    return mEncHead.id_buf;
 }
 
 IUINT32 OHead::Ack() {
     return mAck;
 }
 
-void OHead::AddAck(IUINT32 len) {
-    mAck += len;
+void OHead::SetAck(IUINT32 ack) {
+    mAck = ack;
 }

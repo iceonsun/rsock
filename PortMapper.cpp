@@ -42,7 +42,7 @@ void PortMapper::init() {
     if (!mSrc.empty() && !mDest.empty()) {
         mPortPairs.reserve(24);
         const auto &src = mSrc.GetRawList();
-        const auto &dst = mSrc.GetRawList();
+        const auto &dst = mDest.GetRawList();
         ssize_t n = src.size() < dst.size() ? src.size() : dst.size();
         for (ssize_t i = 0; i < n; i++) {
             mPortPairs.emplace_back(src[i], dst[i]);

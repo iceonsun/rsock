@@ -52,15 +52,11 @@ public:
 
     IUINT32 IncSeq(IUINT32 len);
 
-    IUINT16 IncIpId();
-
     IUINT32 Dst();
 
     IUINT32 Ack();
-    void AddAck(IUINT32 len);
 
-//    IUINT32 Src();
-
+    void SetAck(IUINT32 ack);
 
 public:
     // public addr, cannot be freed. It's a reference to a stack based object
@@ -92,16 +88,13 @@ private:
     };
 
 private:
-    EncHead enc;
-//    IUINT32 mConv;
-
-    IUINT32 seq = 0;
-    IUINT16 ipid = 0;
+    EncHead mEncHead;
+    IUINT32 mSeq = 0;
     IUINT32 mDstAddr = 0;
     IUINT16 mSourcePort = 0;
     IUINT16 mDstPort = 0;
     std::string mGroupId;
-    IUINT32 mAck = 0;
+    IUINT32 mAck = 1;
 };
 
 

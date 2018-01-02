@@ -25,12 +25,12 @@ public:
 
     void Close() override;
 
-    static int SendRawTcp(libnet_t *libnet, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT16 dp, IUINT32 seq,
-                             const IUINT8 *payload, IUINT16 payload_s, IUINT16 ip_id, libnet_ptag_t &tcp,
-                             libnet_ptag_t &ip);
+    static int SendRawTcp(libnet_t *libnet, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT16 dp, IUINT32 seq, IUINT32 ack,
+                          const IUINT8 *payload, IUINT16 payload_s, IUINT16 ip_id, libnet_ptag_t &tcp,
+                          libnet_ptag_t &ip);
 
     static int SendRawUdp(libnet_t *libnet, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT16 dp, const IUINT8 *payload,
-                              IUINT16 payload_len, IUINT16 ip_id, libnet_ptag_t &udp, libnet_ptag_t &ip);
+                          IUINT16 payload_len, IUINT16 ip_id, libnet_ptag_t &udp, libnet_ptag_t &ip);
 
     static void CapInputCb(u_char *args, const pcap_pkthdr *hdr, const u_char *packet);
 
@@ -41,13 +41,21 @@ public:
     int Init() override;
 
 protected:
+    using CMD_TYPE = IUINT8;
+
     static void pollCb(uv_poll_t *handle, int status, int events);;
 
-    virtual int
-    cap2uv(const char *head_beg, size_t head_len, const struct sockaddr_in *target, const char *data,
-               size_t data_len, IUINT16 dst_port);
+    virtual int cap2uv(const char *head_beg, size_t head_len, const struct sockaddr_in *target, const char *data,
+                       size_t data_len, IUINT16 dst_port, CMD_TYPE cmd, IUINT32 ackForPeer);
+
+    static inline char *encodeCmd(CMD_TYPE cmd, char *p);
+
+    static inline const char *decodeCmd(CMD_TYPE *cmd, const char *p);
 
 private:
+    static const CMD_TYPE CMD_TCP = 1;
+    static const CMD_TYPE CMD_UDP = 2;
+
     // mulithread. const var
     IUINT32 mSelf;    // little endian
     in_addr_t mSelfNetEndian;    // network endian
@@ -57,6 +65,8 @@ private:
     char mTargetStr[64] = {0};
     const int mDatalink = DLT_EN10MB;   // default ethernet
     const bool mIsServer;    // const for multithread
+
+    IUINT16 mIpId = 0;
 
     libnet_t *mNet;
 
@@ -73,4 +83,5 @@ private:
     libnet_ptag_t mUdp = 0;
     libnet_ptag_t mIp = 0;
 };
+
 #endif //RSOCK_RAWCONN_H

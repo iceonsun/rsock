@@ -37,9 +37,12 @@ int GroupConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
     auto conn = ConnOfKey(key);
     if (!conn) {
         conn = newConn(head->Conv(), head->srcAddr);
-    
+
     }
 
+//    if (head->Ack() > mHead.Ack()) {
+    mHead.SetAck(head->Ack());
+//    }
     mPorter.AddPortPair(head->DstPort(), head->SourcePort());
     return conn->Input(nread, rbuf);
 }

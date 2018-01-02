@@ -139,7 +139,7 @@ void ClientConn::udpRecvCb(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf,
     auto *conn = static_cast<ClientConn *>(handle->data);
     if (nread > 0) {
         auto *addr4 = (const struct sockaddr_in *) addr;
-        LOGD << "client, receive " << nread << " bytes from " << inet_ntoa(addr4->sin_addr) << "s:"
+        LOGV << "client, receive " << nread << " bytes from " << inet_ntoa(addr4->sin_addr) << ":"
              << ntohs(addr4->sin_port);
         conn->onLocalRecv(nread, buf->base, addr);
     } else if (nread < 0) {
