@@ -103,7 +103,7 @@ int IRawConn::Output(ssize_t nread, const rbuf_t &rbuf) {
         assert(sp != 0);
         IUINT16 len = p - buf;
         IUINT32 seq = oh->IncSeq(len);
-        IUINT32 ack = oh->IncAck();
+        IUINT32 ack = oh->Ack();
         IUINT16 ipid = mIpId++;
         IUINT32 dst = oh->Dst();
         int conn_type = mIsServer ? oh->ConnType() : mConnType;
@@ -111,8 +111,17 @@ int IRawConn::Output(ssize_t nread, const rbuf_t &rbuf) {
             conn_type = OM_PIPE_TCP_SEND;
         }
 
+        IUINT8 flag = TH_ACK;
+        if (ack == 1) {
+            if (mIsServer) {
+                flag = TH_SYN | TH_ACK;
+            } else {
+                flag = TH_SYN;
+            }
+        }
+
         if (conn_type & OM_PIPE_TCP_SEND) {
-            return SendRawTcp(mNet, mSelf, sp, dst, dp, seq, ack, buf, len, ipid, mTcp, mIpForTcp);
+            return SendRawTcp(mNet, mSelf, sp, dst, dp, seq, ack, buf, len, ipid, mTcp, mIpForTcp, flag);
         } else {
             return SendRawUdp(mNet, mSelf, sp, dst, dp, buf, len, ipid, mUdp, mIpForUdp);
         }
@@ -358,8 +367,8 @@ int IRawConn::cap2uv(const char *head_beg, size_t head_len, const struct sockadd
 // todo: send ack number too.
 int IRawConn::SendRawTcp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT16 dp, IUINT32 seq, IUINT32 ack,
                          const IUINT8 *payload, IUINT16 payload_len, IUINT16 ip_id, libnet_ptag_t &tcp,
-                         libnet_ptag_t &ip) {
-    const int DUMY_WIN_SIZE = 1000;
+                         libnet_ptag_t &ip, IUINT8 tcp_flag) {
+    const int DUMY_WIN_SIZE = 65535;
 
     tcp = libnet_build_tcp(
             sp,              // source port
@@ -368,9 +377,8 @@ int IRawConn::SendRawTcp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUIN
             ack,               // ack number
 //            TH_FIN,               // control flag
 //            TH_RST,               // control flag
-//            TH_SYN | TH_PUSH,               // control flag
-//            0,
-            TH_ACK,
+            tcp_flag ,               // control flag
+//            0,     // control flag
             DUMY_WIN_SIZE,   // window size
             0,               // check sum. = 0 auto fill
             0,               // urgent pointer
@@ -381,8 +389,8 @@ int IRawConn::SendRawTcp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUIN
             tcp                // protocol tag to modify an existing header, 0 to build a new one
     );
 
-    LOGV << "sendrawtcp: sp: " << sp << ", dp: " << dp << ", seq: " << seq << ", ack: " << 0 << ", payload_len: "
-         << payload_len;
+    LOGV << "sendrawtcp: sp: " << sp << ", dp: " << dp << ", seq: " << seq << ", ack: " << ack << ", payload_len: "
+         << payload_len << ", flag: " << tcp_flag;
 
     if (tcp == -1) {
         LOGE << "failed to build tcp: " << libnet_geterror(l);

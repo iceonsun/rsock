@@ -82,7 +82,8 @@ int ClientConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
         // todo: check src == target. it's checked in rawconn. just assert(0) here if not match
         OHead *head = static_cast<OHead *>(rbuf.data);
         assert(head);
-
+        
+        mHead.SetAck(head->Ack());
         IUINT32 conv = head->Conv();
         auto it = mConvMap.find(conv);
         if (it != mConvMap.end()) {

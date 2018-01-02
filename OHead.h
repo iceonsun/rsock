@@ -90,6 +90,7 @@ private:
 
 private:
     EncHead mEncHead;
+//    IUINT32 mSeq = rand();
     IUINT32 mSeq = 0;
     IUINT32 mDstAddr = 0;
     IUINT16 mSourcePort = 0;

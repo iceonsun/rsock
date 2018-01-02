@@ -27,7 +27,8 @@ public:
 
     static int SendRawTcp(libnet_t *libnet, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT16 dp, IUINT32 seq, IUINT32 ack,
                           const IUINT8 *payload, IUINT16 payload_s, IUINT16 ip_id, libnet_ptag_t &tcp,
-                          libnet_ptag_t &ip);
+                          libnet_ptag_t &ip,
+                          IUINT8 tcp_flag);
 
     static int SendRawUdp(libnet_t *libnet, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT16 dp, const IUINT8 *payload,
                           IUINT16 payload_len, IUINT16 ip_id, libnet_ptag_t &udp, libnet_ptag_t &ip);

@@ -19,8 +19,8 @@ void PortMapper::AddPortPair(IUINT16 sp, IUINT16 dp) {
         PortPairList::value_type p = {sp, dp};
         auto it = std::find(mPortPairs.begin(), mPortPairs.end(), p);
         if (it == mPortPairs.end()) {
-            LOGD << "PortPair list: " << ToString(*this);
             mPortPairs.push_back(p);
+            LOGD << "PortPair list: " << ToString(*this);
         }
     }
 }
