@@ -133,7 +133,7 @@ std::string OHead::BuildKey(const struct sockaddr *origin, IUINT32 conv) {
 //    assert(0);
 //}
 
-IUINT16 OHead::SourcePort() {
+IUINT16 OHead::SourcePort() const {
     return mSourcePort;
 }
 
@@ -141,7 +141,7 @@ void OHead::UpdateSourcePort(IUINT16 sp) {
     mSourcePort = sp;
 }
 
-IUINT16 OHead::DstPort() {
+IUINT16 OHead::DstPort() const {
     return mDstPort;
 }
 
@@ -177,4 +177,8 @@ void OHead::SetAck(IUINT32 ack) {
 
 IUINT32 OHead::IncAck() {
     return mAck++;
+}
+
+void OHead::UpdateSrc(IUINT32 addr) {
+    mSrcAddr = addr;
 }

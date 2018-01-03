@@ -15,6 +15,7 @@ int main(int argc, char **argv) {
     fakearg[1] = "--dev=lo0";
     fakearg[2] = "--taddr=127.0.0.1:30010";
     fakearg[3] = "--ludp=127.0.0.1";
+    fakearg[4] = "-v";
 
-    return ssock_main(4, fakearg);
+    return ssock_main(5, fakearg);
 }

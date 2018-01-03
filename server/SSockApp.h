@@ -16,7 +16,7 @@ public:
 private:
     RCap *CreateCap(RConfig &conf) override;
 
-    IRawConn *CreateBtmConn(RConfig &conf, libnet_t *l, uv_loop_t *loop, int datalink, int conn_type) override;
+    IRawConn *CreateBtmConn(RConfig &conf, uv_loop_t *loop, int datalink, int conn_type) override;
 
     IConn *CreateBridgeConn(RConfig &conf, IRawConn *btm, uv_loop_t *loop) override;
 };

@@ -4,8 +4,8 @@
 
 #include "CRawConn.h"
 
-CRawConn::CRawConn(libnet_t *libnet, IUINT32 selfInt, uv_loop_t *loop, const std::string &hashKey, IUINT32 targetInt,
-                   int datalinkType, int type) :
-        IRawConn(libnet, selfInt, loop, hashKey, false, type, datalinkType, targetInt) {
+CRawConn::CRawConn(const std::string &dev, IUINT32 selfInt, uv_loop_t *loop, const std::string &hashKey,
+                   IUINT32 targetInt, int datalinkType, int type) :
+        IRawConn(dev, selfInt, loop, hashKey, false, type, datalinkType, targetInt) {
 
 }

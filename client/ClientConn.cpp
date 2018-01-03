@@ -11,8 +11,8 @@ using namespace std::placeholders;
 
 ClientConn::ClientConn(const IdBufType &groupId, const std::string &listenUnPath, const std::string &listenUdpIp,
                        IUINT16 listenUdpPort, const RPortList &sourcePorts, const RPortList &destPorts,
-                       uv_loop_t *loop, IConn *btm, uint32_t bigDst, int connType)
-        : IGroupConn(groupId, btm), mPortMapper(sourcePorts, destPorts) {
+                       uv_loop_t *loop, IConn *btm, uint32_t bigDst, IUINT8 connType)
+        : IGroupConn(groupId, btm), mPortMapper(groupId, bigDst, connType, sourcePorts, destPorts) {
     assert(loop != nullptr);
     if (!listenUdpIp.empty()) {
         mUdpAddr = new_addr4(listenUdpIp.c_str(), listenUdpPort);
@@ -23,9 +23,6 @@ ClientConn::ClientConn(const IdBufType &groupId, const std::string &listenUnPath
         assert(mUnAddr != nullptr);
     }
 
-    mHead.UpdateDst(bigDst);
-    mHead.UpdateGroupId(groupId);
-    mHead.UpdateConnType(connType);
     mLoop = loop;
 }
 
@@ -62,15 +59,13 @@ int ClientConn::Output(ssize_t nread, const rbuf_t &rbuf) {
 
     IUINT32 conv = conn->Conv();
 
-    mHead.UpdateConv(conv);
-    auto &p = mPortMapper.NextPortPair();
-    mHead.UpdateSourcePort(p.source);
-    mHead.UpdateDstPort(p.dest);
+    OHead &hd = mPortMapper.NextHead();
+    hd.UpdateConv(conv);
 
     rbuf_t buf = {0};
     buf.base = rbuf.base;
     buf.len = rbuf.len;
-    buf.data = &mHead;
+    buf.data = &hd;
 
     return IGroupConn::Output(nread, buf); // should use raw conn to send
 }
@@ -82,8 +77,9 @@ int ClientConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
         // todo: check src == target. it's checked in rawconn. just assert(0) here if not match
         OHead *head = static_cast<OHead *>(rbuf.data);
         assert(head);
-        
-        mHead.SetAck(head->Ack());
+
+        OHead *hd = mPortMapper.HeadOfPorts(head->DstPort(), head->SourcePort());
+        hd->SetAck(head->Ack());
         IUINT32 conv = head->Conv();
         auto it = mConvMap.find(conv);
         if (it != mConvMap.end()) {

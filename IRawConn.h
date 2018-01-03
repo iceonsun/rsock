@@ -20,7 +20,7 @@ class IRawConn : public IConn {
 public:
     const static int TTL_OUT = OM_TTL_OUT;
 
-    IRawConn(libnet_t *libnet, IUINT32 selfInt, uv_loop_t *loop, const std::string &hashKey, bool is_server,
+    IRawConn(const std::string &dev, IUINT32 selfInt, uv_loop_t *loop, const std::string &hashKey, bool is_server,
              int type = OM_PIPE_DEF, int datalinkType = DLT_EN10MB, IUINT32 targetInt = 0);
 
     void Close() override;
@@ -69,7 +69,8 @@ private:
 
     IUINT16 mIpId = 0;
 
-    libnet_t *mNet;
+    libnet_t *mTcpNet;
+    libnet_t *mUdpNet;
 
     int mConnType = OM_PIPE_DEF;
 
@@ -84,6 +85,7 @@ private:
     libnet_ptag_t mUdp = 0;
     libnet_ptag_t mIpForTcp = 0;
     libnet_ptag_t mIpForUdp = 0;
+    const std::string &mDev;
 };
 
 #endif //RSOCK_RAWCONN_H

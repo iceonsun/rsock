@@ -7,33 +7,38 @@
 
 #include <map>
 #include <string>
-#include <vector>
-#include <array>
 
 #include "ktype.h"
 #include "util/PortPair.h"
 #include "util/RPortList.h"
+#include "OHead.h"
 
 class PortMapper {
 public:
     using PortLists = std::vector<IUINT16>;
     using PortPairList = std::vector<PortPair>;
 
-    explicit PortMapper(const RPortList &src = RPortList(), const RPortList &dst = RPortList());
+    explicit PortMapper(const IdBufType &id, IUINT32 dst, IUINT8 connType, const RPortList &srcPorts = RPortList(), const RPortList &dstPorts = RPortList());
 
-    virtual void AddPortPair(IUINT16 sp, IUINT16 dp);
+    virtual void AddNewPair(IUINT16 sp, IUINT16 dp);
 
-    virtual const PortPair &NextPortPair();
+    virtual OHead& NextHead();
+
+    IUINT32 keyForPair(const PortPair &p);
+    IUINT32 keyForPair(IUINT16 sp, IUINT16 dp);
+
+    virtual OHead* HeadOfPorts(IUINT16 sp, IUINT16 dp);
 
     static const std::string ToString(const PortMapper &mapper);
 
 private:
-    void init();
+    void init(const RPortList &srcPorts, const RPortList &dstPorts);
 
     // use pair of list rather than two separate list. it's because that nat use (sip:sp:dip:dp) as a item
-    PortPairList mPortPairs;
-    RPortList mSrc;
-    RPortList mDest;
+//    PortPairList mPortPairs;
+    std::map<IUINT32 ,OHead> mHeadMap;
+    IUINT32 mSrcAddr;
+    OHead mFakeHead;
 };
 
 #endif //RSOCK_PORTMAPPER_H

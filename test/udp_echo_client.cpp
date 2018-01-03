@@ -14,19 +14,10 @@
 //const int port = 30000;
 struct sockaddr_in target = {0};
 
-int next = 0;
-const char *DELIM = "hello world ";
-
 void recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf, const struct sockaddr* addr, unsigned flags) {
     if (nread > 0) {
         const auto *addr4 = reinterpret_cast<const sockaddr_in *>(addr);
         fprintf(stderr, "receive %d bytes: %.*s  from %s:%d\n", nread, nread, buf->base, inet_ntoa(addr4->sin_addr), ntohs(addr4->sin_port));
-        next++;
-        auto p = strstr(buf->base, DELIM);
-        int n = atoi(p + strlen(DELIM));
-        if (n != next) {
-            fprintf(stderr, "not equal. n: %d, next: %d\n", n, next);
-        }
 
     } else if (nread < 0) {
         fprintf(stderr, "recv_cb error: %s\n", uv_strerror(nread));

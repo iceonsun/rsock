@@ -44,7 +44,7 @@ public:
 
     virtual void StartTimer(IUINT32 timeout_ms, IUINT32 repeat_ms);
 
-    virtual IRawConn *CreateBtmConn(RConfig &conf, libnet_t *l, uv_loop_t *loop, int datalink, int conn_type) = 0;
+    virtual IRawConn *CreateBtmConn(RConfig &conf, uv_loop_t *loop, int datalink, int conn_type) = 0;
 
     virtual IConn *CreateBridgeConn(RConfig &conf, IRawConn *btm, uv_loop_t *loop) = 0;
 

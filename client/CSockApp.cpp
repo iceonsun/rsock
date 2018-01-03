@@ -11,8 +11,8 @@ RCap *CSockApp::CreateCap(RConfig &conf) {
     return new RCap(conf.param.dev, conf.param.selfCapIp, conf.param.selfCapPorts, conf.param.targetCapPorts, conf.param.targetIp, conf.param.interval);
 }
 
-IRawConn *CSockApp::CreateBtmConn(RConfig &conf, libnet_t *l, uv_loop_t *loop, int datalink, int conn_type) {
-    return new CRawConn(l, conf.param.selfCapInt, loop, conf.param.hashKey, conf.param.targetCapInt, datalink,
+IRawConn *CSockApp::CreateBtmConn(RConfig &conf, uv_loop_t *loop, int datalink, int conn_type) {
+    return new CRawConn(conf.param.dev, conf.param.selfCapInt, loop, conf.param.hashKey, conf.param.targetCapInt, datalink,
                         conn_type);
 }
 

@@ -42,11 +42,11 @@ public:
 
 //    static std::string BuildGroupId(const struct sockaddr *addr);
 
-    IUINT16 SourcePort();
+    IUINT16 SourcePort() const ;
 
     void UpdateSourcePort(IUINT16 sp);
 
-    IUINT16 DstPort();
+    IUINT16 DstPort() const;
 
     void UpdateDstPort(IUINT16 dp);
 
@@ -58,6 +58,8 @@ public:
     IUINT32 IncAck();
 
     void SetAck(IUINT32 ack);
+
+    void UpdateSrc(IUINT32 addr);
 
 public:
     // public addr, cannot be freed. It's a reference to a stack based object
@@ -93,6 +95,7 @@ private:
 //    IUINT32 mSeq = rand();
     IUINT32 mSeq = 0;
     IUINT32 mDstAddr = 0;
+    IUINT32 mSrcAddr = 0;
     IUINT16 mSourcePort = 0;
     IUINT16 mDstPort = 0;
     std::string mGroupId;

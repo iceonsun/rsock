@@ -10,17 +10,11 @@
 #include "util/rsutil.h"
 
 // todo: change all these thing origin to uint32_t? if not consider support ipv6
-GroupConn::GroupConn(const IdBufType &groupId, uv_loop_t *loop, const struct sockaddr *target, const struct sockaddr *origin,
-                     IUINT8 conn_type, IConn *btm)
-        : IGroupConn(groupId, btm) {
+GroupConn::GroupConn(const IdBufType &groupId, uv_loop_t *loop, const struct sockaddr *target,
+                     const sockaddr_in *origin, IUINT8 conn_type, IConn *btm)
+        : IGroupConn(groupId, btm) , mPorter(groupId, origin->sin_addr.s_addr, conn_type){
     mLoop = loop;
     mTarget = new_addr(target);
-    assert(origin->sa_family == AF_INET);
-
-    struct sockaddr_in *addr4 = (sockaddr_in *) origin;
-    mHead.UpdateDst(addr4->sin_addr.s_addr);
-    mHead.UpdateGroupId(groupId);
-    mHead.UpdateConnType(conn_type);
 }
 
 int GroupConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
@@ -40,10 +34,14 @@ int GroupConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
 
     }
 
-//    if (head->Ack() > mHead.Ack()) {
-    mHead.SetAck(head->Ack());
-//    }
-    mPorter.AddPortPair(head->DstPort(), head->SourcePort());
+    IUINT16 sp = head->DstPort();
+    IUINT16 dp = head->SourcePort();
+    OHead *hd = mPorter.HeadOfPorts(sp, dp);
+    if (hd) {
+        hd->SetAck(head->Ack());
+    } else {
+        mPorter.AddNewPair(sp, dp);
+    }
     return conn->Input(nread, rbuf);
 }
 
@@ -58,14 +56,13 @@ IConn *GroupConn::newConn(IUINT32 conv, const struct sockaddr *origin) {
 
 int GroupConn::Output(ssize_t nread, const rbuf_t &rbuf) {
     OHead *head = static_cast<OHead *>(rbuf.data);
-    mHead.UpdateConv(head->Conv());
-    auto p = mPorter.NextPortPair();
-    mHead.UpdateDstPort(p.dest);
-    mHead.UpdateSourcePort(p.source);
+    OHead &hd = mPorter.NextHead();
+
+    hd.UpdateConv(head->Conv());
 
     rbuf_t buf = {0};
     buf.base = rbuf.base;
-    buf.data = &mHead;
+    buf.data = &hd;
     return IGroupConn::Output(nread, buf);
 }
 

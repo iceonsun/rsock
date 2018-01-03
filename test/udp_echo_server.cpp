@@ -22,7 +22,11 @@ void recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf, const struct 
     if (nread > 0) {
         rudp_send_t *rudp = static_cast<rudp_send_t *>(malloc(sizeof(rudp_send_t)));
         memset(rudp, 0, sizeof(rudp_send_t));
-        rudp->buf = uv_buf_init(buf->base, nread);
+        rudp->buf.base = (char*)(malloc(BUFSIZ));
+        char *p = rudp->buf.base;
+        snprintf(p, BUFSIZ, "echo from server. rand: %d. msg: %.*s", rand(), nread, buf->base);
+
+        rudp->buf.len = strlen(p);
         struct sockaddr_in *addr4 = (sockaddr_in *) addr;
         fprintf(stderr, "receive %d bytes: %.*s  from %s:%d\n", nread, nread, buf->base, inet_ntoa(addr4->sin_addr), ntohs(addr4->sin_port));
         uv_udp_send(reinterpret_cast<uv_udp_send_t *>(rudp), handle, &rudp->buf, 1, addr, send_cb);
@@ -30,9 +34,8 @@ void recv_cb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf, const struct 
         if (nread < 0) {
             fprintf(stderr, "err: %s\n", uv_strerror(nread));
         }
-        free(buf->base);
     }
-//    free(buf->base);
+    free(buf->base);
 }
 
 int parse_ip( const char *str, char *ip, int *port) {

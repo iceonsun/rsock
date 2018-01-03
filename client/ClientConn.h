@@ -20,7 +20,7 @@ class ClientConn : public IGroupConn {
 public:
     ClientConn(const IdBufType &groupId, const std::string &listenUnPath, const std::string &listenUdpIp,
                IUINT16 listenUdpPort, const RPortList &sourcePorts, const RPortList &destPorts,
-               uv_loop_t *loop, IConn *btm, uint32_t bigDst, int connType);
+               uv_loop_t *loop, IConn *btm, uint32_t bigDst, IUINT8 connType);
     int Init() override;
 
     int Output(ssize_t nread, const rbuf_t &rbuf) override;
@@ -53,7 +53,7 @@ private:
 //    std::map<IUINT32, struct sockaddr *> mConv2Origin;
     IUINT32 mConvCounter = 1;
 
-    OHead mHead;
+//    OHead mHead;
     uv_udp_t *mUdp = nullptr;
     uv_poll_t *mUnPoll = nullptr;
     int mUnSock;

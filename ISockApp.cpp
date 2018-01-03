@@ -94,7 +94,7 @@ int ISockApp::doInit() {
         return -1;
     }
 
-    mBtmConn = CreateBtmConn(mConf, mLibnet, mLoop, mCap->Datalink(), mConf.param.type);
+    mBtmConn = CreateBtmConn(mConf, mLoop, mCap->Datalink(), mConf.param.type);
     if (!mBtmConn) {
         return -1;
     }

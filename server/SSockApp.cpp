@@ -13,8 +13,8 @@ RCap *SSockApp::CreateCap(RConfig &conf) {
     return new RCap(conf.param.dev, conf.param.selfCapIp, conf.param.selfCapPorts, {}, "", conf.param.interval);
 }
 
-IRawConn *SSockApp::CreateBtmConn(RConfig &conf, libnet_t *l, uv_loop_t *loop, int datalink, int conn_type) {
-    return new SRawConn(l, conf.param.selfCapInt, loop, conf.param.hashKey, datalink, conn_type);
+IRawConn *SSockApp::CreateBtmConn(RConfig &conf, uv_loop_t *loop, int datalink, int conn_type) {
+    return new SRawConn(conf.param.dev, conf.param.selfCapInt, loop, conf.param.hashKey, datalink, conn_type);
 }
 
 IConn *SSockApp::CreateBridgeConn(RConfig &conf, IRawConn *btm, uv_loop_t *loop) {

@@ -3,6 +3,7 @@
 //
 
 #include <cstring>
+#include <ctime>
 #include <cassert>
 #include <algorithm>
 #include <netinet/in.h>
@@ -97,12 +98,12 @@ std::string IdBuf2Str(const IdBufType &id) {
 }
 
 void GenerateIdBuf(IdBufType &hash, const std::string &key) {
-    int sec = rand();
+    long sec = time(NULL);
     const int APRIME = 709217;
     sec %= APRIME;
     const int buflen = 12 + key.size();
     char buf[buflen];
-    snprintf(buf, buflen, "%6d%6ld%s", sec, ((long)(&sec)) % APRIME, key.c_str());
+    snprintf(buf, buflen, "%6ld%6ld%s", sec, ((long)(&sec)) % APRIME, key.c_str());
 
     MD5_CTX ctx;
     MD5_Update(&ctx, buf, buflen);

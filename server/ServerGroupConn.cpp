@@ -24,7 +24,6 @@ int ServerGroupConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
         auto addr = head->srcAddr;
         assert(addr != nullptr);
 
-        auto key = OHead::BuildKey(addr, head->Conv());
         std::string groupId = head->GroupIdStr();
         auto group = ConnOfKey(groupId);
         if (nullptr == group) {
@@ -38,7 +37,7 @@ int ServerGroupConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
 }
 
 IGroupConn *ServerGroupConn::newGroup(const IdBufType &conn_id, const struct sockaddr *origin, IUINT8 conn_type) {
-    IGroupConn *group = new GroupConn(conn_id, mLoop, mTargetAddr, origin, conn_type, nullptr);
+    IGroupConn *group = new GroupConn(conn_id, mLoop, mTargetAddr, reinterpret_cast<const sockaddr_in *>(origin), conn_type, nullptr);
     AddConn(group);
     LOGV << "new group, key: " << group->Key();
     return group;

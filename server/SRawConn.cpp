@@ -5,6 +5,7 @@
 #include "SRawConn.h"
 #include "SConn.h"
 
-SRawConn::SRawConn(libnet_t *libnet, IUINT32 self, uv_loop_t *loop, const std::string &hashKey, int datalinkType, int type)
-        : IRawConn(libnet, self, loop, hashKey, true, type, datalinkType, 0) {}
+SRawConn::SRawConn(const std::string &dev, IUINT32 self, uv_loop_t *loop, const std::string &hashKey, int datalinkType,
+                   int type)
+        : IRawConn(dev, self, loop, hashKey, true, type, datalinkType, 0) {}
 

@@ -6,6 +6,7 @@
 #include <cstdlib>
 
 #include <algorithm>
+#include <iterator>
 #include <sstream>
 
 #include "plog/Log.h"
@@ -14,57 +15,73 @@
 
 #include "PortMapper.h"
 
-void PortMapper::AddPortPair(IUINT16 sp, IUINT16 dp) {
-    if (sp > 0 && dp > 0) {
-        PortPairList::value_type p = {sp, dp};
-        auto it = std::find(mPortPairs.begin(), mPortPairs.end(), p);
-        if (it == mPortPairs.end()) {
-            mPortPairs.push_back(p);
-            LOGD << "PortPair list: " << ToString(*this);
-        }
-    }
+PortMapper::PortMapper(const IdBufType &id, IUINT32 dst, IUINT8 connType, const RPortList &srcPorts, const RPortList &dstPorts) {
+    mFakeHead.UpdateDst(dst);
+    mFakeHead.UpdateConnType(connType);
+    mFakeHead.UpdateGroupId(id);
+
+    init(srcPorts, dstPorts);
 }
 
-const PortPair &PortMapper::NextPortPair() {
-    assert(!mPortPairs.empty());
-
-    long now = rand();
-    return mPortPairs[now % mPortPairs.size()];
-}
-
-PortMapper::PortMapper(const RPortList &src, const RPortList &dst) {
-    mSrc = src;
-    mDest = dst;
-    init();
-}
-
-void PortMapper::init() {
-    if (!mSrc.empty() && !mDest.empty()) {
-        mPortPairs.reserve(24);
-        const auto &src = mSrc.GetRawList();
-        const auto &dst = mDest.GetRawList();
+void PortMapper::init(const RPortList &srcP, const RPortList &dstP) {
+    RPortList srcPorts = srcP;
+    RPortList dstPorts = dstP;
+    if (!srcPorts.empty() && !dstPorts.empty()) {
+        const auto &src = srcPorts.GetRawList();
+        const auto &dst = dstPorts.GetRawList();
         ssize_t n = src.size() < dst.size() ? src.size() : dst.size();
         for (ssize_t i = 0; i < n; i++) {
-            mPortPairs.emplace_back(src[i], dst[i]);
+            mFakeHead.UpdateSourcePort(src[i]);
+            mFakeHead.UpdateDstPort(dst[i]);
+            mHeadMap.insert({keyForPair(src[i], dst[i]), mFakeHead});
         }
-//        for (auto source: mSrc.GetRawList()) {
-//            for (auto dest: mDest.GetRawList()) {
-//                mPortPairs.emplace_back(source, dest);
-//            }
-//        }
     }
 
-    LOGV << "src port list: " << RPortList::ToString(mSrc);
-    LOGV << "dst port list: " << RPortList::ToString(mDest);
+    LOGV << "src port list: " << RPortList::ToString(srcPorts);
+    LOGV << "dst port list: " << RPortList::ToString(dstPorts);
     LOGV << "PortPair list: " << ToString(*this);
 }
 
 const std::string PortMapper::ToString(const PortMapper &mapper) {
     std::ostringstream out;
-    for (auto &e: mapper.mPortPairs) {
-        out << "(" << e.source << "," << e.dest << "),";
+    for (auto &e: mapper.mHeadMap) {
+        out << "(" << e.second.SourcePort() << "," << e.second.DstPort() << "),";
     }
     return out.str();
 }
 
+IUINT32 PortMapper::keyForPair(const PortPair &p) {
+    return (p.source << 16) | p.dest;
+}
 
+IUINT32 PortMapper::keyForPair(IUINT16 sp, IUINT16 dp) {
+    return (sp << 16) | dp;
+}
+
+OHead &PortMapper::NextHead() {
+    assert(!mHeadMap.empty());
+
+    long now = rand();
+    auto it = mHeadMap.begin();
+    std::advance(it, now % mHeadMap.size());
+    return it->second;
+}
+
+void PortMapper::AddNewPair(IUINT16 sp, IUINT16 dp) {
+    IUINT32 key = keyForPair(sp, dp);
+    auto it = mHeadMap.find(key);
+    if (it == mHeadMap.end()) {
+        mFakeHead.UpdateSourcePort(sp);
+        mFakeHead.UpdateDstPort(dp);
+        mHeadMap.insert({key, mFakeHead});
+    }
+}
+
+OHead *PortMapper::HeadOfPorts(IUINT16 sp, IUINT16 dp) {
+    IUINT32 key = keyForPair(sp, dp);
+    auto it = mHeadMap.find(key);
+    if (it != mHeadMap.end()) {
+        return &it->second;
+    }
+    return nullptr;
+}

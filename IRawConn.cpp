@@ -13,13 +13,11 @@
 
 // todo: change src and dst to self and target.
 // RawConn has key of nullptr to expose errors as fast as it can if any.
-IRawConn::IRawConn(libnet_t *libnet, IUINT32 selfInt, uv_loop_t *loop, const std::string &hashKey, bool is_server,
+IRawConn::IRawConn(const std::string &dev, IUINT32 selfInt, uv_loop_t *loop, const std::string &hashKey, bool is_server,
                    int type, int datalinkType, IUINT32 targetInt)
-        : IConn("IRawConn"), mNet(libnet), mSelf(selfInt), mLoop(loop), mHashKey(hashKey),
-          mIsServer(is_server), mConnType(type), mDatalink(datalinkType), mTarget(targetInt) {
-    assert(libnet != nullptr);
+        : IConn("IRawConn"), mSelf(selfInt), mLoop(loop), mHashKey(hashKey),
+          mIsServer(is_server), mConnType(type), mDatalink(datalinkType), mTarget(targetInt), mDev(dev) {
     assert(loop != nullptr);
-
     mSelfNetEndian = mSelf;
     mTargetNetEndian = mTarget;
     assert(mSelf != 0);
@@ -27,6 +25,18 @@ IRawConn::IRawConn(libnet_t *libnet, IUINT32 selfInt, uv_loop_t *loop, const std
 
 int IRawConn::Init() {
     IConn::Init();
+    char err[LIBNET_ERRBUF_SIZE] = {0};
+    mTcpNet = libnet_init(LIBNET_RAW4, mDev.c_str(), err);
+    if (!mTcpNet) {
+        LOGE << "failed to init libnet: " << err;
+        return -1;
+    }
+    mUdpNet = libnet_init(LIBNET_RAW4, mDev.c_str(), err);
+    if (!mUdpNet) {
+        LOGE << "failed to init libnet: " << err;
+        return -1;
+    }
+
     int nret = socketpair(AF_UNIX, SOCK_DGRAM, 0, mSockPair);
     if (nret) {
         LOGE << "failed to create unix socket pair: " << strerror(errno);
@@ -112,7 +122,7 @@ int IRawConn::Output(ssize_t nread, const rbuf_t &rbuf) {
         }
 
         IUINT8 flag = TH_ACK;
-        if (ack == 1) {
+        if (ack <= 1) {
             if (mIsServer) {
                 flag = TH_SYN | TH_ACK;
             } else {
@@ -121,9 +131,9 @@ int IRawConn::Output(ssize_t nread, const rbuf_t &rbuf) {
         }
 
         if (conn_type & OM_PIPE_TCP_SEND) {
-            return SendRawTcp(mNet, mSelf, sp, dst, dp, seq, ack, buf, len, ipid, mTcp, mIpForTcp, flag);
+            return SendRawTcp(mTcpNet, mSelf, sp, dst, dp, seq, ack, buf, len, ipid, mTcp, mIpForTcp, flag);
         } else {
-            return SendRawUdp(mNet, mSelf, sp, dst, dp, buf, len, ipid, mUdp, mIpForUdp);
+            return SendRawUdp(mUdpNet, mSelf, sp, dst, dp, buf, len, ipid, mUdp, mIpForUdp);
         }
     }
 
@@ -278,6 +288,14 @@ void IRawConn::Close() {
         free(mUnixDgramPoll);
         mUnixDgramPoll = nullptr;
     }
+    if (mTcpNet) {
+        libnet_destroy(mTcpNet);
+        mTcpNet = nullptr;
+    }
+    if (mUdpNet) {
+        libnet_destroy(mUdpNet);
+        mUdpNet = nullptr;
+    }
 }
 
 void IRawConn::pollCb(uv_poll_t *handle, int status, int events) {
@@ -389,7 +407,7 @@ int IRawConn::SendRawTcp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUIN
             tcp                // protocol tag to modify an existing header, 0 to build a new one
     );
 
-    LOGV << "sendrawtcp: sp: " << sp << ", dp: " << dp << ", seq: " << seq << ", ack: " << ack << ", payload_len: "
+    LOGV << "sp: " << sp << ", dp: " << dp << ", seq: " << seq << ", ack: " << ack << ", payload_len: "
          << payload_len << ", flag: " << tcp_flag;
 
     if (tcp == -1) {
