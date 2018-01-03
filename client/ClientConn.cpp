@@ -67,7 +67,9 @@ int ClientConn::Output(ssize_t nread, const rbuf_t &rbuf) {
     buf.len = rbuf.len;
     buf.data = &hd;
 
-    return IGroupConn::Output(nread, buf); // should use raw conn to send
+    int n = IGroupConn::Output(nread, buf); // should use raw conn to send
+    hd.IncAck();
+    return n;
 }
 
 // hash_buf check passed. src and dst check passed.
@@ -79,7 +81,8 @@ int ClientConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
         assert(head);
 
         OHead *hd = mPortMapper.HeadOfPorts(head->DstPort(), head->SourcePort());
-        hd->SetAck(head->Ack());
+//        hd->SetAck(head->Ack());
+        hd->IncAck();
         IUINT32 conv = head->Conv();
         auto it = mConvMap.find(conv);
         if (it != mConvMap.end()) {

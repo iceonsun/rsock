@@ -38,7 +38,8 @@ int GroupConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
     IUINT16 dp = head->SourcePort();
     OHead *hd = mPorter.HeadOfPorts(sp, dp);
     if (hd) {
-        hd->SetAck(head->Ack());
+//        hd->SetAck(head->Ack());
+        hd->IncAck();
     } else {
         mPorter.AddNewPair(sp, dp);
     }
@@ -63,7 +64,9 @@ int GroupConn::Output(ssize_t nread, const rbuf_t &rbuf) {
     rbuf_t buf = {0};
     buf.base = rbuf.base;
     buf.data = &hd;
-    return IGroupConn::Output(nread, buf);
+    int n = IGroupConn::Output(nread, buf);
+    hd.IncAck();
+    return n;
 }
 
 void GroupConn::Close() {
