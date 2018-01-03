@@ -175,10 +175,18 @@ void OHead::SetAck(IUINT32 ack) {
     mAck = ack;
 }
 
-IUINT32 OHead::IncAck() {
-    return mAck++;
-}
+//IUINT32 OHead::IncAck() {
+//    return mAck++;
+//}
 
 void OHead::UpdateSrc(IUINT32 addr) {
     mSrcAddr = addr;
+}
+
+IUINT8 OHead::GetAckStat() {
+    return mAckStat;
+}
+
+void OHead::SetAckStat(IUINT8 ackStat) {
+    mAckStat = ackStat;
 }

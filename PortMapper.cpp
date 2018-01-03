@@ -31,6 +31,7 @@ void PortMapper::init(const RPortList &srcP, const RPortList &dstP) {
         const auto &dst = dstPorts.GetRawList();
         ssize_t n = src.size() < dst.size() ? src.size() : dst.size();
         for (ssize_t i = 0; i < n; i++) {
+            OHead head;
             mFakeHead.UpdateSourcePort(src[i]);
             mFakeHead.UpdateDstPort(dst[i]);
             mHeadMap.insert({keyForPair(src[i], dst[i]), mFakeHead});
@@ -84,4 +85,8 @@ OHead *PortMapper::HeadOfPorts(IUINT16 sp, IUINT16 dp) {
         return &it->second;
     }
     return nullptr;
+}
+
+ssize_t PortMapper::size() {
+    return mHeadMap.size();
 }

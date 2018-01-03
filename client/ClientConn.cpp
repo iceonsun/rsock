@@ -57,19 +57,22 @@ int ClientConn::Output(ssize_t nread, const rbuf_t &rbuf) {
     auto *conn = static_cast<CConn *>(rbuf.data);
     assert(conn != nullptr);
 
-    IUINT32 conv = conn->Conv();
+//    int size = mPortMapper.size() * 2;
+//    for (int i = 0; i < size; i++) {
+        OHead &hd = mPortMapper.NextHead();
+//        if (hd.AckPending()) {
+//            continue;
+//        }
 
-    OHead &hd = mPortMapper.NextHead();
-    hd.UpdateConv(conv);
+        hd.UpdateConv(conn->Conv());
 
-    rbuf_t buf = {0};
-    buf.base = rbuf.base;
-    buf.len = rbuf.len;
-    buf.data = &hd;
+        rbuf_t buf = {0};
+        buf.base = rbuf.base;
+        buf.data = &hd;
+        return IGroupConn::Output(nread, buf);
+//    }
 
-    int n = IGroupConn::Output(nread, buf); // should use raw conn to send
-    hd.IncAck();
-    return n;
+//    return 0;
 }
 
 // hash_buf check passed. src and dst check passed.
@@ -81,14 +84,17 @@ int ClientConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
         assert(head);
 
         OHead *hd = mPortMapper.HeadOfPorts(head->DstPort(), head->SourcePort());
-//        hd->SetAck(head->Ack());
-        hd->IncAck();
+        if (head->Ack() != OM_INIT_ACK_SYN) {
+            hd->SetAck(head->Ack());
+        } else {
+            hd->SetAck(OM_ACK);     // server is syn+ack state. clear the state
+        }
+//        hd->IncAck();
         IUINT32 conv = head->Conv();
         auto it = mConvMap.find(conv);
         if (it != mConvMap.end()) {
             return it->second->Input(nread, rbuf);
         } else {
-            LOGE << "no such conn: " << conv;
             return 0;
         }
     }

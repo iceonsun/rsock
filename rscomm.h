@@ -49,6 +49,9 @@ extern "C" {
 #define RLOG_FILE_PATH "/var/log/rsock/rsock.log"
 #endif
 
+#define OM_INIT_ACK 1
+#define OM_INIT_ACK_SYN 2
+#define OM_ACK 3
 #ifdef __cplusplus
 }
 #endif

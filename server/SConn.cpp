@@ -53,9 +53,6 @@ SConn::udpRecvCb(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf, const str
             }
             LOGV << "sconn addr: " << inet_ntoa(conn->mSelfAddr->sin_addr) << ":" << ntohs(conn->mSelfAddr->sin_port);
         }
-        char tmp[BUFSIZ] = {0};
-        snprintf(tmp, BUFSIZ, "SConn: receive %d bytes from server: %.*s\n", nread, nread, buf->base);
-        fprintf(stderr, "%s", tmp);
         rbuf_t rbuf = {0};
         rbuf.len = nread;
         rbuf.base = buf->base;

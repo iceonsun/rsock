@@ -29,6 +29,7 @@ public:
 
     virtual OHead* HeadOfPorts(IUINT16 sp, IUINT16 dp);
 
+    virtual ssize_t size();
     static const std::string ToString(const PortMapper &mapper);
 
 private:
@@ -39,6 +40,7 @@ private:
     std::map<IUINT32 ,OHead> mHeadMap;
     IUINT32 mSrcAddr;
     OHead mFakeHead;
+    std::map<IUINT32 , int> mSockMap;
 };
 
 #endif //RSOCK_PORTMAPPER_H

@@ -55,11 +55,14 @@ public:
     IUINT32 Dst();
 
     IUINT32 Ack();
-    IUINT32 IncAck();
+//    IUINT32 IncAck();
 
     void SetAck(IUINT32 ack);
 
     void UpdateSrc(IUINT32 addr);
+
+    virtual IUINT8 GetAckStat();
+    virtual void SetAckStat(IUINT8 ackStat);
 
 public:
     // public addr, cannot be freed. It's a reference to a stack based object
@@ -99,7 +102,8 @@ private:
     IUINT16 mSourcePort = 0;
     IUINT16 mDstPort = 0;
     std::string mGroupId;
-    IUINT32 mAck = 1;
+    IUINT32 mAck = OM_INIT_ACK;
+    IUINT8 mAckStat = OM_INIT_ACK;
 };
 
 

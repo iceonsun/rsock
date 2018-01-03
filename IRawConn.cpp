@@ -122,7 +122,7 @@ int IRawConn::Output(ssize_t nread, const rbuf_t &rbuf) {
         }
 
         IUINT8 flag = TH_ACK;
-        if (ack <= 1) {
+        if (ack <= OM_INIT_ACK_SYN) {
             if (mIsServer) {
                 flag = TH_SYN | TH_ACK;
             } else {
@@ -219,6 +219,9 @@ int IRawConn::RawInput(u_char *args, const pcap_pkthdr *hdr, const u_char *packe
         hashhead = (const char *) tcp + (tcp->th_off << 2);
         cmd = CMD_TCP;
         ackForPeer = ntohl(tcp->th_seq) + (hdr->len - ((const u_char *) hashhead - packet));
+        if (tcp->th_flags & TH_SYN) {
+            ackForPeer = mIsServer? OM_INIT_ACK: OM_INIT_ACK_SYN;
+        }
     } else if (proto == IPPROTO_UDP) {
         if (!(mConnType & OM_PIPE_UDP_RECV)) {  // check incomming packets
             LOGE << "conn type " << mConnType << ", but receive udp packet" << mConnType;
@@ -361,10 +364,11 @@ void IRawConn::pollCb(uv_poll_t *handle, int status, int events) {
 int IRawConn::cap2uv(const char *head_beg, size_t head_len, const struct sockaddr_in *target, const char *data,
                      size_t data_len, IUINT16 dst_port, CMD_TYPE cmd, IUINT32 ackForPeer) {
     if (data_len + sizeof(struct sockaddr_in) + head_len + sizeof(dst_port) + sizeof(CMD_TYPE) > OM_MAX_PKT_SIZE) {
-        LOGE << "data_len: " << data_len << ", sizeof(struct sockaddr_in): " << sizeof(struct sockaddr_in)
+        LOGE << "drop data_len: " << data_len << ", sizeof(struct sockaddr_in): " << sizeof(struct sockaddr_in)
              << ", head_len: " << head_len;
-        assert(data_len + sizeof(struct sockaddr_in) + head_len + sizeof(dst_port) + sizeof(CMD_TYPE) <=
-               OM_MAX_PKT_SIZE);
+        return 0;
+//        assert(data_len + sizeof(struct sockaddr_in) + head_len + sizeof(dst_port) + sizeof(CMD_TYPE) <=
+//               OM_MAX_PKT_SIZE);
     }
 
     char buf[OM_MAX_PKT_SIZE] = {0};
