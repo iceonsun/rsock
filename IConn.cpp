@@ -26,9 +26,6 @@ int IConn::Send(ssize_t nread, const rbuf_t &rbuf) {
 }
 
 int IConn::Output(ssize_t nread, const rbuf_t &rbuf) {
-#ifndef NNDEBUG
-    assert(mOutputCb);
-#endif
     if (mOutputCb) {
         return mOutputCb(nread, rbuf);
     }
@@ -43,9 +40,6 @@ int IConn::Input(ssize_t nread, const rbuf_t &rbuf) {
 }
 
 int IConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
-#ifndef NNDEBUG
-    assert(mOnRecvCb);
-#endif
     if (mOnRecvCb) {
         return mOnRecvCb(nread, rbuf);
     }
