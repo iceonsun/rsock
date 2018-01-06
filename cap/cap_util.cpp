@@ -172,7 +172,7 @@ uint32_t NetIntOfIp(const char *ip) {
 u_int32_t hostIntOfIp(const std::string &ip) {
     in_addr addr = {0};
     int nret = inet_aton(ip.c_str(), &addr);
-    if (!nret) {
+    if (1 != nret) {
         LOGE << "inet_aton failed, nret " << nret << ": " << strerror(errno);
         return 0;
     }

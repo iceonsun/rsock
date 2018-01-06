@@ -2,6 +2,7 @@
 // Created on 12/17/17.
 //
 
+#include <cerrno>
 #include <cstring>
 #include <cstdlib>
 #include <cassert>
@@ -130,7 +131,7 @@ om_listen_unix_dgram(const struct sockaddr_un *addr, uv_loop_t *loop, uv_poll_cb
     if (nret) {
         if (err) { *err = nret; }
         close(un_sock);
-        LOGE <<  "failed to bind unix domain socket, " << nret << ": " << strerror(errno);
+        LOGE << "failed to bind unix domain socket, " << nret << ": " << strerror(errno);
         return NULL;
     }
 
@@ -185,3 +186,34 @@ struct sockaddr_un *new_addrUn(const char *sockPath) {
     memcpy(un->sun_path, sockPath, strlen(sockPath));
     return un;
 }
+
+int got_eagain(int err) {
+#ifdef _WIN32
+    return err == WSAEWOULDBLOCK;
+#else
+    return err == EAGAIN
+           || err == EINPROGRESS
+           #ifdef EWOULDBLOCK
+           || err == EWOULDBLOCK;
+#endif
+    ;
+#endif
+}
+
+std::string Addr2Str(const struct sockaddr *addr) {
+    if (!addr) {
+        return "";
+    } else if (addr->sa_family == AF_INET) {
+        struct sockaddr_in *addr4 = (sockaddr_in *) addr;
+        std::string s = inet_ntoa(addr4->sin_addr);
+        s += ":";
+        s += htons(addr4->sin_port);
+        return s;
+    } else if (addr->sa_family == AF_UNIX) {
+        struct sockaddr_un *un = (sockaddr_un *) addr;
+        return un->sun_path;
+    }
+    LOGE << "Unsupported protocol: " << addr->sa_family;
+    return "";
+}
+

@@ -25,4 +25,7 @@ uv_poll_t *
 om_listen_unix_dgram(const struct sockaddr_un *addr, uv_loop_t *loop, uv_poll_cb cb, void *arg, int *err);
 uv_udp_t *om_new_udp(uv_loop_t *loop, void *arg, uv_udp_recv_cb cb);
 
+int got_eagain(int err);
+std::string Addr2Str(const struct sockaddr* addr);
+
 #endif //RSOCK_RSUTIL_H

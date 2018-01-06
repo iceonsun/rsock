@@ -12,14 +12,15 @@
 #include "IRawConn.h"
 #include "rstype.h"
 
+class SockMon;
+
 // each group has a groupId. each subconn in group shares same groupId. ip:port,
 // each subconn has a key. ip:port:conv,  or sockpath:conv
 class IGroupConn : public IConn {
 public:
-
     using MapConnIter = std::map<std::string, IConn*>::iterator;
 
-    explicit IGroupConn(const IdBufType &groupId, IConn *btm = nullptr);
+    explicit IGroupConn(const IdBufType &groupId, uint32_t selfAddr, uint32_t targetAddr, SockMon *mon, IConn *btm = nullptr);
 
     virtual IConn* ConnOfKey(const std::string &key) ;
 
@@ -39,6 +40,8 @@ public:
 
     virtual IConn *BtmConn() { return mBtm;}
 
+    virtual int NextPortPair(uint16_t &sp, uint16_t &dp);
+
     MapConnIter begin();
     MapConnIter end();
 
@@ -49,6 +52,9 @@ private:
     std::string mGroupId;   // represents each machine
     IConn *mBtm = nullptr;
     std::map<std::string, IConn*> mConns;
+    SockMon* mMon = nullptr;
+    uint32_t mSelfAddr;
+    uint32_t mTargetAddr;
 };
 
 

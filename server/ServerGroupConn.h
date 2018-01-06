@@ -13,18 +13,20 @@
 
 class ServerGroupConn : public IGroupConn {
 public:
-    explicit ServerGroupConn(const IdBufType &groupId, uv_loop_t *loop, IConn *btm,
+    explicit ServerGroupConn(const IdBufType &groupId, uv_loop_t *loop, SockMon* mon,  IConn *btm,
                                  const struct sockaddr *targetAddr);
 
     int OnRecv(ssize_t nread, const rbuf_t &rbuf) override;
 
 
 private:
-    IGroupConn *newGroup(const IdBufType &conn_id, const struct sockaddr *origin, IUINT8 conn_type);
+    IGroupConn *newGroup(const IdBufType &conn_id, const struct sockaddr *peerAddr, IUINT8 conn_type, uint32_t selfInt,
+                             uint32_t peerInt);
 
 private:
-    struct sockaddr* mTargetAddr;
+    struct sockaddr* mSelfAddr;
     uv_loop_t *mLoop = nullptr;
+    SockMon *mMon = nullptr;
 };
 
 

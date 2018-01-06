@@ -10,11 +10,12 @@
 
 using namespace std::placeholders;
 
-ServerGroupConn::ServerGroupConn(const IdBufType &groupId, uv_loop_t *loop, IConn *btm,
-                                 const struct sockaddr *targetAddr) : IGroupConn(groupId, btm) {
+ServerGroupConn::ServerGroupConn(const IdBufType &groupId, uv_loop_t *loop, SockMon *mon, IConn *btm,
+                                 const struct sockaddr *targetAddr) : IGroupConn(groupId, 0, 0, nullptr, btm) {
     assert(loop != nullptr);
     mLoop = loop;
-    mTargetAddr = new_addr(targetAddr);
+    mSelfAddr = new_addr(targetAddr);
+    mMon = mon;
 }
 
 int ServerGroupConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
@@ -27,7 +28,7 @@ int ServerGroupConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
         std::string groupId = head->GroupIdStr();
         auto group = ConnOfKey(groupId);
         if (nullptr == group) {
-            group = newGroup(head->GroupId(), head->srcAddr, head->ConnType());
+            group = newGroup(head->GroupId(), head->srcAddr, head->ConnType(), head->Dst(), head->Src());
         }
 
         return group->Input(nread, rbuf);
@@ -36,8 +37,10 @@ int ServerGroupConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
     return nread;
 }
 
-IGroupConn *ServerGroupConn::newGroup(const IdBufType &conn_id, const struct sockaddr *origin, IUINT8 conn_type) {
-    IGroupConn *group = new GroupConn(conn_id, mLoop, mTargetAddr, reinterpret_cast<const sockaddr_in *>(origin), conn_type, nullptr);
+IGroupConn *ServerGroupConn::newGroup(const IdBufType &conn_id, const struct sockaddr *peerAddr, IUINT8 conn_type, 
+                                      uint32_t selfInt, uint32_t peerInt) {
+    IGroupConn *group = new GroupConn(conn_id, mLoop,  selfInt, peerInt, mSelfAddr, reinterpret_cast<const sockaddr_in *>(peerAddr),
+                                      mMon, conn_type, nullptr);
     AddConn(group);
     LOGV << "new group, key: " << group->Key();
     return group;

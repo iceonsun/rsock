@@ -190,3 +190,7 @@ IUINT8 OHead::GetAckStat() {
 void OHead::SetAckStat(IUINT8 ackStat) {
     mAckStat = ackStat;
 }
+
+IUINT32 OHead::Src() {
+    return mSrcAddr;
+}

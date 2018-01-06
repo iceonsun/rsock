@@ -54,6 +54,8 @@ extern "C" {
 #define OM_ACK 3
 #ifdef __cplusplus
 }
+
+
 #endif
 
 #endif //RSOCK_RSCOMM_H

@@ -15,6 +15,7 @@
 #include "plog/Log.h"
 #include "plog/Appenders/ConsoleAppender.h"
 #include "util/FdUtil.h"
+#include "tcp/SockMon.h"
 
 ISockApp::ISockApp(bool is_server, uv_loop_t *loop) : mServer(is_server) {
     mLoop = loop;
@@ -99,11 +100,18 @@ int ISockApp::doInit() {
         return -1;
     }
 
-    mBridge = CreateBridgeConn(mConf, mBtmConn, mLoop);
+    mMon = InitSockMon(mLoop, mConf);
+    if (!mMon) {
+        LOGE << "failed to create sockmon or init failed";
+        return -1;
+    }
+
+    mBridge = CreateBridgeConn(mConf, mBtmConn, mLoop, mMon);
 
     if (!mBridge || mBridge->Init()) {
         return -1;
     }
+
 
     mInited = true;
     srand(time(NULL));
@@ -166,6 +174,12 @@ void ISockApp::Close() {
         uv_stop(mLoop);
         uv_loop_delete(mLoop);
         mLoop = nullptr;
+    }
+
+    if (mMon) {
+        mMon->Close();
+        delete mMon;
+        mMon = nullptr;
     }
 }
 

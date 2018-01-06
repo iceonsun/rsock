@@ -17,6 +17,8 @@ class IRawConn;
 
 class IConn;
 
+class SockMon;
+
 namespace plog {
     class IAppender;
 }
@@ -46,8 +48,9 @@ public:
 
     virtual IRawConn *CreateBtmConn(RConfig &conf, uv_loop_t *loop, int datalink, int conn_type) = 0;
 
-    virtual IConn *CreateBridgeConn(RConfig &conf, IRawConn *btm, uv_loop_t *loop) = 0;
+    virtual IConn *CreateBridgeConn(RConfig &conf, IRawConn *btm, uv_loop_t *loop, SockMon *mon) = 0;
 
+    virtual SockMon *InitSockMon(uv_loop_t *loop, const RConfig &conf) = 0;
 private:
     int doInit();
     int makeDaemon(bool d);
@@ -55,18 +58,19 @@ private:
 
 private:
     // even app is deleted. don't delete IAppender object. because single process has only one ISockApp instance.
-    plog::IAppender *mFileAppender;
-    plog::IAppender *mConsoleAppender;
+    plog::IAppender *mFileAppender = nullptr;
+    plog::IAppender *mConsoleAppender = nullptr;
 
     uv_loop_t *mLoop = nullptr;
-    RTimer *mTimer;
+    RTimer *mTimer = nullptr;
     bool mServer;
-    RCap *mCap;
-    IConn *mBridge;
-    IRawConn *mBtmConn;
-    libnet_t* mLibnet;
+    RCap *mCap = nullptr;
+    IConn *mBridge = nullptr;
+    IRawConn *mBtmConn = nullptr;
+    libnet_t* mLibnet = nullptr;
     RConfig mConf;
     bool mInited = false;
+    SockMon *mMon = nullptr;
 };
 
 

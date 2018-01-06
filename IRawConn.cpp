@@ -122,13 +122,13 @@ int IRawConn::Output(ssize_t nread, const rbuf_t &rbuf) {
         }
 
         IUINT8 flag = TH_ACK;
-        if (ack <= OM_INIT_ACK_SYN) {
-            if (mIsServer) {
-                flag = TH_SYN | TH_ACK;
-            } else {
-                flag = TH_SYN;
-            }
-        }
+//        if (ack <= OM_INIT_ACK_SYN) {
+//            if (mIsServer) {
+//                flag = TH_SYN | TH_ACK;
+//            } else {
+//                flag = TH_SYN;
+//            }
+//        }
 
         if (conn_type & OM_PIPE_TCP_SEND) {
             return SendRawTcp(mTcpNet, mSelf, sp, dst, dp, seq, ack, buf, len, ipid, mTcp, mIpForTcp, flag);
@@ -222,6 +222,24 @@ int IRawConn::RawInput(u_char *args, const pcap_pkthdr *hdr, const u_char *packe
         if (tcp->th_flags & TH_SYN) {
             ackForPeer = mIsServer? OM_INIT_ACK: OM_INIT_ACK_SYN;
         }
+//        IUINT8 flag = 0;
+        std::string flag = "";
+        if (tcp->th_flags & TH_SYN) {
+            flag += "SYN|";
+        }
+        if (tcp->th_flags & TH_ACK) {
+            flag += "ACK|";
+        }
+        if (tcp->th_flags & TH_PUSH) {
+            flag += "PUSH|";
+        }
+        if (tcp->th_flags & TH_RST) {
+            flag += "RST|";
+        }
+        if (tcp->th_flags & TH_FIN) {
+            flag += "FIN";
+        }
+        LOGV << "flag: " << flag;
     } else if (proto == IPPROTO_UDP) {
         if (!(mConnType & OM_PIPE_UDP_RECV)) {  // check incomming packets
             LOGE << "conn type " << mConnType << ", but receive udp packet" << mConnType;
@@ -274,11 +292,17 @@ int IRawConn::RawInput(u_char *args, const pcap_pkthdr *hdr, const u_char *packe
         return 0;
     }
 
-    struct sockaddr_in src;
-    src.sin_family = AF_INET;
-    src.sin_port = src_port;
-    src.sin_addr.s_addr = ip->ip_src.s_addr;
-    return cap2uv(ohead, oheadLen, &src, data, data_len, dst_port, cmd, ackForPeer);
+    struct sockaddr_in peer;
+    peer.sin_family = AF_INET;
+    peer.sin_port = src_port;
+    peer.sin_addr.s_addr = ip->ip_src.s_addr;
+
+    struct sockaddr_in self;
+    self.sin_family = AF_INET;
+    self.sin_port = dst_port;
+    self.sin_addr.s_addr = ip->ip_dst.s_addr;
+
+    return cap2uv(ohead, oheadLen, &self, &peer, data, data_len, dst_port, cmd, ackForPeer);
 }
 
 void IRawConn::Close() {
@@ -338,18 +362,23 @@ void IRawConn::pollCb(uv_poll_t *handle, int status, int events) {
 #endif
         }
 
+        // todo: add srcInt dstInt
         // todo: how to update omhead field using addr
-        struct sockaddr_in addr = {0};
-        p = decode_sockaddr4(p, &addr);
+        struct sockaddr_in peer = {0};
+        struct sockaddr_in self = {0};
+        p = decode_sockaddr4(p, &self);
+        p = decode_sockaddr4(p, &peer);
         IUINT16 dst_port = 0;
-        p = decode_uint16(&dst_port, p);
-        head.UpdateSourcePort(ntohs(addr.sin_port));
-        head.UpdateDstPort(ntohs(dst_port));
+        p = decode_uint16(&dst_port, p);    // todo: remove this decode
+        head.UpdateDst(self.sin_addr.s_addr);
+        head.UpdateSrc(peer.sin_addr.s_addr);
+        head.UpdateSourcePort(ntohs(peer.sin_port));
+        head.UpdateDstPort(ntohs(self.sin_port));
         head.SetAck(ackForPeer);
 
         int len = nread - (p - buf);
         if (len > 0) {
-            head.srcAddr = reinterpret_cast<sockaddr *>(&addr);
+            head.srcAddr = reinterpret_cast<sockaddr *>(&peer);
             rbuf_t rbuf = {0};
             rbuf.base = const_cast<char *>(p);
             rbuf.len = len;
@@ -361,7 +390,7 @@ void IRawConn::pollCb(uv_poll_t *handle, int status, int events) {
     }
 }
 
-int IRawConn::cap2uv(const char *head_beg, size_t head_len, const struct sockaddr_in *target, const char *data,
+int IRawConn::cap2uv(const char *head_beg, size_t head_len, const struct sockaddr_in * self, const struct sockaddr_in *peer, const char *data,
                      size_t data_len, IUINT16 dst_port, CMD_TYPE cmd, IUINT32 ackForPeer) {
     if (data_len + sizeof(struct sockaddr_in) + head_len + sizeof(dst_port) + sizeof(CMD_TYPE) > OM_MAX_PKT_SIZE) {
         LOGE << "drop data_len: " << data_len << ", sizeof(struct sockaddr_in): " << sizeof(struct sockaddr_in)
@@ -378,7 +407,8 @@ int IRawConn::cap2uv(const char *head_beg, size_t head_len, const struct sockadd
     }
     memcpy(p, head_beg, head_len);
     p += head_len;
-    p = encode_sockaddr4(p, target);
+    p = encode_sockaddr4(p, self);
+    p = encode_sockaddr4(p, peer);
     p = encode_uint16(dst_port, p);
     memcpy(p, data, data_len);
     p += data_len;

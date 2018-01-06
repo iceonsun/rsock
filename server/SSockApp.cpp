@@ -3,9 +3,9 @@
 //
 
 #include "SSockApp.h"
-#include "../RConfig.h"
 #include "SRawConn.h"
-#include "../RConfig.h"
+#include "../tcp/SockMon.h"
+#include "../tcp/LSockMon.h"
 
 SSockApp::SSockApp(uv_loop_t *loop) : ISockApp(true, loop) {}
 
@@ -17,10 +17,20 @@ IRawConn *SSockApp::CreateBtmConn(RConfig &conf, uv_loop_t *loop, int datalink, 
     return new SRawConn(conf.param.dev, conf.param.selfCapInt, loop, conf.param.hashKey, datalink, conn_type);
 }
 
-IConn *SSockApp::CreateBridgeConn(RConfig &conf, IRawConn *btm, uv_loop_t *loop) {
+IConn *SSockApp::CreateBridgeConn(RConfig &conf, IRawConn *btm, uv_loop_t *loop, SockMon *mon) {
     struct sockaddr_in target = {0};
     target.sin_family = AF_INET;
     target.sin_port = htons(conf.param.targetPort);
     inet_aton(conf.param.targetIp.c_str(), &target.sin_addr);
-    return new ServerGroupConn(conf.param.id, loop, btm, reinterpret_cast<const sockaddr *>(&target));
+    return new ServerGroupConn(conf.param.id, loop, mon, btm, reinterpret_cast<const sockaddr *>(&target));
+}
+
+SockMon *SSockApp::InitSockMon(uv_loop_t *loop, const RConfig &conf) {
+    auto mon = new LSockMon(loop, nullptr, conf.param.selfCapIp, conf.param.selfCapPorts);
+    if (mon->Init()) {
+        mon->Close();
+        delete mon;
+        mon = nullptr;
+    }
+    return mon;
 }

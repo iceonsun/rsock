@@ -32,6 +32,7 @@ public:
     virtual ssize_t size();
     static const std::string ToString(const PortMapper &mapper);
 
+    static void BuildPairs(const RPortList &srcPorts, const RPortList &dstPorts, PortPairList &lists);
 private:
     void init(const RPortList &srcPorts, const RPortList &dstPorts);
 

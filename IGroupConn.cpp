@@ -7,11 +7,17 @@
 #include "IGroupConn.h"
 #include "util/rsutil.h"
 #include "util/rhash.h"
+#include "tcp/SockMon.h"
 
 using namespace std::placeholders;
 
-IGroupConn::IGroupConn(const IdBufType &groupId, IConn *btm) : IConn(IdBuf2Str(groupId)), mBtm(btm) {
+IGroupConn::IGroupConn(const IdBufType &groupId, uint32_t selfAddr, uint32_t targetAddr, SockMon *mon, IConn *btm) : IConn(
+        IdBuf2Str(groupId)) {
     mGroupId = IdBuf2Str(groupId);
+    mMon = mon;
+    mSelfAddr = selfAddr;
+    mTargetAddr = targetAddr;
+    mBtm = btm;
 }
 
 int IGroupConn::Init() {
@@ -120,4 +126,9 @@ IGroupConn::MapConnIter IGroupConn::begin() {
 
 IGroupConn::MapConnIter IGroupConn::end() {
     return mConns.end();
+}
+
+// todo: change according to mselfAddr and targetAddr
+int IGroupConn::NextPortPair(uint16_t &sp, uint16_t &dp) {
+    return mMon->NextPairForAddr(mSelfAddr, mTargetAddr, sp, dp);
 }

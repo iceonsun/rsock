@@ -19,8 +19,8 @@
 class ClientConn : public IGroupConn {
 public:
     ClientConn(const IdBufType &groupId, const std::string &listenUnPath, const std::string &listenUdpIp,
-               IUINT16 listenUdpPort, const RPortList &sourcePorts, const RPortList &destPorts,
-               uv_loop_t *loop, IConn *btm, uint32_t bigDst, IUINT8 connType);
+               uint32_t selfAddr, IUINT16 listenUdpPort, const RPortList &sourcePorts, const RPortList &destPorts,
+               uv_loop_t *loop, SockMon *mon, IConn *btm, uint32_t targetAddrInt, IUINT8 connType);
     int Init() override;
 
     int Output(ssize_t nread, const rbuf_t &rbuf) override;
@@ -32,21 +32,26 @@ public:
     // empty implementation
 //    void AddConn(IConn *conn, bool bindOutput = true) override {};
 
-    void RemoveConn(IConn *conn, bool removeCb = true) override ;
+    void RemoveConn(IConn *conn, bool removeCb) override;
 
 private:
     int subconnRecv(ssize_t nread, const rbuf_t &rbuf);
 
     int send2Origin(ssize_t nread, const rbuf_t &rbuf, const sockaddr *origin);
+
     int unSendOrigin(ssize_t nread, const rbuf_t &rbuf, struct sockaddr_un *addr);
 
     static void send_cb(uv_udp_send_t *req, int status);
+
     static void udpRecvCb(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf, const struct sockaddr *addr,
                           unsigned flags);
+
     void onLocalRecv(ssize_t nread, const char *base, const struct sockaddr *addr);
-    CConn* newConn(const std::string &key, const struct sockaddr *addr, IUINT32 conv);
+
+    CConn *newConn(const std::string &key, const struct sockaddr *addr, IUINT32 conv);
 
     static void pollCb(uv_poll_t *handle, int status, int events);
+
 private:
 
 //    std::map<std::string, IUINT32> mAddr2Conv;
@@ -63,7 +68,7 @@ private:
 
     PortMapper mPortMapper; // todo initialize this.
     uv_loop_t *mLoop = nullptr;
-    std::map<IUINT32 , CConn*> mConvMap;
+    std::map<IUINT32, CConn *> mConvMap;
 };
 
 

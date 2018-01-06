@@ -6,13 +6,15 @@
 #include "plog/Log.h"
 #include "ClientConn.h"
 #include "../util/rsutil.h"
+#include "../tcp/SockMon.h"
 
 using namespace std::placeholders;
 
 ClientConn::ClientConn(const IdBufType &groupId, const std::string &listenUnPath, const std::string &listenUdpIp,
-                       IUINT16 listenUdpPort, const RPortList &sourcePorts, const RPortList &destPorts,
-                       uv_loop_t *loop, IConn *btm, uint32_t bigDst, IUINT8 connType)
-        : IGroupConn(groupId, btm), mPortMapper(groupId, bigDst, connType, sourcePorts, destPorts) {
+                       uint32_t selfAddr, IUINT16 listenUdpPort, const RPortList &sourcePorts,
+                       const RPortList &destPorts, uv_loop_t *loop, SockMon *mon, IConn *btm, uint32_t targetAddrInt,
+                       IUINT8 connType) : IGroupConn(groupId, selfAddr, targetAddrInt, mon, btm),
+                                          mPortMapper(groupId, targetAddrInt, connType, sourcePorts, destPorts) {
     assert(loop != nullptr);
     if (!listenUdpIp.empty()) {
         mUdpAddr = new_addr4(listenUdpIp.c_str(), listenUdpPort);
@@ -56,20 +58,27 @@ int ClientConn::Output(ssize_t nread, const rbuf_t &rbuf) {
 
     auto *conn = static_cast<CConn *>(rbuf.data);
     assert(conn != nullptr);
+// todo: add udp logic
+    uint16_t sp, dp;
+    int n = NextPortPair(sp, dp);
+    if (n) {
+        return -1;
+    }
 
 //    int size = mPortMapper.size() * 2;
 //    for (int i = 0; i < size; i++) {
-        OHead &hd = mPortMapper.NextHead();
+    OHead &hd = mPortMapper.NextHead();
 //        if (hd.AckPending()) {
 //            continue;
 //        }
+    hd.UpdateSourcePort(sp);
+    hd.UpdateDstPort(dp);
+    hd.UpdateConv(conn->Conv());
 
-        hd.UpdateConv(conn->Conv());
-
-        rbuf_t buf = {0};
-        buf.base = rbuf.base;
-        buf.data = &hd;
-        return IGroupConn::Output(nread, buf);
+    rbuf_t buf = {0};
+    buf.base = rbuf.base;
+    buf.data = &hd;
+    return IGroupConn::Output(nread, buf);
 //    }
 
 //    return 0;

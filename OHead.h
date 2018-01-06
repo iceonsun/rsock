@@ -53,6 +53,7 @@ public:
     IUINT32 IncSeq(IUINT32 len);
 
     IUINT32 Dst();
+    IUINT32 Src();
 
     IUINT32 Ack();
 //    IUINT32 IncAck();

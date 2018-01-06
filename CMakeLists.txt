@@ -11,7 +11,7 @@ set(SOURCE_FILES ktype.h rcommon.c RConfig.cpp ISockApp.cpp IConn.cpp IGroupConn
         server/SConn.cpp server/ServerGroupConn.cpp server/SSockApp.cpp server/ssock.cpp server/SRawConn.cpp
         client/CRawConn.cpp client/RClient.cpp client/CConn.cpp client/csock.cpp client/ClientConn.cpp client/CSockApp.cpp
         thirdparty/md5.c thirdparty/json11.cpp
-        )
+        tcp/TcpConnector.cpp tcp/SockMon.cpp tcp/SockMon.h tcp/LSockMon.cpp tcp/LSockMon.h)
 
 add_executable(ssock ${SOURCE_FILES} server/main.cpp)
 set_target_properties(

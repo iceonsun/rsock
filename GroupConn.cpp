@@ -10,9 +10,9 @@
 #include "util/rsutil.h"
 
 // todo: change all these thing origin to uint32_t? if not consider support ipv6
-GroupConn::GroupConn(const IdBufType &groupId, uv_loop_t *loop, const struct sockaddr *target,
-                     const sockaddr_in *origin, IUINT8 conn_type, IConn *btm)
-        : IGroupConn(groupId, btm) , mPorter(groupId, origin->sin_addr.s_addr, conn_type){
+GroupConn::GroupConn(const IdBufType &groupId, uv_loop_t *loop, uint32_t selfInt, uint32_t targetInt,
+                     const struct sockaddr *target, const sockaddr_in *peer, SockMon* mon, IUINT8 conn_type, IConn *btm)
+        : IGroupConn(groupId, selfInt, targetInt, mon, btm), mPorter(groupId, peer->sin_addr.s_addr, conn_type) {
     mLoop = loop;
     mTarget = new_addr(target);
 }
@@ -58,17 +58,25 @@ IConn *GroupConn::newConn(IUINT32 conv, const struct sockaddr *origin) {
 
 int GroupConn::Output(ssize_t nread, const rbuf_t &rbuf) {
     OHead *head = static_cast<OHead *>(rbuf.data);
-    int size = mPorter.size() * 2;
-    for (int i = 0; i < size; i++) {
-        OHead &hd = mPorter.NextHead();
-        IUINT8 ackStat = hd.GetAckStat();
-        if (ackStat == OM_ACK) {    // normal
-        } else if (ackStat == OM_INIT_ACK) {    // send syn, ack back
-            hd.SetAckStat(OM_INIT_ACK_SYN);
-            hd.SetAck(OM_INIT_ACK_SYN);
-        } else {
-            continue;
+//    int size = mPorter.size() * 2;
+//    for (int i = 0; i < size; i++) {
+        uint16_t sp, dp;
+        if (NextPortPair(sp, dp)) {
+            LOGE << "No port pair for connection";
+            return -1;
         }
+
+        OHead &hd = mPorter.NextHead();
+//        IUINT8 ackStat = hd.GetAckStat();
+//        if (ackStat == OM_ACK) {    // normal
+//        } else if (ackStat == OM_INIT_ACK) {    // send syn, ack back
+//            hd.SetAckStat(OM_INIT_ACK_SYN);
+//            hd.SetAck(OM_INIT_ACK_SYN);
+//        } else {
+//            continue;
+//        }
+        hd.UpdateSourcePort(sp);
+        hd.UpdateDstPort(dp);
 
         hd.UpdateConv(head->Conv());
 
@@ -76,7 +84,7 @@ int GroupConn::Output(ssize_t nread, const rbuf_t &rbuf) {
         buf.base = rbuf.base;
         buf.data = &hd;
         return IGroupConn::Output(nread, buf);
-    }
+//    }
 
     return 0;
 
