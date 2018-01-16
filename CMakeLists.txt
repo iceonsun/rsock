@@ -1,19 +1,20 @@
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.5)
 project(rSock)
 
 set(CMAKE_CXX_STANDARD 11)
 
 include_directories(./include)
 
-set(SOURCE_FILES ktype.h rcommon.c RConfig.cpp ISockApp.cpp IConn.cpp IGroupConn.cpp PortMapper.cpp IRawConn.cpp GroupConn.cpp OHead.cpp
+set(SOURCE_FILES ktype.h rcommon.c RConfig.cpp ISockApp.cpp IConn.cpp IGroupConn.cpp PortMapper.cpp IRawConn.cpp OHead.cpp
         util/enc.c util/rsutil.cpp util/FdUtil.cpp util/rhash.cpp util/RTimer.cpp util/TextUtils.h util/RPortList.cpp util/PortPair.cpp
         cap/cap_util.cpp cap/RCap.cpp
-        server/SConn.cpp server/ServerGroupConn.cpp server/SSockApp.cpp server/ssock.cpp server/SRawConn.cpp
-        client/CRawConn.cpp client/RClient.cpp client/CConn.cpp client/csock.cpp client/ClientConn.cpp client/CSockApp.cpp
         thirdparty/md5.c thirdparty/json11.cpp
-        tcp/TcpConnector.cpp tcp/SockMon.cpp tcp/SockMon.h tcp/LSockMon.cpp tcp/LSockMon.h)
+        tcp/TcpConnector.cpp tcp/SockMon.cpp tcp/SockMon.h tcp/LSockMon.cpp tcp/LSockMon.h util/ProcUtil.cpp util/ProcUtil.h)
 
-add_executable(ssock ${SOURCE_FILES} server/main.cpp)
+set(SVR_SOURCE_FILES ${SOURCE_FILES} GroupConn.cpp server/SConn.cpp server/ServerGroupConn.cpp server/SSockApp.cpp server/ssock.cpp server/SRawConn.cpp)
+set(CLI_SOURCE_FILES ${SOURCE_FILES} client/CRawConn.cpp client/RClient.cpp client/CConn.cpp client/csock.cpp client/ClientConn.cpp client/CSockApp.cpp)
+
+add_executable(ssock ${SVR_SOURCE_FILES} server/main.cpp)
 set_target_properties(
         ssock
         PROPERTIES
@@ -21,20 +22,22 @@ set_target_properties(
         COMPILE_DEFINITIONS RSOCK_NNDEBUG   # don't output pcap in/out
 )
 
-add_executable(csock ${SOURCE_FILES} client/main.cpp)
+add_executable(csock ${CLI_SOURCE_FILES} client/main.cpp)
 set_target_properties(
         csock
         PROPERTIES
         COMPILE_DEFINITIONS RSOCK_NNDEBUG   # don't output pcap in/out
 )
 
-add_executable(test_server ${SOURCE_FILES} test/test_server.cpp)
+
+add_executable(test_server ${SVR_SOURCE_FILES} test/test_server.cpp)
 set_target_properties(
         test_server
         PROPERTIES
         COMPILE_DEFINITIONS RSOCK_IS_SERVER_)
 
-add_executable(test_client ${SOURCE_FILES} test/test_client.cpp)
+add_executable(test_client ${CLI_SOURCE_FILES} test/test_client.cpp)
+
 add_executable(test_conf ${SOURCE_FILES} test/test_conf.cpp)
 add_executable(echo_server rcommon.c test/udp_echo_server.cpp)
 add_executable(echo_client rcommon.c test/udp_echo_client.cpp)
@@ -60,7 +63,11 @@ link_libraries($UV_PATH)
 find_library(CAP_PATH pcap /usr/lib NO_DEFAUL_CAP_PATH)
 link_libraries($CAP_PATH)
 
-set(libs uv net pcap)
+if(APPLE)
+    set(libs uv net pcap)
+else()
+    set(libs uv net pcap pthread)
+endif()
 
 #target_link_libraries(rsock uv net pcap)
 target_link_libraries(rawsock ${libs})

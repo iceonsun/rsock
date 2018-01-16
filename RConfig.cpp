@@ -51,6 +51,7 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
     args::ValueFlag<int> daemon(opt, "daemon", "1 for running as daemon, 0 for not. (default as daemon)",
                                 {"daemon", 'd'});
     args::Flag verbose(opt, "verbose", "flag to indicate if log in verbose", {'v'});
+    args::ValueFlag<std::string> flog(parser, "/path/to/log_file", "log file", {"log"});
 
     try {
         parser.ParseCLI(argc, argv);
@@ -124,9 +125,14 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
                 this->log_level = plog::verbose;
             }
 
+            if (flog) {
+                this->log_path = flog.Get();
+            }
+
             if (daemon) {
                 this->isDaemon = (daemon.Get() != 0);
             }
+
         } while (false);
 
         if (param.selfCapIp.empty()) {
@@ -218,7 +224,6 @@ void RConfig::ParseJsonString(RConfig &c, const std::string &content, std::strin
         return;
     }
 
-
     if (json["daemon"].is_number()) {
         c.isDaemon = (json["daemon"].int_value() != 0);
     }
@@ -226,6 +231,10 @@ void RConfig::ParseJsonString(RConfig &c, const std::string &content, std::strin
     if (json["verbose"].is_bool()) {
         bool verbose = json["verbose"].bool_value();
         c.log_level = verbose ? plog::verbose : plog::debug;
+    }
+
+    if (json["log"].is_string()) {
+        c.log_path = json["log"].string_value();
     }
 
     if (json["param"].is_object()) {
@@ -290,6 +299,7 @@ json11::Json RConfig::to_json() const {
             {"daemon",  isDaemon},
             {"server",  isServer},
             {"verbose", log_level == plog::verbose},
+            {"log", log_path},
             {
              "param",   Json::object {
                     {"dev",       param.dev},
@@ -304,8 +314,7 @@ json11::Json RConfig::to_json() const {
                     {"duration",  (int) param.interval},
                     {"type",      strOfType(param.type)},
                     {"hash",      param.hashKey},
-            }
-            },
+            }},
     };
     return j;
 }

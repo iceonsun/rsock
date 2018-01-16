@@ -5,6 +5,8 @@
 #ifndef RSOCK_RSUTIL_H
 #define RSOCK_RSUTIL_H
 
+#include "uv.h"
+
 struct sockaddr;
 
 struct sockaddr_in *new_addr4(const char *ip, int port);

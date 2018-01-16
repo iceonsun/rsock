@@ -13,6 +13,7 @@
 #include "TcpConnector.h"
 #include "../util/TextUtils.h"
 #include "../PortMapper.h"
+#include "../util/rsutil.h"
 
 
 TcpConnector::TcpConnector(RPortList &ports, const std::string &ip)
@@ -229,7 +230,7 @@ int TcpConnector::SyncConnect(const std::string &selfIp, const std::string &targ
             socklen = sizeof(targetAddr);
             nret = connect(socks[i], reinterpret_cast<const sockaddr *>(&targetAddr), socklen);
             if (nret) {
-                LOGE << "failed to connect " << inet_ntoa(selfAddr.sin_addr) << ":" << p.dest << ", err: "
+                LOGE << "failed to connect " << Addr2Str(reinterpret_cast<const sockaddr *>(&targetAddr)) << ", err: "
                      << strerror(errno);
                 break;
             }

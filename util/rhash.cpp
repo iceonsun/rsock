@@ -46,8 +46,7 @@ IINT8 compute_hash(HashBufType &hash, const std::string &key, const char *data, 
     return 0;
 }
 
-bool
-hash_equal(const HashBufType &hashed_buf, const std::string &key, const char *data, int data_len) {
+bool hash_equal(const HashBufType &hashed_buf, const std::string &key, const char *data, int data_len) {
     assert(hashed_buf.size() <= MD5_LEN);
 
     if (!data || data_len <= 0) {
@@ -78,7 +77,7 @@ std::string HashBuf2String(const HashBufType &hash) {
 // todo: change
 bool hash_equal(const char *hashed_buf, const std::string &key, const char *data, int data_len) {
     assert(data && data_len > 0);
-    HashBufType buf {{0}};
+    HashBufType buf{{0}};
     std::copy(hashed_buf, hashed_buf + HASH_BUF_SIZE, buf.begin());
     return hash_equal(buf, key, data, data_len);
 }
@@ -86,7 +85,7 @@ bool hash_equal(const char *hashed_buf, const std::string &key, const char *data
 IINT8 compute_hash(char *hash, const std::string &key, const char *data, int data_len) {
     assert(data && data_len > 0);
 
-    HashBufType buf {{0}};
+    HashBufType buf{{0}};
     compute_hash(buf, key, data, data_len);
     std::copy(buf.begin(), buf.end(), hash);
     return 0;
@@ -103,7 +102,7 @@ void GenerateIdBuf(IdBufType &hash, const std::string &key) {
     sec %= APRIME;
     const int buflen = 12 + key.size();
     char buf[buflen];
-    snprintf(buf, buflen, "%6ld%6ld%s", sec, ((long)(&sec)) % APRIME, key.c_str());
+    snprintf(buf, buflen, "%6ld%6ld%s", sec, ((long) (&sec)) % APRIME, key.c_str());
 
     MD5_CTX ctx;
     MD5_Update(&ctx, buf, buflen);

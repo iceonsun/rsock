@@ -3,32 +3,36 @@
 //
 
 #include <cassert>
+#include <cstring>
 #include "RTimer.h"
+#include "../rcommon.h"
 
 RTimer::RTimer(uv_loop_t *loop) {
     mLoop = loop;
 }
 
-void RTimer::Start(IUINT32 timeoutMs, IUINT32 repeatMs, RTimer::TimeoutCb cb, void *arg) {
-    if (mStopped) {
-        mStopped = false;
+void RTimer::Start(IUINT32 timeoutMs, IUINT32 repeatMs, const TimeoutCb &cb, void *arg) {
+    if (!mTimer) {
 
         mArg = arg;
         mTimeoutCb = cb;
-        uv_timer_init(mLoop, &mTimer);
-        mTimer.data = this;
-        uv_timer_start(&mTimer, timeout_cb, timeoutMs, repeatMs);
+        mTimer = static_cast<uv_timer_t *>(malloc(sizeof(uv_timer_t)));
+        memset(mTimer, 0, sizeof(uv_timer_t));
+        uv_timer_init(mLoop, mTimer);
+        mTimer->data = this;
+        uv_timer_start(mTimer, timeout_cb, timeoutMs, repeatMs);
     }
 }
 
 void RTimer::Stop() {
-    if (!mStopped) {
-        mStopped = true;
+    if (mTimer) {
 
         mTimeoutCb = nullptr;
         mArg = nullptr;
-        mTimer.data = nullptr;
-        uv_timer_stop(&mTimer);
+        mTimer->data = nullptr;
+        uv_timer_stop(mTimer);
+        uv_close(reinterpret_cast<uv_handle_t *>(mTimer), close_cb);
+        mTimer = nullptr;
     }
 }
 

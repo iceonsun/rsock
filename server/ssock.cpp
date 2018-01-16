@@ -12,7 +12,7 @@ int ssock_main(int argc, char **argv) {
     int nret = app->Parse(argc, reinterpret_cast<const char *const *>(argv));
     if (!nret) {
         if (!(nret = app->Init())) {
-            app->Start();
+            nret = app->Start();
         }
     }
     app->Close();

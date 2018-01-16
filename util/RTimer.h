@@ -16,21 +16,18 @@ public:
 
     explicit RTimer(uv_loop_t *loop);
 
-    void Start(IUINT32 timeoutMs, IUINT32 repeatMs, TimeoutCb cb, void *arg = nullptr);
+    void Start(IUINT32 timeoutMs, IUINT32 repeatMs, const TimeoutCb &cb, void *arg = nullptr);
     void Stop();
-    int GetRepeatMs();
 
 protected:
     static void timeout_cb(uv_timer_t* handle);
 
 private:
-    uv_timer_t mTimer;
-    uv_loop_t *mLoop;
-    bool mStopped = true;
+    uv_timer_t *mTimer = nullptr;
+    uv_loop_t *mLoop = nullptr;
     void *mArg = nullptr;
 
-    TimeoutCb mTimeoutCb;
+    TimeoutCb mTimeoutCb = nullptr;
 };
-
 
 #endif //RPIPE_RTIMER_H

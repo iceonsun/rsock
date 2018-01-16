@@ -16,11 +16,11 @@
 #include "plog/Appenders/ConsoleAppender.h"
 #include "util/FdUtil.h"
 #include "tcp/SockMon.h"
+#include "util/ProcUtil.h"
 
 ISockApp::ISockApp(bool is_server, uv_loop_t *loop) : mServer(is_server) {
     mLoop = loop;
 }
-
 
 int ISockApp::Init(RConfig &conf) {
     if (!conf.Inited()) {
@@ -65,7 +65,6 @@ int ISockApp::Init() {
 
 int ISockApp::doInit() {
     assert(mConf.Inited());
-    fprintf(stdout, "log file path: %s\n", RLOG_FILE_PATH);
 
     int nret = initLog();
     if (nret) {
@@ -73,12 +72,8 @@ int ISockApp::doInit() {
         return -1;
     }
 
-    makeDaemon(mConf.isDaemon);
-
-    if (mConf.isDaemon) {   // todo: if run in daemon, poll will fail if use default loop (on mac, it's uv__io_check_fd fails). why?
-        mLoop = static_cast<uv_loop_t *>(malloc(sizeof(uv_loop_t)));
-        memset(mLoop, 0, sizeof(uv_loop_t));
-        uv_loop_init(mLoop);
+    if (makeDaemon(mConf.isDaemon)) {
+        return -1;
     }
 
     mTimer = new RTimer(mLoop);
@@ -119,25 +114,26 @@ int ISockApp::doInit() {
 }
 
 int ISockApp::initLog() {
-    if (mConf.log_path.empty()) {
-        fprintf(stderr, "log path empty\n");
-        return -1;
-    }
-
-    if (!FdUtil::FileExists(mConf.log_path.c_str())) {
-        int nret = FdUtil::CreateFile(mConf.log_path);
-        if (nret < 0) {
-            return nret;
+    if (!mConf.log_path.empty()) {
+        if (!FdUtil::FileExists(mConf.log_path.c_str())) {
+            int nret = FdUtil::CreateFile(mConf.log_path);
+            if (nret < 0) {
+                return nret;
+            }
         }
+        mFileAppender = new plog::RollingFileAppender<plog::TxtFormatter>(mConf.log_path.c_str(), 100000, 5);
+    } else  {
+        fprintf(stderr, "warning: log path empty\n");
     }
 
-    mFileAppender = new plog::RollingFileAppender<plog::TxtFormatter>(RLOG_FILE_PATH, 100000, 5);
     mConsoleAppender = new plog::ConsoleAppender<plog::TxtFormatter>();
-    plog::init(mConf.log_level, mFileAppender).addAppender(mConsoleAppender);
+    plog::init(mConf.log_level, mConsoleAppender);
+    if (mFileAppender) {
+        plog::get()->addAppender(mFileAppender);
+    }
 
     return 0;
 }
-
 int ISockApp::Start() {
     assert(mInited);
     mCap->Start(IRawConn::CapInputCb, reinterpret_cast<u_char *>(mBtmConn)); // starts the thread
@@ -189,34 +185,16 @@ void ISockApp::StartTimer(IUINT32 timeout_ms, IUINT32 repeat_ms) {
 }
 
 int ISockApp::makeDaemon(bool d) {
-    if (d) {
-//        signal(SIGCHLD,SIG_IGN);
-        const int nret = fork();
-        if (nret == 0) {
-            int n = setsid();
-            if (-1 == n) {
-                LOGE << "make daemon failed. setsid failed " << strerror(errno);
-                exit(1);
-            }
-            LOGI << "Run in background. pid: " << getpid();
-            umask(0);
-            if (chdir("/") < 0) {
-                LOGE << "chdir failed: " << strerror(errno);
-                exit(-1);
-            }
-            for (auto f: {STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO}) {
-                close(f);
-            }
-            int fd = open("/dev/null", O_RDWR);
-            dup2(fd, STDOUT_FILENO);
-            dup2(fd, STDERR_FILENO);
-        } else if (nret > 0) {
-            exit(0);    // parent;
-        } else {
-            LOGE << "make process daemon failed: " << strerror(errno);
-            exit(-1);
-        }
+    int n = ProcUtil::MakeDaemon(d);
+    if (n < 0) {
+        LOGE << "make process daemon failed: " << strerror(errno);
+        return n;
     }
-
+    if (mConf.isDaemon) {   // todo: if run in daemon, poll will fail if use default loop (on mac, it's uv__io_check_fd fails). why?
+        LOGI << "Run in background. pid: " << getpid(); // print to file.
+        mLoop = static_cast<uv_loop_t *>(malloc(sizeof(uv_loop_t)));
+        memset(mLoop, 0, sizeof(uv_loop_t));
+        uv_loop_init(mLoop);
+    }
     return 0;
 }
