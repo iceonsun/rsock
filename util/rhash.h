@@ -7,8 +7,8 @@
 
 #include <string>
 
-#include "../ktype.h"
-#include "../rstype.h"
+#include "ktype.h"
+#include "rstype.h"
 
 bool ValidIp4(const std::string &ip);
 
@@ -16,9 +16,11 @@ bool hash_equal(const char *hashed_buf, const std::string &key, const char *data
 
 bool EmptyIdBuf(const IdBufType &id);
 
-IINT8 compute_hash(char *hash, const std::string &key, const char *data, int data_len);
+char * compute_hash(char *hash, const std::string &key, const char *data, int data_len);
 
 std::string IdBuf2Str(const IdBufType &id);
+
+IdBufType Str2IdBuf(const std::string &str);
 
 std::string HashBuf2String(const HashBufType &hash);
 

@@ -8,7 +8,7 @@
 
 #include "SockMon.h"
 #include "../util/RPortList.h"
-#include "../rscomm.h"
+#include "rscomm.h"
 
 class LSockMon : public SockMon {
 public:

@@ -11,7 +11,7 @@
 
 #include "rhash.h"
 #include "../thirdparty/md5.h"
-#include "../rscomm.h"
+#include "rscomm.h"
 
 
 using u_char = unsigned char;
@@ -82,13 +82,13 @@ bool hash_equal(const char *hashed_buf, const std::string &key, const char *data
     return hash_equal(buf, key, data, data_len);
 }
 
-IINT8 compute_hash(char *hash, const std::string &key, const char *data, int data_len) {
+char * compute_hash(char *hash, const std::string &key, const char *data, int data_len) {
     assert(data && data_len > 0);
 
     HashBufType buf{{0}};
     compute_hash(buf, key, data, data_len);
     std::copy(buf.begin(), buf.end(), hash);
-    return 0;
+    return hash + buf.size();
 }
 
 
@@ -127,4 +127,13 @@ bool EmptyIdBuf(const IdBufType &id) {
 bool ValidIp4(const std::string &ip) {
     struct in_addr addr = {0};
     return -1 != inet_pton(AF_INET, ip.c_str(), &addr);
+}
+
+IdBufType Str2IdBuf(const std::string &str) {
+    IdBufType id;
+    assert(str.size() == id.size());
+    for (int i = 0; i < str.size(); i++) {
+        id[i] = str[i];
+    }
+    return id;
 }

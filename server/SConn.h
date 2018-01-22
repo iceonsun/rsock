@@ -8,13 +8,13 @@
 
 #include <sys/socket.h>
 #include <vector>
-#include "../IConn.h"
-#include "../OHead.h"
+#include "../conn/IConn.h"
+#include "../EncHead.h"
 
 // todo: add unix sock support
 class SConn : public IConn {
 public:
-    explicit SConn(uv_loop_t *loop, const struct sockaddr *origin, const struct sockaddr *target, IUINT32 conv);
+    explicit SConn(const std::string &key, uv_loop_t *loop, const struct sockaddr *target, IUINT32 conv);
     virtual ~SConn();
 
     void Close() override;
@@ -25,6 +25,8 @@ public:
     // to target
     int OnRecv(ssize_t nread, const rbuf_t &rbuf) override;
 
+    IUINT32 Conv();
+
 private:
     static void udpRecvCb(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf, const struct sockaddr* addr,
                           unsigned flags);
@@ -34,7 +36,7 @@ private:
     struct sockaddr_in *mSelfAddr = nullptr;  // addr in server
 //    struct sockaddr_in *mOrigin;
     uv_udp_t *mUdp = nullptr;
-    OHead mHead;
+    IUINT32 mConv = 0;
 };
 
 

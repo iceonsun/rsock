@@ -6,22 +6,19 @@
 #define RSOCK_ISOCKAPP_H
 
 #include <uv.h>
-#include <libnet.h>
 #include "util/RTimer.h"
 #include "cap/RCap.h"
 #include "RConfig.h"
 
 struct RConfig;
 
-class IRawConn;
-
 class IConn;
-
-class SockMon;
 
 namespace plog {
     class IAppender;
 }
+
+class INetConn;
 
 class ISockApp {
 public:
@@ -46,11 +43,14 @@ public:
 
     virtual void StartTimer(IUINT32 timeout_ms, IUINT32 repeat_ms);
 
-    virtual IRawConn *CreateBtmConn(RConfig &conf, uv_loop_t *loop, int datalink, int conn_type) = 0;
+    virtual IConn * CreateBtmConn(RConfig &conf) = 0;
 
-    virtual IConn *CreateBridgeConn(RConfig &conf, IRawConn *btm, uv_loop_t *loop, SockMon *mon) = 0;
+    virtual IConn *CreateBridgeConn(RConfig &conf, IConn *btm, uv_loop_t *loop) = 0;
 
-    virtual SockMon *InitSockMon(uv_loop_t *loop, const RConfig &conf) = 0;
+protected:
+    std::vector<INetConn *> createUdpConns(uint32_t src, const std::vector<uint16_t> &ports, uint32_t dst,
+                                                     const std::vector<uint16_t> &svr_ports);
+
 private:
     int doInit();
     int makeDaemon(bool d);
@@ -66,11 +66,9 @@ private:
     bool mServer;
     RCap *mCap = nullptr;
     IConn *mBridge = nullptr;
-    IRawConn *mBtmConn = nullptr;
-    libnet_t* mLibnet = nullptr;
+    IConn *mBtmConn = nullptr;
     RConfig mConf;
     bool mInited = false;
-    SockMon *mMon = nullptr;
 };
 
 

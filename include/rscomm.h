@@ -42,9 +42,6 @@ extern "C" {
 
 #define MD5_LEN 16
 
-#define HASH_BUF_SIZE 8
-#define ID_BUF_SIZE 8
-
 #ifndef RLOG_FILE_PATH
 #define RLOG_FILE_PATH "/var/log/rsock/rsock.log"
 #endif
@@ -52,10 +49,12 @@ extern "C" {
 #define OM_INIT_ACK 1
 #define OM_INIT_ACK_SYN 2
 #define OM_ACK 3
+
+typedef struct sockaddr SA;
+typedef struct sockaddr_in SA4;
+
 #ifdef __cplusplus
 }
-
-
 #endif
 
 #endif //RSOCK_RSCOMM_H

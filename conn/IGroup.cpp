@@ -3,24 +3,20 @@
 //
 
 #include <cassert>
+#include <vector>
 #include "plog/Log.h"
-#include "IGroupConn.h"
-#include "util/rsutil.h"
-#include "util/rhash.h"
-#include "tcp/SockMon.h"
+#include "IGroup.h"
+#include "../util/rsutil.h"
+#include "../util/rhash.h"
 
 using namespace std::placeholders;
 
-IGroupConn::IGroupConn(const IdBufType &groupId, uint32_t selfAddr, uint32_t targetAddr, SockMon *mon, IConn *btm) : IConn(
-        IdBuf2Str(groupId)) {
-    mGroupId = IdBuf2Str(groupId);
-    mMon = mon;
-    mSelfAddr = selfAddr;
-    mTargetAddr = targetAddr;
+IGroup::IGroup(const std::string &groupId, IConn *btm)
+        : IConn(groupId) {
     mBtm = btm;
 }
 
-int IGroupConn::Init() {
+int IGroup::Init() {
     int nret = IConn::Init();
     if (nret) {
         LOGE << "IConn::Init failed: " << nret;
@@ -43,40 +39,23 @@ int IGroupConn::Init() {
     return 0;
 }
 
-void IGroupConn::Close() {
+void IGroup::Close() {
+    IConn::Close();
     if (mBtm) {
         mBtm->Close();
         delete mBtm;
         mBtm = nullptr;
     }
     if (!mConns.empty()) {
-#ifndef NNDEBUG
-        assert(0);
-#else
-        LOGE << "mConns not empty";
         for (auto e: mConns) {
             e.second->Close();
             delete e.second;
         }
         mConns.clear();
-#endif
     }
 }
 
-const std::string &IGroupConn::Key() {
-    return mGroupId;
-}
-
-void IGroupConn::AddConn(IConn *conn, bool bindOutput) {
-    mConns.insert({conn->Key(), conn});
-
-    if (bindOutput) {
-        auto fn = std::bind(&IConn::Send, this, _1, _2);
-        conn->SetOutputCb(fn);
-    }
-}
-
-void IGroupConn::RemoveConn(IConn *conn, bool removeCb) {
+void IGroup::RemoveConn(IConn *conn, bool removeCb) {
     mConns.erase(conn->Key());
     if (removeCb) {
         conn->SetOnRecvCb(nullptr);
@@ -84,18 +63,22 @@ void IGroupConn::RemoveConn(IConn *conn, bool removeCb) {
     }
 }
 
-IConn *IGroupConn::ConnOfKey(const std::string &key) {
+IConn *IGroup::ConnOfKey(const std::string &key) {
     auto it = mConns.find(key);
     return (it != mConns.end()) ? it->second : nullptr;
 }
 
-void IGroupConn::AddConn(IConn *conn, const IConn::IConnCb &outCb, const IConn::IConnCb &recvCb) {
+void IGroup::AddConn(IConn *conn, const IConn::IConnCb &outCb, const IConn::IConnCb &recvCb) {
     mConns.insert({conn->Key(), conn});
-    conn->SetOutputCb(outCb);
-    conn->SetOnRecvCb(recvCb);
+    if (outCb) {
+        conn->SetOutputCb(outCb);
+    }
+    if (recvCb) {
+        conn->SetOnRecvCb(recvCb);
+    }
 }
 
-bool IGroupConn::CheckAndClose() {
+bool IGroup::CheckAndClose() {
     std::vector<std::pair<std::string, IConn *>> vec;
     int size = mConns.size();
     for (auto &e: mConns) {
@@ -120,15 +103,10 @@ bool IGroupConn::CheckAndClose() {
     return can;
 }
 
-IGroupConn::MapConnIter IGroupConn::begin() {
-    return mConns.begin();
+int IGroup::size() {
+    return mConns.size();
 }
 
-IGroupConn::MapConnIter IGroupConn::end() {
-    return mConns.end();
-}
-
-// todo: change according to mselfAddr and targetAddr
-int IGroupConn::NextPortPair(uint16_t &sp, uint16_t &dp) {
-    return mMon->NextPairForAddr(mSelfAddr, mTargetAddr, sp, dp);
+std::map<std::string, IConn *> &IGroup::GetAllConns() {
+    return mConns;
 }

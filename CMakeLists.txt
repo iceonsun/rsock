@@ -5,14 +5,18 @@ set(CMAKE_CXX_STANDARD 11)
 
 include_directories(./include)
 
-set(SOURCE_FILES ktype.h rcommon.c RConfig.cpp ISockApp.cpp IConn.cpp IGroupConn.cpp PortMapper.cpp IRawConn.cpp OHead.cpp
-        util/enc.c util/rsutil.cpp util/FdUtil.cpp util/rhash.cpp util/RTimer.cpp util/TextUtils.h util/RPortList.cpp util/PortPair.cpp
+set(SOURCE_FILES rcommon.c RConfig.cpp ISockApp.cpp conn/IConn.cpp PortMapper.cpp OHead.cpp
+        util/enc.c util/rsutil.cpp util/FdUtil.cpp util/rhash.cpp util/RTimer.cpp util/TextUtils.h util/RPortList.cpp util/PortPair.cpp util/ProcUtil.cpp
         cap/cap_util.cpp cap/RCap.cpp
         thirdparty/md5.c thirdparty/json11.cpp
-        tcp/TcpConnector.cpp tcp/SockMon.cpp tcp/SockMon.h tcp/LSockMon.cpp tcp/LSockMon.h util/ProcUtil.cpp util/ProcUtil.h)
+        tcp/TcpConnector.cpp tcp/SockMon.cpp tcp/LSockMon.cpp
+        conn/INetConn.cpp conn/BtmUdpConn.cpp EncHead.cpp conn/FakeTcp.cpp conn/TcpInfo.cpp
+        conn/INetGroup.cpp conn/IGroup.cpp conn/ConnInfo.cpp conn/FakeUdp.cpp
+        conn/RConn.cpp conn/RawTcp.cpp conn/IAppGroup.cpp
+        net/NetUtil.cpp net/NetManager.cpp net/TcpAckMon.cpp)
 
-set(SVR_SOURCE_FILES ${SOURCE_FILES} GroupConn.cpp server/SConn.cpp server/ServerGroupConn.cpp server/SSockApp.cpp server/ssock.cpp server/SRawConn.cpp)
-set(CLI_SOURCE_FILES ${SOURCE_FILES} client/CRawConn.cpp client/RClient.cpp client/CConn.cpp client/csock.cpp client/ClientConn.cpp client/CSockApp.cpp)
+set(SVR_SOURCE_FILES ${SOURCE_FILES} server/SConn.cpp server/SSockApp.cpp server/ssock.cpp server/SNetGroup.cpp server/ServerGroup.cpp server/SubGroup.cpp)
+set(CLI_SOURCE_FILES ${SOURCE_FILES} client/CConn.cpp client/csock.cpp client/CSockApp.cpp client/ClientGroup.cpp client/CNetGroup.cpp)
 
 add_executable(ssock ${SVR_SOURCE_FILES} server/main.cpp)
 set_target_properties(
@@ -28,7 +32,6 @@ set_target_properties(
         PROPERTIES
         COMPILE_DEFINITIONS RSOCK_NNDEBUG   # don't output pcap in/out
 )
-
 
 add_executable(test_server ${SVR_SOURCE_FILES} test/test_server.cpp)
 set_target_properties(
@@ -63,11 +66,11 @@ link_libraries($UV_PATH)
 find_library(CAP_PATH pcap /usr/lib NO_DEFAUL_CAP_PATH)
 link_libraries($CAP_PATH)
 
-if(APPLE)
+if (APPLE)
     set(libs uv net pcap)
-else()
+else ()
     set(libs uv net pcap pthread)
-endif()
+endif ()
 
 #target_link_libraries(rsock uv net pcap)
 target_link_libraries(rawsock ${libs})

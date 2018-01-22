@@ -7,23 +7,19 @@
 
 #include <sys/un.h>
 
-#include "../rscomm.h"
+#include "../conn/IAppGroup.h"
+#include "../EncHead.h"
 
-#include "../IGroupConn.h"
-#include "../PortMapper.h"
-#include "../OHead.h"
-#include "../rstype.h"
-#include "CConn.h"
+class CConn;
 
+class RPortList;
 
-class ClientConn : public IGroupConn {
+class ClientGroup : public IAppGroup {
 public:
-    ClientConn(const IdBufType &groupId, const std::string &listenUnPath, const std::string &listenUdpIp,
-               uint32_t selfAddr, IUINT16 listenUdpPort, const RPortList &sourcePorts, const RPortList &destPorts,
-               uv_loop_t *loop, SockMon *mon, IConn *btm, uint32_t targetAddrInt, IUINT8 connType);
-    int Init() override;
+    ClientGroup(const std::string &groupId, const std::string &listenUnPath, const std::string &listenUdpIp,
+                IUINT16 listenUdpPort, uv_loop_t *loop, INetGroup *fakeGroup, IConn *btm);
 
-    int Output(ssize_t nread, const rbuf_t &rbuf) override;
+    int Init() override;
 
     int OnRecv(ssize_t nread, const rbuf_t &rbuf) override;
 
@@ -33,6 +29,8 @@ public:
 //    void AddConn(IConn *conn, bool bindOutput = true) override {};
 
     void RemoveConn(IConn *conn, bool removeCb) override;
+
+//    int Output(ssize_t nread, const rbuf_t &rbuf) override;
 
 private:
     int subconnRecv(ssize_t nread, const rbuf_t &rbuf);
@@ -52,13 +50,12 @@ private:
 
     static void pollCb(uv_poll_t *handle, int status, int events);
 
+    int cconSend(ssize_t nread, const rbuf_t &rbuf);
+
 private:
 
-//    std::map<std::string, IUINT32> mAddr2Conv;
-//    std::map<IUINT32, struct sockaddr *> mConv2Origin;
     IUINT32 mConvCounter = 1;
 
-//    OHead mHead;
     uv_udp_t *mUdp = nullptr;
     uv_poll_t *mUnPoll = nullptr;
     int mUnSock;
@@ -66,9 +63,9 @@ private:
     struct sockaddr_in *mUdpAddr = nullptr;
     struct sockaddr_un *mUnAddr = nullptr;
 
-    PortMapper mPortMapper; // todo initialize this.
     uv_loop_t *mLoop = nullptr;
     std::map<IUINT32, CConn *> mConvMap;
+    EncHead mHead;
 };
 
 

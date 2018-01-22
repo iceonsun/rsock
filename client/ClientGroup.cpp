@@ -3,19 +3,22 @@
 //
 
 #include <cassert>
+
 #include "plog/Log.h"
-#include "ClientConn.h"
+
+#include "CConn.h"
+#include "ClientGroup.h"
 #include "../util/rsutil.h"
-#include "../tcp/SockMon.h"
+#include "../conn/ConnInfo.h"
+#include "../util/rhash.h"
 
 using namespace std::placeholders;
 
-ClientConn::ClientConn(const IdBufType &groupId, const std::string &listenUnPath, const std::string &listenUdpIp,
-                       uint32_t selfAddr, IUINT16 listenUdpPort, const RPortList &sourcePorts,
-                       const RPortList &destPorts, uv_loop_t *loop, SockMon *mon, IConn *btm, uint32_t targetAddrInt,
-                       IUINT8 connType) : IGroupConn(groupId, selfAddr, targetAddrInt, mon, btm),
-                                          mPortMapper(groupId, targetAddrInt, connType, sourcePorts, destPorts) {
-    assert(loop != nullptr);
+ClientGroup::ClientGroup(const std::string &groupId, const std::string &listenUnPath, const std::string &listenUdpIp,
+                         IUINT16 listenUdpPort, uv_loop_t *loop, INetGroup *fakeGroup, IConn *btm) : IAppGroup(groupId,
+                                                                                                               fakeGroup,
+                                                                                                               btm) {
+    assert(fakeGroup != nullptr);
     if (!listenUdpIp.empty()) {
         mUdpAddr = new_addr4(listenUdpIp.c_str(), listenUdpPort);
     }
@@ -25,11 +28,12 @@ ClientConn::ClientConn(const IdBufType &groupId, const std::string &listenUnPath
         assert(mUnAddr != nullptr);
     }
 
+    mHead.id_buf = Str2IdBuf(groupId);
     mLoop = loop;
 }
 
-int ClientConn::Init() {
-    int nret = IGroupConn::Init();
+int ClientGroup::Init() {
+    int nret = IAppGroup::Init();
     if (nret) {
         return nret;
     }
@@ -53,53 +57,13 @@ int ClientConn::Init() {
     return 0;
 }
 
-int ClientConn::Output(ssize_t nread, const rbuf_t &rbuf) {
-    assert(nread > 0);
-
-    auto *conn = static_cast<CConn *>(rbuf.data);
-    assert(conn != nullptr);
-// todo: add udp logic
-    uint16_t sp, dp;
-    int n = NextPortPair(sp, dp);
-    if (n) {
-        return -1;
-    }
-
-//    int size = mPortMapper.size() * 2;
-//    for (int i = 0; i < size; i++) {
-    OHead &hd = mPortMapper.NextHead();
-//        if (hd.AckPending()) {
-//            continue;
-//        }
-    hd.UpdateSourcePort(sp);
-    hd.UpdateDstPort(dp);
-    hd.UpdateConv(conn->Conv());
-
-    rbuf_t buf = {0};
-    buf.base = rbuf.base;
-    buf.data = &hd;
-    return IGroupConn::Output(nread, buf);
-//    }
-
-//    return 0;
-}
-
-// hash_buf check passed. src and dst check passed.
-int ClientConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
+// recv from peer. send data to origin
+int ClientGroup::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
     assert(nread > 0);
     if (nread > 0) {
-        // todo: check src == target. it's checked in rawconn. just assert(0) here if not match
-        OHead *head = static_cast<OHead *>(rbuf.data);
-        assert(head);
-
-        OHead *hd = mPortMapper.HeadOfPorts(head->DstPort(), head->SourcePort());
-        if (head->Ack() != OM_INIT_ACK_SYN) {
-            hd->SetAck(head->Ack());
-        } else {
-            hd->SetAck(OM_ACK);     // server is syn+ack state. clear the state
-        }
-//        hd->IncAck();
-        IUINT32 conv = head->Conv();
+        ConnInfo *info = static_cast<ConnInfo *>(rbuf.data);
+        EncHead *head = info->head;
+        uint32_t conv = head->conv;
         auto it = mConvMap.find(conv);
         if (it != mConvMap.end()) {
             return it->second->Input(nread, rbuf);
@@ -110,8 +74,19 @@ int ClientConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
     return nread;
 }
 
+//int ClientGroup::Output(ssize_t nread, const rbuf_t &rbuf) {
+//    CConn *conn = static_cast<CConn *>(rbuf.data);
+//    assert(conn);
+//    mHead.conv = conn->Conv();
+//    const rbuf_t buf = {
+//            .base = rbuf.base,
+//            .len = (int)nread,
+//            .data = &mHead,
+//    };
+//    return IAppGroup::Output(nread, buf);
+//}
 
-int ClientConn::send2Origin(ssize_t nread, const rbuf_t &rbuf, const sockaddr *addr) {
+int ClientGroup::send2Origin(ssize_t nread, const rbuf_t &rbuf, const sockaddr *addr) {
     if (addr->sa_family == AF_UNIX) {   // if unix domain socket. send on it.
         return unSendOrigin(nread, rbuf, (sockaddr_un *) addr);
     }
@@ -127,7 +102,7 @@ int ClientConn::send2Origin(ssize_t nread, const rbuf_t &rbuf, const sockaddr *a
     return nread;
 }
 
-int ClientConn::unSendOrigin(ssize_t nread, const rbuf_t &rbuf, struct sockaddr_un *addr) {
+int ClientGroup::unSendOrigin(ssize_t nread, const rbuf_t &rbuf, struct sockaddr_un *addr) {
     socklen_t socklen = sizeof(struct sockaddr_un);
     ssize_t n = sendto(mUnSock, rbuf.base, nread, 0, reinterpret_cast<const sockaddr *>(&addr), socklen);
     if (n <= 0) {
@@ -137,8 +112,8 @@ int ClientConn::unSendOrigin(ssize_t nread, const rbuf_t &rbuf, struct sockaddr_
 }
 
 
-void ClientConn::send_cb(uv_udp_send_t *req, int status) {
-//ClientConn *conn = static_cast<ClientConn *>(req->data);
+void ClientGroup::send_cb(uv_udp_send_t *req, int status) {
+//ClientGroup *conn = static_cast<ClientGroup *>(req->data);
     if (status) {
         // todo: error processing
         LOGE << "udp send error: " << uv_strerror(status);
@@ -149,9 +124,9 @@ void ClientConn::send_cb(uv_udp_send_t *req, int status) {
     free_rudp_send(reinterpret_cast<rudp_send_t *>(req));
 }
 
-void ClientConn::udpRecvCb(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf, const struct sockaddr *addr,
-                           unsigned flags) {
-    auto *conn = static_cast<ClientConn *>(handle->data);
+void ClientGroup::udpRecvCb(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf, const struct sockaddr *addr,
+                            unsigned flags) {
+    auto *conn = static_cast<ClientGroup *>(handle->data);
     if (nread > 0) {
         auto *addr4 = (const struct sockaddr_in *) addr;
         LOGV << "client, receive " << nread << " bytes from " << inet_ntoa(addr4->sin_addr) << ":"
@@ -168,8 +143,8 @@ void ClientConn::udpRecvCb(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf,
     free(buf->base);
 }
 
-void ClientConn::pollCb(uv_poll_t *handle, int status, int events) {
-    ClientConn *conn = static_cast<ClientConn *>(handle->data);
+void ClientGroup::pollCb(uv_poll_t *handle, int status, int events) {
+    ClientGroup *conn = static_cast<ClientGroup *>(handle->data);
     if (status) {
         LOGE << "unix listen sock error: " << uv_strerror(status);
         return;
@@ -196,8 +171,8 @@ void ClientConn::pollCb(uv_poll_t *handle, int status, int events) {
     }
 }
 
-void ClientConn::Close() {
-    IGroupConn::Close();
+void ClientGroup::Close() {
+    IGroup::Close();
 
     if (mUdp) {
         uv_close(reinterpret_cast<uv_handle_t *>(mUdp), close_cb);
@@ -207,7 +182,8 @@ void ClientConn::Close() {
     if (mUnPoll) {
         uv_poll_stop(mUnPoll);
         close(mUnSock);
-        free(mUnPoll);
+        uv_close(reinterpret_cast<uv_handle_t *>(mUnPoll), close_cb);
+//        free(mUnPoll);    // may cause bug!
     }
 
     if (mUdpAddr) {
@@ -221,29 +197,27 @@ void ClientConn::Close() {
     }
 }
 
-void ClientConn::onLocalRecv(ssize_t nread, const char *base, const struct sockaddr *addr) {
-    auto key = OHead::BuildAddrKey(addr);
+void ClientGroup::onLocalRecv(ssize_t nread, const char *base, const struct sockaddr *addr) {
+    auto key = ConnInfo::BuildAddrKey(addr);
     auto conn = ConnOfKey(key);
     if (!conn) {
         conn = newConn(key, addr, ++mConvCounter);
     }
 
     rbuf_t rbuf = {0};
-    rbuf.base = const_cast<char *>(base);   // todo:
+    rbuf.base = const_cast<char *>(base);
     rbuf.len = nread;
     rbuf.data = conn;
-
     conn->Send(nread, rbuf);
 }
 
-CConn *ClientConn::newConn(const std::string &key, const struct sockaddr *addr, IUINT32 conv) {
+CConn *ClientGroup::newConn(const std::string &key, const struct sockaddr *addr, IUINT32 conv) {
     LOGD << "new cconn:" << key;
     CConn *conn = new CConn(key, addr, conv);
-    auto outfn = std::bind(&IConn::Send, this, _1, _2);
-    auto recvfn = std::bind(&ClientConn::subconnRecv, this, _1, _2);
+    auto outfn = std::bind(&ClientGroup::cconSend, this, _1, _2);
+    auto recvfn = std::bind(&ClientGroup::subconnRecv, this, _1, _2);
 
     AddConn(conn, outfn, recvfn);
-//    IGroupConn::AddConn(conn, outfn, recvfn);
     mConvMap.insert({conv, conn});
 
     int nret = conn->Init();
@@ -251,14 +225,25 @@ CConn *ClientConn::newConn(const std::string &key, const struct sockaddr *addr, 
     return conn;
 }
 
-int ClientConn::subconnRecv(ssize_t nread, const rbuf_t &rbuf) {
+int ClientGroup::subconnRecv(ssize_t nread, const rbuf_t &rbuf) {
     struct sockaddr *addr = static_cast<sockaddr *>(rbuf.data);
     return send2Origin(nread, rbuf, addr);
 }
 
-void ClientConn::RemoveConn(IConn *conn, bool removeCb) {
-    IGroupConn::RemoveConn(conn, removeCb);
+void ClientGroup::RemoveConn(IConn *conn, bool removeCb) {
+    IGroup::RemoveConn(conn, removeCb);
     CConn *cConn = dynamic_cast<CConn *>(conn);
     assert(cConn != nullptr);
     mConvMap.erase(cConn->Conv());
+}
+
+int ClientGroup::cconSend(ssize_t nread, const rbuf_t &rbuf) {
+    CConn *cConn = static_cast<CConn *>(rbuf.data);
+    mHead.conv = cConn->Conv();
+    const rbuf_t buf = {
+            .base = rbuf.base,
+            .len = (int) nread,
+            .data = &mHead,
+    };
+    return Send(nread, buf);
 }

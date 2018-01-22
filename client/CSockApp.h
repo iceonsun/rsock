@@ -7,6 +7,7 @@
 
 
 #include "../ISockApp.h"
+#include "../conn/IGroup.h"
 
 class CSockApp : public ISockApp {
 public:
@@ -14,11 +15,9 @@ public:
 
     RCap *CreateCap(RConfig &conf) override;
 
-    IRawConn *CreateBtmConn(RConfig &conf, uv_loop_t *loop, int datalink, int conn_type) override;
+    IConn * CreateBtmConn(RConfig &conf) override;
 
-    IConn *CreateBridgeConn(RConfig &conf, IRawConn *btm, uv_loop_t *loop, SockMon *mon) override;
-
-    SockMon *InitSockMon(uv_loop_t *loop, const RConfig &conf) override;
+    IConn *CreateBridgeConn(RConfig &conf, IConn *btm, uv_loop_t *loop) override;
 };
 
 

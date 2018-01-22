@@ -10,7 +10,7 @@
 #include <functional>
 
 #include "ktype.h"
-#include "rcommon.h"
+#include "../rcommon.h"
 
 class IConn {
 public:
@@ -18,6 +18,7 @@ public:
     //    typedef std::shared_ptr<IConn *> SPConn;
 
     explicit IConn(const std::string &key);
+
     virtual ~IConn() = default;
 
     virtual void Close();
@@ -26,13 +27,13 @@ public:
 
     // non overridable to ensure child class don't override this method.
     // if child class want to process data, override Output for sending data, OnRecv for input data
-     int Send(ssize_t nread, const rbuf_t &rbuf);
+    virtual int Send(ssize_t nread, const rbuf_t &rbuf);
 //    virtual int Send(ssize_t nread, const rbuf_t &rbuf);
 
     virtual int Output(ssize_t nread, const rbuf_t &rbuf);
 
     // non overridable
-     int Input(ssize_t nread, const rbuf_t &rbuf);
+    virtual int Input(ssize_t nread, const rbuf_t &rbuf);
 //    virtual int Input(ssize_t nread, const rbuf_t &rbuf);
 
     virtual int OnRecv(ssize_t nread, const rbuf_t &rbuf);
@@ -45,14 +46,19 @@ public:
 
     // if no data send/input since last check, return true.
     virtual bool CheckAndClose();
-    
-    IConn&operator=(const IConn &) = delete;
+
+    // TODO: return alive according dataset. return false if no data flowed on `both` directions
+    virtual bool Alive() { return true; }
+
+    IConn &operator=(const IConn &) = delete;
 
 private:
     class DataStat {
     public:
         void afterInput(ssize_t nread);
+
         void afterSend(ssize_t nread);
+
         bool canCloseCheck();
 
     private:

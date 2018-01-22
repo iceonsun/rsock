@@ -10,13 +10,15 @@
 #include "uv.h"
 
 #include "ISockApp.h"
-#include "IConn.h"
-#include "IRawConn.h"
+#include "conn/IConn.h"
 #include "plog/Log.h"
 #include "plog/Appenders/ConsoleAppender.h"
 #include "util/FdUtil.h"
 #include "tcp/SockMon.h"
 #include "util/ProcUtil.h"
+#include "conn/RawTcp.h"
+#include "net/NetManager.h"
+#include "conn/IGroup.h"
 
 ISockApp::ISockApp(bool is_server, uv_loop_t *loop) : mServer(is_server) {
     mLoop = loop;
@@ -66,14 +68,21 @@ int ISockApp::Init() {
 int ISockApp::doInit() {
     assert(mConf.Inited());
 
+    if (makeDaemon(mConf.isDaemon)) {
+        return -1;
+    }
+
     int nret = initLog();
     if (nret) {
         fprintf(stderr, "failed to init logger, nret: %d\n", nret);
         return -1;
     }
 
-    if (makeDaemon(mConf.isDaemon)) {
-        return -1;
+    auto manager = NetManager::GetInstance(mLoop);
+    nret = manager->Init();
+    if (nret) {
+        LOGE << "NetManager init failed";
+        return nret;
     }
 
     mTimer = new RTimer(mLoop);
@@ -83,25 +92,12 @@ int ISockApp::doInit() {
         return -1;
     }
 
-    char err[LIBNET_ERRBUF_SIZE] = {0};
-    mLibnet = libnet_init(LIBNET_RAW4, mConf.param.dev.c_str(), err);
-    if (nullptr == mLibnet) {
-        LOGE << "failed to init libnet: " << err;
-        return -1;
-    }
-
-    mBtmConn = CreateBtmConn(mConf, mLoop, mCap->Datalink(), mConf.param.type);
+    mBtmConn = CreateBtmConn(mConf);
     if (!mBtmConn) {
         return -1;
     }
 
-    mMon = InitSockMon(mLoop, mConf);
-    if (!mMon) {
-        LOGE << "failed to create sockmon or init failed";
-        return -1;
-    }
-
-    mBridge = CreateBridgeConn(mConf, mBtmConn, mLoop, mMon);
+    mBridge = CreateBridgeConn(mConf, mBtmConn, mLoop);
 
     if (!mBridge || mBridge->Init()) {
         return -1;
@@ -122,7 +118,7 @@ int ISockApp::initLog() {
             }
         }
         mFileAppender = new plog::RollingFileAppender<plog::TxtFormatter>(mConf.log_path.c_str(), 100000, 5);
-    } else  {
+    } else {
         fprintf(stderr, "warning: log path empty\n");
     }
 
@@ -134,9 +130,11 @@ int ISockApp::initLog() {
 
     return 0;
 }
+
 int ISockApp::Start() {
     assert(mInited);
-    mCap->Start(IRawConn::CapInputCb, reinterpret_cast<u_char *>(mBtmConn)); // starts the thread
+    // todo: !!!
+//    mCap->Start(RawTcp::CapInputCb, reinterpret_cast<u_char *>(mBtmConn)); // starts the thread
     StartTimer(mConf.param.interval * 1000 * 2, mConf.param.interval * 1000);
 
     return uv_run(mLoop, UV_RUN_DEFAULT);
@@ -171,12 +169,7 @@ void ISockApp::Close() {
         uv_loop_delete(mLoop);
         mLoop = nullptr;
     }
-
-    if (mMon) {
-        mMon->Close();
-        delete mMon;
-        mMon = nullptr;
-    }
+    NetManager::DestroyInstance();
 }
 
 void ISockApp::StartTimer(IUINT32 timeout_ms, IUINT32 repeat_ms) {
@@ -197,4 +190,34 @@ int ISockApp::makeDaemon(bool d) {
         uv_loop_init(mLoop);
     }
     return 0;
+}
+
+std::vector<INetConn *> ISockApp::createUdpConns(uint32_t src, const std::vector<uint16_t> &ports, uint32_t dst,
+                                                 const std::vector<uint16_t> &svr_ports) {
+    std::vector<INetConn *> vec;
+    int n = std::min(ports.size(), svr_ports.size());
+    assert(n);
+    ConnInfo info;
+    info.src = src;
+    info.dst = dst;
+    auto manager = NetManager::GetInstance(nullptr);
+    for (int i = 0; i < n; i++) {
+        info.sp = ports[i];
+        info.dp = svr_ports[i];
+        auto conn = manager->DialSync(info);    // todo: add tcp later
+        if (nullptr == conn) {
+            LOGE << "dial udp failed";
+            continue;
+        }
+        if (!conn->Init()) {
+            vec.push_back(conn);
+            continue;
+        } else {
+            conn->Close();
+            delete conn;
+            // todo: if any tcp or udp failed, try again later. e.g 10s later
+            LOGE << "port pair (" << ports[i] << ", " << svr_ports[i] << ") failed to create udp conn";
+        }
+    }
+    return vec;
 }

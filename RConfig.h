@@ -6,7 +6,6 @@
 #define RSOCK_RCONFIG_H
 
 #include <string>
-#include <libnet.h>
 
 #include "ktype.h"
 #include "rstype.h"
@@ -61,7 +60,7 @@ struct RConfig {
 #else
         RPortList targetCapPorts = {{80, 0}, {443, 0}, {10010, 10020}};
 #endif
-        IUINT16 interval = 20;
+        IUINT16 interval = 40;
         IUINT32 selfCapInt = 0;
         IUINT32 targetCapInt = 0;
         std::string hashKey = "hello135";

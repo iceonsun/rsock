@@ -7,7 +7,7 @@
 
 #include <vector>
 #include <string>
-#include "../rstype.h"
+#include "rstype.h"
 
 class TextUtils {
 public:

@@ -11,7 +11,7 @@
 #include <string>
 #include <vector>
 #include <cstdint>
-#include "../rstype.h"
+#include "rstype.h"
 class RPortList;
 
 uint32_t NetIntOfIp(const char *ip);

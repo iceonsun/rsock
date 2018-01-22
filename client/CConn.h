@@ -6,7 +6,7 @@
 #define RSOCK_CCONN_H
 
 
-#include "../IConn.h"
+#include "../conn/IConn.h"
 
 class CConn : public IConn {
 public:
@@ -14,7 +14,7 @@ public:
 
     IUINT32 Conv();
 
-    int Output(ssize_t nread, const rbuf_t &rbuf) override;
+//    int Output(ssize_t nread, const rbuf_t &rbuf) override;
 
     int OnRecv(ssize_t nread, const rbuf_t &rbuf) override;
 
