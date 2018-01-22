@@ -43,7 +43,7 @@ int ServerGroup::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
 IConn *ServerGroup::newConn(const std::string &groupId, uv_loop_t *loop, const struct sockaddr *target) {
     auto fakenet = new SNetGroup(groupId, loop);
     auto conn = new SubGroup(groupId, loop, target, fakenet, nullptr);
-
+    LOGV << "new group: " << groupId;
     if (conn->Init()) {
         conn->Close();
         delete conn;

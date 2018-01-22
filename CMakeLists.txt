@@ -56,6 +56,8 @@ set_target_properties(
         COMPILE_DEFINITIONS RSOCK_NNDEBUG
 )
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -Wsign-compare")
+
 # change /usr/local/lib to the folder of your libnet.so/.a
 find_library(NET_PATH net /usr/local/lib NO_DEFAULT_PATH)
 link_libraries($NET_PATH)

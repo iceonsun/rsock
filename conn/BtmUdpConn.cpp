@@ -57,6 +57,7 @@ void BtmUdpConn::recv_cb(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf, c
                          unsigned flags) {
     BtmUdpConn *conn = static_cast<BtmUdpConn *>(handle->data);
     if (nread > 0) {
+        LOGV << "recv " << nread << " bytes from " << Addr2Str(addr);
         conn->udpRecv(nread, buf, addr);
     } else if (nread < 0 && nread != UV_ECANCELED) {
         LOGE << "recv error: " << uv_strerror(nread);
@@ -81,6 +82,7 @@ int BtmUdpConn::Output(ssize_t nread, const rbuf_t &rbuf) {
     targetAddr.sin_port = htons(info->dp);
     targetAddr.sin_addr.s_addr = info->dst;
 
+    LOGV << "send " << nread << " bytes to " << Addr2Str((const SA*)&targetAddr);
     uv_udp_send(reinterpret_cast<uv_udp_send_t *>(snd), mUdp, &snd->buf, 1,
                 (const struct sockaddr *) (&targetAddr), send_cb);
     return nread;

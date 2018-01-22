@@ -36,9 +36,9 @@ std::string ConnInfo::KeyForUdpBtm(uint32_t src, uint16_t sp) {
     return out.str();
 }
 
-std::string ConnInfo::BuildConnKey(uint32_t dst, uint16_t dp, uint32_t conv) {
+std::string ConnInfo::BuildConnKey(uint32_t dst, uint32_t conv) {
     std::ostringstream out;
-    out << "conv:" << inet_ntoa({dst}) << ":" << dp << ":" << conv;
+    out << "conn:" << inet_ntoa({dst})  << ":" << conv;
     return out.str();
 }
 

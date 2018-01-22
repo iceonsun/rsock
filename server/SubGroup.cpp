@@ -37,7 +37,7 @@ int SubGroup::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
         EncHead *head = info->head;
         assert(head);
 
-        auto key = ConnInfo::BuildConnKey(info->dst, info->dp, head->conv);
+        auto key = ConnInfo::BuildConnKey(info->dst, head->conv);
         auto conn = ConnOfKey(key);
         if (!conn) {
             conn = newConn(key, head->conv);

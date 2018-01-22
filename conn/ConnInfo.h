@@ -32,7 +32,7 @@ struct ConnInfo {
 
     static std::string KeyForUdpBtm(uint32_t src, uint16_t sp);
 
-    static std::string BuildConnKey(uint32_t dst, uint16_t dp, uint32_t conv);
+    static std::string BuildConnKey(uint32_t dst, uint32_t conv);
 
     static std::string BuildAddrKey(const sockaddr *addr);
 
