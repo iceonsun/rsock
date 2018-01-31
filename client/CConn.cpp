@@ -5,25 +5,21 @@
 #include "CConn.h"
 #include "../util/rsutil.h"
 
-CConn::CConn(const std::string &key, const struct sockaddr *addr, IUINT32 conv) : IConn(key) {
+CConn::CConn(const std::string &key, const SA *addr, uint32_t conv) : IConn(key) {
     mAddr = new_addr(addr);
     mConv = conv;
 }
 
-IUINT32 CConn::Conv() {
+uint32_t CConn::Conv() {
     return mConv;
 }
 
-//int CConn::Output(ssize_t nread, const rbuf_t &rbuf) {
-//    rbuf_t buf = {0};
-//    buf.base = rbuf.base;
-//    buf.data = this;
-//    return IConn::Output(nread, buf);
-//}
+int CConn::Output(ssize_t nread, const rbuf_t &rbuf) {
+    rbuf_t buf = new_buf(nread, rbuf, this);
+    return IConn::Output(nread, buf);
+}
 
 int CConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
-    rbuf_t buf = {0};
-    buf.base = rbuf.base;
-    buf.data = mAddr;
+    rbuf_t buf = new_buf(nread, rbuf, this);
     return IConn::OnRecv(nread, buf);
 }

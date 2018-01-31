@@ -6,21 +6,24 @@
 #define RSOCK_CCONN_H
 
 
+#include <rscomm.h>
 #include "../conn/IConn.h"
 
 class CConn : public IConn {
 public:
-    CConn(const std::string &key, const struct sockaddr *addr, IUINT32 conv);
+    CConn(const std::string &key, const SA *addr, uint32_t conv);
 
-    IUINT32 Conv();
+    uint32_t Conv();
 
-//    int Output(ssize_t nread, const rbuf_t &rbuf) override;
+    int Output(ssize_t nread, const rbuf_t &rbuf) override;
 
     int OnRecv(ssize_t nread, const rbuf_t &rbuf) override;
 
+    SA *GetAddr() { return mAddr; }
+
 private:
-    IUINT32 mConv = 0;
-    struct sockaddr *mAddr = nullptr;
+    uint32_t mConv = 0;
+    SA *mAddr = nullptr;
 };
 
 

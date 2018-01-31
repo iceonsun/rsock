@@ -14,11 +14,12 @@
 #include "plog/Log.h"
 #include "plog/Appenders/ConsoleAppender.h"
 #include "util/FdUtil.h"
-#include "tcp/SockMon.h"
 #include "util/ProcUtil.h"
-#include "conn/RawTcp.h"
-#include "net/NetManager.h"
-#include "conn/IGroup.h"
+#include "conn/INetConn.h"
+#include "net/INetManager.h"
+#include "net/TcpAckPool.h"
+#include "cap/RCap.h"
+#include "conn/RConn.h"
 
 ISockApp::ISockApp(bool is_server, uv_loop_t *loop) : mServer(is_server) {
     mLoop = loop;
@@ -78,8 +79,11 @@ int ISockApp::doInit() {
         return -1;
     }
 
-    auto manager = NetManager::GetInstance(mLoop);
-    nret = manager->Init();
+    mAckPool = new TcpAckPool();
+
+    mNetManager = CreateNetManager(mConf, mLoop, mAckPool);
+    nret = mNetManager->Init();
+
     if (nret) {
         LOGE << "NetManager init failed";
         return nret;
@@ -92,12 +96,15 @@ int ISockApp::doInit() {
         return -1;
     }
 
-    mBtmConn = CreateBtmConn(mConf);
+    mBtmConn = CreateBtmConn(mConf, mLoop, mAckPool, mCap->Datalink());
+//    if (!mBtmConn || mBtmConn->Init()) {
     if (!mBtmConn) {
         return -1;
     }
 
-    mBridge = CreateBridgeConn(mConf, mBtmConn, mLoop);
+    mCap->Start(RConn::CapInputCb, reinterpret_cast<u_char *>(mBtmConn));
+
+    mBridge = CreateBridgeConn(mConf, mBtmConn, mLoop, mNetManager);
 
     if (!mBridge || mBridge->Init()) {
         return -1;
@@ -133,8 +140,7 @@ int ISockApp::initLog() {
 
 int ISockApp::Start() {
     assert(mInited);
-    // todo: !!!
-//    mCap->Start(RawTcp::CapInputCb, reinterpret_cast<u_char *>(mBtmConn)); // starts the thread
+
     StartTimer(mConf.param.interval * 1000 * 2, mConf.param.interval * 1000);
 
     return uv_run(mLoop, UV_RUN_DEFAULT);
@@ -166,10 +172,23 @@ void ISockApp::Close() {
 
     if (mLoop) {
         uv_stop(mLoop);
-        uv_loop_delete(mLoop);
+        if (mConf.isDaemon) {   // it will crash if delete default loop
+            uv_loop_delete(mLoop);
+        }
         mLoop = nullptr;
     }
-    NetManager::DestroyInstance();
+
+    if (mNetManager) {
+        mNetManager->Close();
+        delete mNetManager;
+        mNetManager = nullptr;
+    }
+
+    if (mAckPool) {
+        mAckPool->Close();
+        delete mAckPool;
+        mAckPool = nullptr;
+    }
 }
 
 void ISockApp::StartTimer(IUINT32 timeout_ms, IUINT32 repeat_ms) {
@@ -200,11 +219,11 @@ std::vector<INetConn *> ISockApp::createUdpConns(uint32_t src, const std::vector
     ConnInfo info;
     info.src = src;
     info.dst = dst;
-    auto manager = NetManager::GetInstance(nullptr);
+
     for (int i = 0; i < n; i++) {
         info.sp = ports[i];
         info.dp = svr_ports[i];
-        auto conn = manager->DialSync(info);    // todo: add tcp later
+        auto conn = mNetManager->BindUdp(info);    // todo: add tcp later
         if (nullptr == conn) {
             LOGE << "dial udp failed";
             continue;

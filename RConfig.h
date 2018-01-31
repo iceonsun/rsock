@@ -7,7 +7,6 @@
 
 #include <string>
 
-#include "ktype.h"
 #include "rstype.h"
 #include "rscomm.h"
 #include "thirdparty/json11.hpp"
@@ -37,7 +36,7 @@ struct RConfig {
 
         // todo: remove all default values?
         // other app communicate with client/server through this port.
-        IUINT16 localUdpPort = 10000;
+        uint16_t localUdpPort = 10000;
         // The ip for passed in dev. e.g. 192.168.3.2. This may be different from localUdpIp
         std::string selfCapIp;
 
@@ -51,7 +50,7 @@ struct RConfig {
 #endif
 
         std::string targetIp;
-        IUINT16 targetPort = 0;
+        uint16_t targetPort = 0;
 
         // only valid for client
         // for server. only element[0] is valid and it's used for target port for server
@@ -60,9 +59,9 @@ struct RConfig {
 #else
         RPortList targetCapPorts = {{80, 0}, {443, 0}, {10010, 10020}};
 #endif
-        IUINT16 interval = 40;
-        IUINT32 selfCapInt = 0;
-        IUINT32 targetCapInt = 0;
+        uint16_t interval = 40;
+        uint32_t selfCapInt = 0;
+        uint32_t targetCapInt = 0;
         std::string hashKey = "hello135";
         IdBufType id {{0}};
         int type = OM_PIPE_ALL;
@@ -96,7 +95,7 @@ public:
     static void ParseJsonString(RConfig &c, const std::string &content, std::string &err);
 
 private:
-    static inline bool parseAddr(const std::string &addr, std::string &ip, IUINT16 &port, bool usePort);
+    static inline bool parseAddr(const std::string &addr, std::string &ip, uint16_t &port, bool usePort);
 
     static inline int typeOfStr(const std::string &str);
 

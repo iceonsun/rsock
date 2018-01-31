@@ -10,14 +10,14 @@
 
 
 RCap::RCap(const std::string &dev, const std::string &selfIp, const RPortList &selfPorts, const RPortList &srcPorts,
-           const std::string &srcIp, int timeout_ms) : TIMEOUT(timeout_ms) {
+           const std::string &srcIp, int timeout_ms, bool server) : TIMEOUT(timeout_ms) {
     mDev = dev;
     mSrcIp = srcIp;
     mDstIp = selfIp;
     mSrc = srcPorts;
     mDest = selfPorts;
+    mIsServer = server;
 }
-
 
 int RCap::initDevAndIp() {
     if (mDev.empty()) {
@@ -46,7 +46,7 @@ int RCap::Init() {
         }
     }
 
-    auto filterStr = BuildFilterStr(mSrcIp, mDstIp, mSrc, mDest);
+    auto filterStr = BuildFilterStr("tcp", mSrcIp, mDstIp, mSrc, mDest, mIsServer);
     LOGD << "filter : " << filterStr;
     if (filterStr.empty()) {
         LOGE << "failed to build capture filter";
@@ -78,9 +78,11 @@ int RCap::Init() {
             nret = -1;
         }
         if (datalink == DLT_EN10MB) {   // if DLT_NULL, setting PCAP_D_IN will not work.
-            if (-1 == (nret = pcap_setdirection(mCap, PCAP_D_IN))) {
-                LOGE << "pcap_setdirection failed, direction:" << PCAP_D_IN << ", error: " << pcap_geterr(mCap);
-                break;
+            if (!mIsServer) {   // server will capture SYN|ACK of self
+                if (-1 == (nret = pcap_setdirection(mCap, PCAP_D_IN))) {
+                    LOGE << "pcap_setdirection failed, direction:" << PCAP_D_IN << ", error: " << pcap_geterr(mCap);
+                    break;
+                }
             }
         }
     } while (false);

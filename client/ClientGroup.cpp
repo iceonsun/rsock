@@ -15,9 +15,8 @@
 using namespace std::placeholders;
 
 ClientGroup::ClientGroup(const std::string &groupId, const std::string &listenUnPath, const std::string &listenUdpIp,
-                         IUINT16 listenUdpPort, uv_loop_t *loop, INetGroup *fakeGroup, IConn *btm) : IAppGroup(groupId,
-                                                                                                               fakeGroup,
-                                                                                                               btm) {
+                         uint16_t listenUdpPort, uv_loop_t *loop, INetGroup *fakeGroup, IConn *btm)
+        : IAppGroup(groupId, fakeGroup, btm) {
     assert(fakeGroup != nullptr);
     if (!listenUdpIp.empty()) {
         mUdpAddr = new_addr4(listenUdpIp.c_str(), listenUdpPort);
@@ -43,7 +42,7 @@ int ClientGroup::Init() {
         if (nret) {
             return nret;
         }
-        LOGD << "client, listening on udp: " << inet_ntoa(mUdpAddr->sin_addr) << ":" << ntohs(mUdpAddr->sin_port);
+        LOGD << "client, listening on udp: " << InAddr2Ip(mUdpAddr->sin_addr) << ":" << ntohs(mUdpAddr->sin_port);
     }
 
     if (mUnAddr) {
@@ -129,7 +128,7 @@ void ClientGroup::udpRecvCb(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf
     auto *conn = static_cast<ClientGroup *>(handle->data);
     if (nread > 0) {
         auto *addr4 = (const struct sockaddr_in *) addr;
-        LOGV << "client, receive " << nread << " bytes from " << inet_ntoa(addr4->sin_addr) << ":"
+        LOGV << "client, receive " << nread << " bytes from " << InAddr2Ip(addr4->sin_addr) << ":"
              << ntohs(addr4->sin_port);
         conn->onLocalRecv(nread, buf->base, addr);
     } else if (nread < 0) {
@@ -204,14 +203,11 @@ void ClientGroup::onLocalRecv(ssize_t nread, const char *base, const struct sock
         conn = newConn(key, addr, ++mConvCounter);
     }
 
-    rbuf_t rbuf = {0};
-    rbuf.base = const_cast<char *>(base);
-    rbuf.len = nread;
-    rbuf.data = conn;
+    const rbuf_t rbuf = new_buf(nread, base, conn);
     conn->Send(nread, rbuf);
 }
 
-CConn *ClientGroup::newConn(const std::string &key, const struct sockaddr *addr, IUINT32 conv) {
+CConn *ClientGroup::newConn(const std::string &key, const struct sockaddr *addr, uint32_t conv) {
     LOGD << "new cconn:" << key;
     CConn *conn = new CConn(key, addr, conv);
     auto outfn = std::bind(&ClientGroup::cconSend, this, _1, _2);
@@ -226,24 +222,20 @@ CConn *ClientGroup::newConn(const std::string &key, const struct sockaddr *addr,
 }
 
 int ClientGroup::subconnRecv(ssize_t nread, const rbuf_t &rbuf) {
-    struct sockaddr *addr = static_cast<sockaddr *>(rbuf.data);
-    return send2Origin(nread, rbuf, addr);
+    CConn *cConn = static_cast<CConn *>(rbuf.data);
+    return send2Origin(nread, rbuf, cConn->GetAddr());
 }
 
 void ClientGroup::RemoveConn(IConn *conn, bool removeCb) {
     IGroup::RemoveConn(conn, removeCb);
-    CConn *cConn = dynamic_cast<CConn *>(conn);
+    auto *cConn = dynamic_cast<CConn *>(conn);
     assert(cConn != nullptr);
     mConvMap.erase(cConn->Conv());
 }
 
 int ClientGroup::cconSend(ssize_t nread, const rbuf_t &rbuf) {
-    CConn *cConn = static_cast<CConn *>(rbuf.data);
+    auto *cConn = static_cast<CConn *>(rbuf.data);
     mHead.conv = cConn->Conv();
-    const rbuf_t buf = {
-            .base = rbuf.base,
-            .len = (int) nread,
-            .data = &mHead,
-    };
+    rbuf_t buf = new_buf(nread, rbuf, &mHead);
     return Send(nread, buf);
 }

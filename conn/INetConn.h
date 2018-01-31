@@ -5,16 +5,13 @@
 #ifndef RSOCK_INETCONN_H
 #define RSOCK_INETCONN_H
 
-#include "uv.h"
 #include "IConn.h"
-#include "rscomm.h"
 #include "../EncHead.h"
-#include "ConnInfo.h"
+
+struct ConnInfo;
 
 class INetConn : public IConn {
 public:
-    const static int MAX_PKT_SIZE = OM_MAX_PKT_SIZE;
-
     explicit INetConn(const std::string &key);
 
     virtual bool IsUdp() = 0;

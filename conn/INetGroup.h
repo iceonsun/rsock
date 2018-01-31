@@ -21,7 +21,7 @@ public:
 
     int Send(ssize_t nread, const rbuf_t &rbuf) override;
 
-    virtual INetConn *CreateNewConn(const std::string &key, uv_loop_t *loop, const ConnInfo *info) = 0;
+    virtual INetConn *CreateNewConn(const std::string &key, const ConnInfo *info) = 0;
 
     //can only add fakeconn
     virtual void AddNetConn(INetConn *conn);

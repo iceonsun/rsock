@@ -9,7 +9,6 @@
 #include <string>
 #include <functional>
 
-#include "ktype.h"
 #include "../rcommon.h"
 
 class IConn {
@@ -62,8 +61,8 @@ private:
         bool canCloseCheck();
 
     private:
-        IUINT32 prev_cnt = 0;
-        IUINT32 curr_cnt = 0;
+        uint32_t prev_cnt = 0;
+        uint32_t curr_cnt = 0;
     };
 
 private:

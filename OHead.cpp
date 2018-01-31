@@ -10,6 +10,7 @@
 #include "OHead.h"
 #include "util/enc.h"
 #include "rstype.h"
+#include "util/rsutil.h"
 
 void OHead::UpdateConv(IUINT32 conv) {
     mEncHead.conv = conv;
@@ -79,8 +80,8 @@ std::string OHead::BuildAddrKey(const struct sockaddr *origin) {
         struct sockaddr_in *addr4 = (struct sockaddr_in *) origin;
         std::ostringstream out;
 //#ifndef NNDEBUG
-        out << inet_ntoa(addr4->sin_addr) << ":" << ntohs(addr4->sin_port);
-//        out << inet_ntoa(addr4->sin_addr);
+        out << InAddr2Ip(addr4->sin_addr) << ":" << ntohs(addr4->sin_port);
+//        out << InAddr2Ip(addr4->sin_addr);
 //#else
 //        in << addr4->sin_addr.s_addr << ":" << addr4->sin_port;
 //#endif
@@ -107,8 +108,8 @@ std::string OHead::BuildKey(const struct sockaddr *origin, IUINT32 conv) {
         std::ostringstream out;
 //#ifndef NNDEBUG
         // because source port of same conn may vary, so cannot use port as part of key
-//        out << inet_ntoa(addr4->sin_addr) << ":" << ntohs(addr4->sin_port) << ":" << conv;
-        out << inet_ntoa(addr4->sin_addr) << ":" << conv;
+//        out << InAddr2Ip(addr4->sin_addr) << ":" << ntohs(addr4->sin_port) << ":" << conv;
+        out << InAddr2Ip(addr4->sin_addr) << ":" << conv;
 //#else
 //        in << addr4->sin_addr.s_addr << ":" << addr4->sin_port << ":" << conv;
 //#endif

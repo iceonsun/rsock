@@ -10,10 +10,13 @@
 #include "../cap/cap_headers.h"
 #include "../util/enc.h"
 #include "TcpInfo.h"
+#include "../net/TcpAckPool.h"
 
 // RawConn has key of nullptr to expose errors as fast as it can if any.
-RawTcp::RawTcp(const std::string &dev, uv_loop_t *loop, int datalinkType)
+RawTcp::RawTcp(const std::string &dev, uv_loop_t *loop, TcpAckPool *ackPool, int datalinkType, bool server)
         : IConn("RawTcp"), mLoop(loop), mDatalink(datalinkType), mDev(dev) {
+    mTcpAckPool = ackPool;
+    mIsServer = server;
 }
 
 int RawTcp::Init() {
@@ -35,7 +38,7 @@ int RawTcp::Init() {
     mWriteFd = mSockPair[1];
     mUnixDgramPoll = poll_dgram_fd(mReadFd, mLoop, pollCb, this, &nret);
     if (!mUnixDgramPoll) {
-        LOGE << "poll failed: %s" << uv_strerror(nret);
+        LOGE << "poll failed: " << uv_strerror(nret);
         return nret;
     }
     return 0;
@@ -77,7 +80,7 @@ void RawTcp::CapInputCb(u_char *args, const pcap_pkthdr *hdr, const u_char *pack
 
 // todo: 本地向服务器发送数据的时候，本地会再次接收到数据
 int RawTcp::RawInput(u_char *args, const pcap_pkthdr *hdr, const u_char *packet) {
-    if (hdr->len < 44) {    // ip_len + tcp_len // todo: remove
+    if (hdr->len < 44) {    // ip_len + tcp_len
         return 0;
     }
 
@@ -116,50 +119,53 @@ int RawTcp::RawInput(u_char *args, const pcap_pkthdr *hdr, const u_char *packet)
         return 0;
     }
 
-    struct tcphdr *tcp = (struct tcphdr *) ((const char *) ip + (LIBNET_IPV4_H >> 2));
+    struct tcphdr *tcp = (struct tcphdr *) ((const char *) ip + (ip->ip_hl << 2));
     const char *payload = (const char *) tcp + (tcp->th_off << 2);
-
-#ifndef RSOCK_NNDEBUG
-    std::string flag;
-    if (tcp->th_flags & TH_SYN) {
-        flag += "SYN|";
-    }
-    if (tcp->th_flags & TH_ACK) {
-        flag += "ACK|";
-    }
-    if (tcp->th_flags & TH_PUSH) {
-        flag += "PUSH|";
-    }
-    if (tcp->th_flags & TH_RST) {
-        flag += "RST|";
-    }
-    if (tcp->th_flags & TH_FIN) {
-        flag += "FIN";
-    }
-    LOGV << "flag: " << flag;
-#endif
 
     const int payload_len = ntohs(ip->ip_len) - ((const u_char *) payload - (const u_char *) ip);
 
-    std::string src_str = inet_ntoa({ip->ip_src});
-    std::string dst_str = inet_ntoa({ip->ip_dst});
+    if (payload_len > 0 || (tcp->th_flags & ~(TH_ACK))) {
+        std::string flag;
+        if (tcp->th_flags & TH_SYN) {
+            flag += "SYN|";
+        }
+        if (tcp->th_flags & TH_ACK) {
+            flag += "ACK|";
+        }
+        if (tcp->th_flags & TH_PUSH) {
+            flag += "PUSH|";
+        }
+        if (tcp->th_flags & TH_RST) {
+            flag += "RST|";
+        }
+        if (tcp->th_flags & TH_FIN) {
+            flag += "FIN";
+        }
+        LOGV << "receive " << payload_len << " bytes from " << InAddr2Ip({ip->ip_src}) << ":" << ntohs(tcp->th_sport)
+             << "<->" << InAddr2Ip({ip->ip_dst}) << ":" << ntohs(tcp->th_dport) << ", flag: " << flag;
+    }
 
-    LOGV << "receive " << payload_len << " bytes from " << src_str << ":" << ntohs(tcp->th_sport) << "<->" << dst_str
-         << ":" << ntohs(tcp->th_dport);
+    TcpInfo info;
+    info.src = ip->ip_dst.s_addr;
+    info.sp = ntohs(tcp->th_dport);
+    info.dst = ip->ip_src.s_addr;
+    info.dp = ntohs(tcp->th_sport);
+    info.seq = ntohl(tcp->th_seq);
+    info.ack = ntohl(tcp->th_ack);
 
+    if ((tcp->th_flags & TH_SYN) && mTcpAckPool) {   // todo: don't process here
+        if (mIsServer) {
+            info.Reverse();
+        }
+        mTcpAckPool->AddInfoFromPeer(info, tcp->th_flags, uv_now(mLoop));
+        LOGV << "info pool: " << mTcpAckPool->Dump();
+        return 0;
+    }
     // this check is necessary.
     // because we may receive rst with length zero. if we don't check, we may cause illegal memory access error
     if (payload_len < HASH_BUF_SIZE + 1) {  // data len must >= 1
         return 0;
     }
-
-    TcpInfo info;
-    info.src = ip->ip_dst.s_addr;
-    info.sp = tcp->th_dport;
-    info.dst = ip->ip_src.s_addr;
-    info.dp = tcp->th_sport;
-    info.seq = tcp->th_seq;
-    info.ack = tcp->th_ack;
 
     return cap2uv(&info, payload, payload_len);
 }
@@ -198,19 +204,13 @@ void RawTcp::pollCb(uv_poll_t *handle, int status, int events) {
         const char *p = info.Decode(buf, nread);
         assert(p);
         int len = nread - (p - buf);
-        const rbuf_t rbuf = {
-                .base = const_cast<char *>(p),
-                .len = len,
-                .data = &info,
-
-        };
-
+        const rbuf_t rbuf = new_buf(len, p, &info);
         conn->Input(len, rbuf);
     }
 }
 
 
-// todo: send ack number too.
+// only src and dst are network endian. other values are host endian.
 int RawTcp::SendRawTcp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT16 dp, IUINT32 seq, IUINT32 ack,
                        const IUINT8 *payload, IUINT16 payload_len, IUINT16 ip_id, libnet_ptag_t &tcp,
                        libnet_ptag_t &ip, IUINT8 tcp_flag) {
@@ -220,11 +220,8 @@ int RawTcp::SendRawTcp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT1
             sp,              // source port
             dp,              // dst port
             seq,             // seq
-            ack,               // ack number
-//            TH_FIN,               // control flag
-//            TH_RST,               // control flag
+            ack,             // ack number
             tcp_flag,               // control flag
-//            0,     // control flag
             DUMY_WIN_SIZE,   // window size
             0,               // check sum. = 0 auto fill
             0,               // urgent pointer
@@ -270,8 +267,8 @@ int RawTcp::SendRawTcp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT1
         LOGE << "libnet_write failed: " << libnet_geterror(l);
         return -1;
     } else {
-        std::string src_str = inet_ntoa({src});
-        std::string dst_str = inet_ntoa({dst});
+        std::string src_str = InAddr2Ip({src});
+        std::string dst_str = InAddr2Ip({dst});
         LOGV << "libnet_write " << n << " bytes. " << src_str << ":" << sp << "<->" << dst_str << ":" << dp;
 
     }
@@ -322,11 +319,7 @@ int RawTcp::SendRawUdp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT1
         LOGE << "libnet_write failed: " << libnet_geterror(l);
         return -1;
     } else {
-#ifndef RSOCK_NNDEBUG
-        std::string src_str = inet_ntoa({src});
-        std::string dst_str = inet_ntoa({dst});
-        LOGV << "libnet_write " << n << " bytes " << src_str << ":" << sp << "<->" << dst_str << ":" << dp;
-#endif
+        LOGV << "libnet_write " << n << " bytes " << InAddr2Ip({src}) << ":" << sp << "<->" << InAddr2Ip({dst}) << ":" << dp;
     }
     return payload_len;
 }

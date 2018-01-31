@@ -4,10 +4,9 @@
 
 #include <cstdlib>
 #include <plog/Log.h>
-#include "../conn/ConnInfo.h"
+#include "../conn/TcpInfo.h"
 #include "../conn/BtmUdpConn.h"
 #include "../conn/FakeTcp.h"
-
 #include "NetUtil.h"
 #include "../util/rsutil.h"
 
@@ -29,41 +28,8 @@ BtmUdpConn *NetUtil::CreateBtmUdpConn(uv_loop_t *loop, const ConnInfo &info) {
     return btm;
 }
 
-int NetUtil::CreateTcpSock(const SA4 *target, const SA4 *self) {
-    int sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (self && self->sin_port) {
-        int optval = 1;
-        int nret = setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
-        if (nret) {
-            return nret;
-        }
-        nret = bind(sock, (const SA *) (self), sizeof(SA4));
-        if (-1 == nret) {
-            return nret;
-        }
-    }
-
-    int nret = connect(sock, (const SA *) (target), sizeof(SA4));
-    if (nret) {
-        close(sock);
-        return nret;
-    }
-    return sock;
-}
-
-int NetUtil::CreateTcpSock(const ConnInfo &info) {
-    SA4 self = {0}, target = {0};
-    self.sin_family = AF_INET;
-    self.sin_port = htons(info.sp);
-    self.sin_addr.s_addr = info.src;
-    target.sin_family = AF_INET;
-    target.sin_port = htons(info.dp);
-    target.sin_addr.s_addr = info.dst;
-    return CreateTcpSock(&target, &self);
-}
-
-FakeTcp *NetUtil::CreateTcpConn(uv_loop_t *loop, const ConnInfo &info) {
-    int sock = NetUtil::CreateTcpSock(info);
+FakeTcp *NetUtil::CreateTcpConn(uv_loop_t *loop, const TcpInfo &info) {
+    int sock = NetUtil::createTcpSock(info);
     if (sock < 0) {
         LOGE << "init tcp socket failed: " << strerror(errno);
         return nullptr;
@@ -78,13 +44,12 @@ FakeTcp *NetUtil::CreateTcpConn(uv_loop_t *loop, const ConnInfo &info) {
         LOGE << "uv_tcp_open failed: " << uv_strerror(nret);
         return nullptr;
     }
-    FakeTcp *conn = new FakeTcp(reinterpret_cast<uv_stream_t *>(tcp), ConnInfo::BuildKey(info));
+    FakeTcp *conn = new FakeTcp(reinterpret_cast<uv_stream_t *>(tcp), ConnInfo::BuildKey(info), info);
     return conn;
 }
 
-FakeTcp *NetUtil::CreateTcpConn(uv_tcp_t *tcp, const ConnInfo &info) {
-
-    FakeTcp *conn = new FakeTcp(reinterpret_cast<uv_stream_t *>(tcp), ConnInfo::BuildKey(info));
+FakeTcp *NetUtil::CreateTcpConn(uv_tcp_t *tcp, const TcpInfo &info) {
+    FakeTcp *conn = new FakeTcp(reinterpret_cast<uv_stream_t *>(tcp), ConnInfo::BuildKey(info), info);
     return conn;
 }
 
@@ -116,4 +81,40 @@ uv_connect_t *NetUtil::ConnectTcp(uv_loop_t *loop, const ConnInfo &info, const u
         return nullptr;
     }
     return req;
+}
+
+int NetUtil::createTcpSock(const SA4 *target, const SA4 *self) {
+    int sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (self && self->sin_port) {
+        int optval = 1;
+        int nret = setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
+        if (nret) {
+            LOGE << "setsockopt failed: " << strerror(errno);
+            return nret;
+        }
+        nret = bind(sock, (const SA *) (self), sizeof(SA4));
+        if (-1 == nret) {
+            LOGE << "bind failed: " << strerror(errno);
+            return nret;
+        }
+    }
+
+    int nret = connect(sock, (const SA *) (target), sizeof(SA4));
+    if (nret) {
+        LOGE << "connect failed: " << strerror(errno);
+        close(sock);
+        return nret;
+    }
+    return sock;
+}
+
+int NetUtil::createTcpSock(const ConnInfo &info) {
+    SA4 self = {0}, target = {0};
+    self.sin_family = AF_INET;
+    self.sin_port = htons(info.sp);
+    self.sin_addr.s_addr = info.src;
+    target.sin_family = AF_INET;
+    target.sin_port = htons(info.dp);
+    target.sin_addr.s_addr = info.dst;
+    return createTcpSock(&target, &self);
 }

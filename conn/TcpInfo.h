@@ -7,7 +7,6 @@
 
 #include <cstdint>
 
-#include <cstdint>
 #include "ConnInfo.h"
 
 struct TcpInfo : ConnInfo {
@@ -23,7 +22,16 @@ struct TcpInfo : ConnInfo {
     char *Encode(char *buf, int len) const override;
 
     const char *Decode(const char *buf, int len) override;
-};
 
+    std::string ToStr() const override;
+
+    TcpInfo() = default;
+
+    TcpInfo(const TcpInfo &info) = default;
+
+    explicit TcpInfo(const ConnInfo &info);
+
+    void Reverse() override;
+};
 
 #endif //RSOCK_TCPINFO_H

@@ -10,6 +10,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <sys/un.h>
+#include <rscomm.h>
 
 #include "uv.h"
 #include "plog/Log.h"
@@ -17,6 +18,7 @@
 #include "enc.h"
 #include "rsutil.h"
 #include "../rcommon.h"
+#include "../conn/ConnInfo.h"
 
 struct sockaddr *new_addr(const struct sockaddr *addr) {
     const int family = addr->sa_family;
@@ -31,6 +33,7 @@ struct sockaddr *new_addr(const struct sockaddr *addr) {
     }
     LOGE << "src protocol not supported now: " << addr->sa_family;
     assert(0);
+    return nullptr;
 }
 
 int checkFdType(int fd, int type) {
@@ -99,7 +102,7 @@ om_listen_udp_addr(const struct sockaddr_in *addr, uv_loop_t *loop, uv_udp_recv_
     int nret = uv_udp_bind(udp, (const struct sockaddr *) addr, 0);
     if (nret) {
         if (err) { *err = nret; }
-        LOGE << "failed to bind udp on " << inet_ntoa(addr->sin_addr) << ":" << ntohs(addr->sin_port) << ", nret: "
+        LOGE << "failed to bind udp on " << InAddr2Ip(addr->sin_addr) << ":" << ntohs(addr->sin_port) << ", nret: "
              << nret << ", err: " << uv_strerror(nret);
 #ifndef NNDEBUG
         assert(0);
@@ -205,7 +208,7 @@ std::string Addr2Str(const struct sockaddr *addr) {
         return "";
     } else if (addr->sa_family == AF_INET) {
         struct sockaddr_in *addr4 = (struct sockaddr_in *) addr;
-        std::string s = inet_ntoa(addr4->sin_addr);
+        std::string s = InAddr2Ip(addr4->sin_addr);
         s += ":";
         s += std::to_string(ntohs(addr4->sin_port));
         return s;
@@ -217,3 +220,54 @@ std::string Addr2Str(const struct sockaddr *addr) {
     return "";
 }
 
+int GetTcpInfo(ConnInfo &info, uv_tcp_t *tcp) {
+    SA4 self = {0};
+    int socklen = sizeof(SA4);
+    int nret = uv_tcp_getsockname(tcp, (SA *) &self, &socklen);
+    if (nret) {
+        return nret;
+    }
+    SA4 peer = {0};
+    socklen = sizeof(SA4);
+    nret = uv_tcp_getpeername(tcp, (SA *) &peer, &socklen);
+    if (nret) {
+        return nret;
+    }
+    info.src = self.sin_addr.s_addr;
+    info.sp = ntohs(self.sin_port);
+    info.dst = peer.sin_addr.s_addr;
+    info.dp = ntohs(peer.sin_port);
+    return 0;
+}
+
+std::string InAddr2Ip(in_addr addr) {
+    std::string ip;
+    auto iaddr = addr.s_addr;
+    for (int i = 0; i < 4; i++) {
+        if (i > 0) {
+            ip += ".";
+        }
+        ip += std::to_string(iaddr & 0xff);
+        iaddr >>= 8;
+    }
+
+    return ip;
+}
+
+const rbuf_t new_buf(int nread, const rbuf_t &rbuf, void *data) {
+    const rbuf_t result = {
+            .base = rbuf.base,
+            .len = nread,
+            .data = data,
+    };
+    return result;
+}
+
+const rbuf_t new_buf(int nread, const char *base, void *data) {
+    const rbuf_t result = {
+            .base = const_cast<char *>(base),
+            .len = nread,
+            .data = data,
+    };
+    return result;
+}

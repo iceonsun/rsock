@@ -74,7 +74,7 @@ int TcpConnector::syncConnect(RPortList::PortList &ports, in_addr_t inAddr, std:
                 addr.sin_port = htons(ports[i]);
                 nret = bind(socks[i], reinterpret_cast<const sockaddr *>(&addr), socklen);
                 if (nret) {
-                    LOGE << "failed to bind  " << inet_ntoa(addr.sin_addr) << ":" << ports[i] << ", err: "
+                    LOGE << "failed to bind  " << InAddr2Ip(addr.sin_addr) << ":" << ports[i] << ", err: "
                          << strerror(errno);
                     break;
                 }
@@ -83,7 +83,7 @@ int TcpConnector::syncConnect(RPortList::PortList &ports, in_addr_t inAddr, std:
             }
             nret = connect(socks[i], reinterpret_cast<const sockaddr *>(&addr), socklen);
             if (nret) {
-                LOGE << "failed to connect " << inet_ntoa(addr.sin_addr) << ":" << ports[i] << ", err: "
+                LOGE << "failed to connect " << InAddr2Ip(addr.sin_addr) << ":" << ports[i] << ", err: "
                      << strerror(errno);
                 break;
             }
@@ -214,7 +214,7 @@ int TcpConnector::SyncConnect(const std::string &selfIp, const std::string &targ
                 selfAddr.sin_port = htons(p.source);
                 nret = bind(socks[i], reinterpret_cast<const sockaddr *>(&selfAddr), socklen);
                 if (nret) {
-                    LOGE << "failed to bind  " << inet_ntoa(selfAddr.sin_addr) << ":" << p.source << ", err: "
+                    LOGE << "failed to bind  " << InAddr2Ip(selfAddr.sin_addr) << ":" << p.source << ", err: "
                          << strerror(errno);
                     break;
                 }

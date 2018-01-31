@@ -18,10 +18,10 @@ INetGroup::INetGroup(const std::string &groupId, uv_loop_t *loop)
 int INetGroup::Input(ssize_t nread, const rbuf_t &rbuf) {
     if (nread > 0) {
         ConnInfo *info = static_cast<ConnInfo *>(rbuf.data);
-        auto key = ConnInfo::BuildKey(*info);    // todo: 搞清楚各个buildKey
+        auto key = ConnInfo::BuildKey(*info);
         auto conn = ConnOfKey(key);
         if (!conn) {
-            auto netconn = CreateNewConn(key, mLoop, info);
+            auto netconn = CreateNewConn(key, info);
             if (netconn) {
                 AddNetConn(netconn);
             }

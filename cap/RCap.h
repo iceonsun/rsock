@@ -9,6 +9,7 @@
 
 #include <pcap.h>
 #include <uv.h>
+#include <thread>
 #include "cap_util.h"
 #include "../util/RPortList.h"
 
@@ -16,14 +17,13 @@
 class RCap {
 public:
     struct CapThreadArgs {
-        RCap *instance;
-        pcap_handler handler;
-        u_char *args;
+        RCap *instance = nullptr;
+        pcap_handler handler = nullptr;
+        u_char *args = nullptr;
     };
 
-    // todo: remove for testing
     RCap(const std::string &dev, const std::string &selfIp, const RPortList &selfPorts, const RPortList &srcPorts,
-         const std::string &srcIp = "", int timeout_ms = 20);
+         const std::string &srcIp, int timeout_ms, bool server);
 
     virtual ~RCap() = default;
 
@@ -48,9 +48,9 @@ protected:
     static void capHandler(u_char *, const struct pcap_pkthdr *, const u_char *);
 
 private:
-
     int initDevAndIp();
 
+private:
     std::string mSrcIp;
     std::string mDstIp;
     std::string mDev;
@@ -63,6 +63,7 @@ private:
     bool mInited = false;
     u_char *mArgs = nullptr;
     pcap_handler mHandler = nullptr;
+    bool mIsServer = false;
 };
 
 

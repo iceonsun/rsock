@@ -21,7 +21,7 @@ public:
 //    int Output(ssize_t nread, const rbuf_t &rbuf) override;
 
 private:
-    IConn *newConn(const std::string &key, IUINT32 conv);
+    IConn *newConn(const std::string &key, uint32_t conv);
     int sconnSend(ssize_t nread, const rbuf_t &rbuf);
 protected:
     uv_loop_t *mLoop = nullptr;

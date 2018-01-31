@@ -11,13 +11,15 @@
 
 class CSockApp : public ISockApp {
 public:
-    CSockApp(uv_loop_t *loop);
+    explicit CSockApp(uv_loop_t *loop);
 
     RCap *CreateCap(RConfig &conf) override;
 
-    IConn * CreateBtmConn(RConfig &conf) override;
+    IConn *CreateBtmConn(RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool, int datalink) override;
 
-    IConn *CreateBridgeConn(RConfig &conf, IConn *btm, uv_loop_t *loop) override;
+    IConn *CreateBridgeConn(RConfig &conf, IConn *btm, uv_loop_t *loop, INetManager *netManager) override;
+
+    INetManager *CreateNetManager(RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool) override;
 };
 
 

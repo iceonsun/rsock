@@ -16,11 +16,13 @@
 
 struct TcpInfo;
 
+class TcpAckPool;
+
 class RawTcp : public IConn {
 public:
     const static int TTL_OUT = OM_TTL_OUT;
 
-    RawTcp(const std::string &dev, uv_loop_t *loop, int datalinkType);
+    RawTcp(const std::string &dev, uv_loop_t *loop, TcpAckPool *ackPool, int datalinkType, bool server);
 
     void Close() override;
 
@@ -57,6 +59,7 @@ private:
 
     IUINT16 mIpId = 0;
 
+    TcpAckPool *mTcpAckPool = nullptr;
     libnet_t *mTcpNet = nullptr;
 
     int mSockPair[2];
@@ -68,6 +71,7 @@ private:
     libnet_ptag_t mTcp = 0;
     libnet_ptag_t mIpForTcp = 0;
     const std::string mDev;
+    bool mIsServer = false;
 };
 
 #endif //RSOCK_RAWCONN_H

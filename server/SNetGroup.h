@@ -7,12 +7,16 @@
 
 
 #include "../conn/INetGroup.h"
+class INetManager;
 
 class SNetGroup : public INetGroup {
 public:
-    SNetGroup(const std::string &groupId, uv_loop_t *loop);
+    SNetGroup(const std::string &groupId, uv_loop_t *loop, INetManager *netManager);
 
-    INetConn *CreateNewConn(const std::string &key, uv_loop_t *loop, const ConnInfo *info) override;
+    INetConn *CreateNewConn(const std::string &key, const ConnInfo *info) override;
+
+private:
+    INetManager *mNetManager = nullptr;
 };
 
 

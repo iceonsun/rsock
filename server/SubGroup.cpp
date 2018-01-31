@@ -50,7 +50,7 @@ int SubGroup::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
     return nread;
 }
 
-IConn *SubGroup::newConn(const std::string &key, IUINT32 conv) {
+IConn *SubGroup::newConn(const std::string &key, uint32_t conv) {
     IConn *conn = new SConn(key, mLoop, mTarget, conv);
     int nret = conn->Init();
     if (nret) {
@@ -70,10 +70,6 @@ IConn *SubGroup::newConn(const std::string &key, IUINT32 conv) {
 int SubGroup::sconnSend(ssize_t nread, const rbuf_t &rbuf) {
     SConn *conn = static_cast<SConn *>(rbuf.data);
     mHead.conv = conn->Conv();
-    const rbuf_t buf = {
-            .base = rbuf.base,
-            .len = rbuf.len,
-            .data = &mHead,
-    };
+    const rbuf_t buf = new_buf(nread, rbuf, &mHead);
     return Send(nread, buf);
 }

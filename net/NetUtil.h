@@ -16,21 +16,22 @@ class FakeTcp;
 
 struct ConnInfo;
 
+struct TcpInfo;
 
 class NetUtil {
 public:
     static BtmUdpConn *CreateBtmUdpConn(uv_loop_t *loop, const ConnInfo &info);
 
-    static int CreateTcpSock(const SA4 *target, const SA4 *self);
+    static FakeTcp *CreateTcpConn(uv_loop_t *loop, const TcpInfo &info);
 
-    static int CreateTcpSock(const ConnInfo &info);
-
-    static FakeTcp *CreateTcpConn(uv_loop_t *loop, const ConnInfo &info);
-
-    static FakeTcp *CreateTcpConn(uv_tcp_t *tcp, const ConnInfo &info);
+    static FakeTcp *CreateTcpConn(uv_tcp_t *tcp, const TcpInfo &info);
 
     static uv_connect_t *ConnectTcp(uv_loop_t *loop, const ConnInfo &info, const uv_connect_cb &cb, void *data);
 
+private:
+    static int createTcpSock(const SA4 *target, const SA4 *self);
+
+    static int createTcpSock(const ConnInfo &info);
 };
 
 

@@ -13,7 +13,7 @@ set(SOURCE_FILES rcommon.c RConfig.cpp ISockApp.cpp conn/IConn.cpp PortMapper.cp
         conn/INetConn.cpp conn/BtmUdpConn.cpp EncHead.cpp conn/FakeTcp.cpp conn/TcpInfo.cpp
         conn/INetGroup.cpp conn/IGroup.cpp conn/ConnInfo.cpp conn/FakeUdp.cpp
         conn/RConn.cpp conn/RawTcp.cpp conn/IAppGroup.cpp
-        net/NetUtil.cpp net/NetManager.cpp net/TcpAckMon.cpp)
+        net/NetUtil.cpp net/ClientNetManager.cpp net/TcpAckPool.cpp net/NetListenPool.cpp net/INetManager.cpp net/ServerNetManager.cpp)
 
 set(SVR_SOURCE_FILES ${SOURCE_FILES} server/SConn.cpp server/SSockApp.cpp server/ssock.cpp server/SNetGroup.cpp server/ServerGroup.cpp server/SubGroup.cpp)
 set(CLI_SOURCE_FILES ${SOURCE_FILES} client/CConn.cpp client/csock.cpp client/CSockApp.cpp client/ClientGroup.cpp client/CNetGroup.cpp)
@@ -41,7 +41,6 @@ set_target_properties(
 
 add_executable(test_client ${CLI_SOURCE_FILES} test/test_client.cpp)
 
-add_executable(test_conf ${SOURCE_FILES} test/test_conf.cpp)
 add_executable(echo_server rcommon.c test/udp_echo_server.cpp)
 add_executable(echo_client rcommon.c test/udp_echo_client.cpp)
 
@@ -56,7 +55,7 @@ set_target_properties(
         COMPILE_DEFINITIONS RSOCK_NNDEBUG
 )
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -Wsign-compare")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -Wsign-compare -fno-limit-debug-info")
 
 # change /usr/local/lib to the folder of your libnet.so/.a
 find_library(NET_PATH net /usr/local/lib NO_DEFAULT_PATH)
@@ -74,13 +73,11 @@ else ()
     set(libs uv net pcap pthread)
 endif ()
 
-#target_link_libraries(rsock uv net pcap)
 target_link_libraries(rawsock ${libs})
 target_link_libraries(ssock ${libs})
 target_link_libraries(csock ${libs})
 
 target_link_libraries(test_server ${libs})
 target_link_libraries(test_client ${libs})
-target_link_libraries(test_conf ${libs})
 target_link_libraries(echo_client uv)
 target_link_libraries(echo_server uv)

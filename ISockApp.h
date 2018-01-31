@@ -7,7 +7,6 @@
 
 #include <uv.h>
 #include "util/RTimer.h"
-#include "cap/RCap.h"
 #include "RConfig.h"
 
 struct RConfig;
@@ -20,9 +19,16 @@ namespace plog {
 
 class INetConn;
 
+class INetManager;
+
+class TcpAckPool;
+
+class RCap;
+
 class ISockApp {
 public:
     ISockApp(bool is_server, uv_loop_t *loop);
+
     virtual ~ISockApp() = default;
 
     int Parse(int argc, const char *const *argv);
@@ -43,17 +49,23 @@ public:
 
     virtual void StartTimer(IUINT32 timeout_ms, IUINT32 repeat_ms);
 
-    virtual IConn * CreateBtmConn(RConfig &conf) = 0;
+    virtual IConn *CreateBtmConn(RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool, int datalink) = 0;
 
-    virtual IConn *CreateBridgeConn(RConfig &conf, IConn *btm, uv_loop_t *loop) = 0;
+    virtual IConn *CreateBridgeConn(RConfig &conf, IConn *btm, uv_loop_t *loop, INetManager *netManager) = 0;
+
+    virtual INetManager *CreateNetManager(RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool) = 0;
+
+    INetManager *GetNetManager() { return mNetManager; }
 
 protected:
     std::vector<INetConn *> createUdpConns(uint32_t src, const std::vector<uint16_t> &ports, uint32_t dst,
-                                                     const std::vector<uint16_t> &svr_ports);
+                                           const std::vector<uint16_t> &svr_ports);
 
 private:
     int doInit();
+
     int makeDaemon(bool d);
+
     int initLog();
 
 private:
@@ -69,6 +81,8 @@ private:
     IConn *mBtmConn = nullptr;
     RConfig mConf;
     bool mInited = false;
+    INetManager *mNetManager = nullptr;
+    TcpAckPool *mAckPool = nullptr;
 };
 
 

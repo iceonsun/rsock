@@ -11,7 +11,7 @@
 #include "plog/Log.h"
 
 #include "RConfig.h"
-#include "thirdparty/args.hxx"
+#include "args.hxx"
 #include "util/rhash.h"
 #include "util/FdUtil.h"
 #include "cap/cap_util.h"
@@ -319,7 +319,7 @@ json11::Json RConfig::to_json() const {
     return j;
 }
 
-bool RConfig::parseAddr(const std::string &addr, std::string &ip, IUINT16 &port, bool usePort) {
+bool RConfig::parseAddr(const std::string &addr, std::string &ip, uint16_t &port, bool usePort) {
     auto pos = addr.find(':');
     ip = addr.substr(0, pos);
 

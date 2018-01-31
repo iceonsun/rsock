@@ -26,8 +26,6 @@ IINT8 compute_hash(HashBufType &hash, const std::string &key, const char *data, 
     }
     assert(hash.size() <= MD5_LEN);
 
-//    fprintf(stderr, "%s:%d, data[0]: %c\n", __FUNCTION__, __LINE__, data[0]);
-
     const int hashLen = key.size() + 1;
     char need_hash[hashLen];
 
@@ -52,7 +50,6 @@ bool hash_equal(const HashBufType &hashed_buf, const std::string &key, const cha
     if (!data || data_len <= 0) {
         return false;
     }
-//    fprintf(stderr, "%s:%d, data[0]: %c\n", __FUNCTION__, __LINE__, data[0]);
 
     const int key_len = key.size();
     const int hashLen = key_len + 1;

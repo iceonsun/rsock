@@ -8,6 +8,7 @@
 
 #include <cstdint>
 #include <string>
+#include <uv.h>
 
 struct EncHead;
 struct sockaddr;
@@ -28,18 +29,23 @@ struct ConnInfo {
 
     static std::string BuildKey(const ConnInfo &info);
 
-    static std::string KeyForTcp(const ConnInfo *info);
-
     static std::string KeyForUdpBtm(uint32_t src, uint16_t sp);
 
     static std::string BuildConnKey(uint32_t dst, uint32_t conv);
 
     static std::string BuildAddrKey(const sockaddr *addr);
 
-    ConnInfo &operator=(const ConnInfo &) = default;
+    virtual std::string ToStr() const;
 
     virtual bool EqualTo(const ConnInfo &info) const;
-};
 
+    ConnInfo() = default;
+
+    ConnInfo(const ConnInfo &info) = default;
+
+    ConnInfo &operator=(const ConnInfo &) = default;
+
+    virtual void Reverse();
+};
 
 #endif //RSOCK_NETINFO_H

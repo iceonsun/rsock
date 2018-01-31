@@ -6,17 +6,19 @@
 #include <plog/Log.h>
 #include "ServerGroup.h"
 #include "../conn/ConnInfo.h"
-#include "../EncHead.h"
 #include "../util/rhash.h"
 #include "../util/rsutil.h"
 #include "SNetGroup.h"
+#include "../net/INetManager.h"
 
 using namespace std::placeholders;
 
-ServerGroup::ServerGroup(const std::string &groupId, uv_loop_t *loop, const struct sockaddr *target, IConn *btm)
+ServerGroup::ServerGroup(const std::string &groupId, uv_loop_t *loop, const struct sockaddr *target, IConn *btm,
+                         INetManager *netManager)
         : IGroup(groupId, btm) {
     mLoop = loop;
     mTarget = new_addr(target);
+    mNetManager = netManager;
 }
 
 int ServerGroup::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
@@ -41,7 +43,7 @@ int ServerGroup::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
 }
 
 IConn *ServerGroup::newConn(const std::string &groupId, uv_loop_t *loop, const struct sockaddr *target) {
-    auto fakenet = new SNetGroup(groupId, loop);
+    auto fakenet = new SNetGroup(groupId, loop, mNetManager);
     auto conn = new SubGroup(groupId, loop, target, fakenet, nullptr);
     LOGV << "new group: " << groupId;
     if (conn->Init()) {

@@ -1,6 +1,5 @@
 #pragma once
 #include <plog/Logger.h>
-#include <plog/Formatters/CsvFormatter.h>
 #include <plog/Formatters/TxtFormatter.h>
 #include <plog/Appenders/RollingFileAppender.h>
 #include <cstring>
@@ -9,15 +8,6 @@ namespace plog
 {
     namespace
     {
-        bool isCsv(const util::nchar* fileName)
-        {
-            const util::nchar* dot = util::findExtensionDot(fileName);
-#ifdef _WIN32
-            return dot && 0 == std::wcscmp(dot, L".csv");
-#else
-            return dot && 0 == std::strcmp(dot, ".csv");
-#endif
-        }
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -57,7 +47,7 @@ namespace plog
     template<int instance>
     inline Logger<instance>& init(Severity maxSeverity, const util::nchar* fileName, size_t maxFileSize = 0, int maxFiles = 0)
     {
-        return isCsv(fileName) ? init<CsvFormatter, instance>(maxSeverity, fileName, maxFileSize, maxFiles) : init<TxtFormatter, instance>(maxSeverity, fileName, maxFileSize, maxFiles);
+        return init<TxtFormatter, instance>(maxSeverity, fileName, maxFileSize, maxFiles);
     }
 
     inline Logger<PLOG_DEFAULT_INSTANCE>& init(Severity maxSeverity, const util::nchar* fileName, size_t maxFileSize = 0, int maxFiles = 0)

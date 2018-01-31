@@ -5,24 +5,23 @@
 #include "RawTcp.h"
 #include "BtmUdpConn.h"
 #include "RConn.h"
-#include "ConnInfo.h"
-#include "rstype.h"
-#include "../EncHead.h"
 #include "../util/rhash.h"
-#include "INetConn.h"
+#include "../util/rsutil.h"
 
 using namespace std::placeholders;
 
-RConn::RConn(const std::string &hashKey, RawTcp *tcp) : IGroup("RConn", nullptr), mHashKey(hashKey) {
-    mRawTcp = tcp;
+const int RConn::HEAD_SIZE = EncHead::GetEncBufSize() + HASH_BUF_SIZE;
+
+RConn::RConn(const std::string &hashKey, const std::string &dev, uv_loop_t *loop, TcpAckPool *ackPool, int datalink,
+             bool isServer) : IGroup("RConn", nullptr), mHashKey(hashKey) {
+    mRawTcp = new RawTcp(dev, loop, ackPool, datalink, isServer);
 }
 
 int RConn::Init() {
     IGroup::Init();
-    if (mRawTcp) {
-        return mRawTcp->Init();
-    }
-    return 0;
+    auto fn = std::bind(&IConn::Input, this, _1, _2);
+    mRawTcp->SetOnRecvCb(fn);
+    return mRawTcp->Init();
 }
 
 void RConn::Close() {
@@ -49,11 +48,7 @@ int RConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
         if (p && hash_equal(hashed_buf, mHashKey, p, nread - (p - hashed_buf))) {
             ConnInfo *info = static_cast<ConnInfo *>(rbuf.data);
             info->head = &head;
-            const rbuf_t buf = {
-                    .base = const_cast<char *>(p),
-                    .len = (int) (nread - (p - hashed_buf)),
-                    .data = info,
-            };
+            const rbuf_t buf = new_buf(nread - (p - hashed_buf), p, info);
             return IGroup::OnRecv(buf.len, buf);
         }
     }
@@ -82,11 +77,7 @@ int RConn::Output(ssize_t nread, const rbuf_t &rbuf) {
     memcpy(p, rbuf.base, nread);
     p += nread;
 
-    const rbuf_t buf = {
-            .base = base,
-            .len = (int) (p - base),
-            .data = rbuf.data,
-    };
+    const rbuf_t buf = new_buf((p - base), base, rbuf.data);
     if (info->IsUdp()) {
         auto key = ConnInfo::KeyForUdpBtm(info->src, info->sp);
         auto conn = ConnOfKey(key);
@@ -104,4 +95,9 @@ int RConn::Output(ssize_t nread, const rbuf_t &rbuf) {
 
 void RConn::AddConn(IConn *conn, const IConn::IConnCb &outCb, const IConn::IConnCb &recvCb) {
     IGroup::AddConn(conn, outCb, recvCb);
+}
+
+void RConn::CapInputCb(u_char *args, const pcap_pkthdr *hdr, const u_char *packet) {
+    RConn *conn = reinterpret_cast<RConn *>(args);
+    conn->mRawTcp->RawInput(nullptr, hdr, packet);
 }

@@ -17,7 +17,7 @@ class RPortList;
 class ClientGroup : public IAppGroup {
 public:
     ClientGroup(const std::string &groupId, const std::string &listenUnPath, const std::string &listenUdpIp,
-                IUINT16 listenUdpPort, uv_loop_t *loop, INetGroup *fakeGroup, IConn *btm);
+                uint16_t listenUdpPort, uv_loop_t *loop, INetGroup *fakeGroup, IConn *btm);
 
     int Init() override;
 
@@ -46,7 +46,7 @@ private:
 
     void onLocalRecv(ssize_t nread, const char *base, const struct sockaddr *addr);
 
-    CConn *newConn(const std::string &key, const struct sockaddr *addr, IUINT32 conv);
+    CConn *newConn(const std::string &key, const struct sockaddr *addr, uint32_t conv);
 
     static void pollCb(uv_poll_t *handle, int status, int events);
 
@@ -54,7 +54,7 @@ private:
 
 private:
 
-    IUINT32 mConvCounter = 1;
+    uint32_t mConvCounter = 1;
 
     uv_udp_t *mUdp = nullptr;
     uv_poll_t *mUnPoll = nullptr;
@@ -64,7 +64,7 @@ private:
     struct sockaddr_un *mUnAddr = nullptr;
 
     uv_loop_t *mLoop = nullptr;
-    std::map<IUINT32, CConn *> mConvMap;
+    std::map<uint32_t, CConn *> mConvMap;
     EncHead mHead;
 };
 

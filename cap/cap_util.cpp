@@ -15,6 +15,7 @@
 
 #include "cap_util.h"
 #include "../util/RPortList.h"
+#include "../util/rsutil.h"
 
 int ipv4OfDev(const char *dev, char *ip_buf, char *err) {
     pcap_if_t *dev_list;
@@ -38,8 +39,8 @@ int ipv4OfDev(const char *dev, char *ip_buf, char *err) {
                     struct sockaddr *a = addr->addr;
                     if (a->sa_family == AF_INET) {
                         struct sockaddr_in *addr4 = reinterpret_cast<struct sockaddr_in *>(a);
-                        sprintf(ip_buf, "%s", inet_ntoa(addr4->sin_addr));
-                        LOGV << "dev: " << dev << ", ipv4: " << ip_buf;
+                        sprintf(ip_buf, "%s", InAddr2Ip(addr4->sin_addr).c_str());
+                        LOGV << "dev: " << dev << ", ipv4: " << InAddr2Ip(addr4->sin_addr);
                         ok = true;
                         break;
                     }
@@ -61,11 +62,12 @@ int ipv4OfDev(const char *dev, char *ip_buf, char *err) {
     return nret;
 }
 
-const std::string BuildFilterStr(const std::string &srcIp, const std::string &dstIp, RPortList &srcPorts,
-                                 RPortList &dstPorts) {
+const std::string
+BuildFilterStr(const std::string &proto, const std::string &srcIp, const std::string &dstIp, RPortList &srcPorts,
+               RPortList &dstPorts, bool isServer) {
     std::ostringstream out;
-    out << "(tcp or udp) ";
-//    bool ok = true;
+    out << proto;
+
     const auto ipFn = [&out](const std::string &ip, bool src) {
         if (!ip.empty()) {
             out << " and ";
@@ -123,6 +125,19 @@ const std::string BuildFilterStr(const std::string &srcIp, const std::string &ds
 
     if (!portFn(srcPorts, true) || !portFn(dstPorts, false)) {
         return "";
+    }
+    if (isServer) {
+        std::string s = out.str();
+        std::string bak = s;
+        auto pos = s.find("dst");
+        while (pos != std::string::npos) {
+            s = s.replace(pos, strlen("dst"), "src");
+            pos = s.find("dst");
+        }
+        std::ostringstream out2;
+        out2 << "((tcp[tcpflags] & tcp-syn != 0) and " << s << ") or (" << bak << "and (tcp[tcpflags] & (tcp-syn) == 0)"
+             << ")";
+        return out2.str();
     }
     return out.str();
 }

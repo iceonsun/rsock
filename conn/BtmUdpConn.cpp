@@ -98,11 +98,7 @@ void BtmUdpConn::Close() {
 
 void BtmUdpConn::udpRecv(ssize_t nread, const uv_buf_t *buf, const struct sockaddr *addr) {
     fillInfo(addr);
-    const rbuf_t rbuf = {
-            .base = buf->base,
-            .len = (int) nread,
-            .data = &mInfo,
-    };
+    rbuf_t rbuf = new_buf(nread, buf->base, &mInfo);
 
     Input(nread, rbuf);
 }

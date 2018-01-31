@@ -20,7 +20,6 @@ public:
 
     RPortList() = default;
 
-    // todo? test if ok
     RPortList(const RPortList &portList) = default;
 
     RPortList(const std::initializer_list<PortPair> &list);

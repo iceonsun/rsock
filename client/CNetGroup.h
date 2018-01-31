@@ -12,7 +12,7 @@ class CNetGroup : public INetGroup {
 public:
     CNetGroup(const std::string &groupId, uv_loop_t *loop);
 
-    INetConn *CreateNewConn(const std::string &key, uv_loop_t *loop, const ConnInfo *info) override;
+    INetConn *CreateNewConn(const std::string &key, const ConnInfo *info) override;
 };
 
 

@@ -5,8 +5,6 @@
 #ifndef RSOCK_RSCOMM_H
 #define RSOCK_RSCOMM_H
 
-#include "ktype.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -52,6 +50,8 @@ extern "C" {
 
 typedef struct sockaddr SA;
 typedef struct sockaddr_in SA4;
+
+#define OM_ACKPOOL_FLUSH_SEC 5
 
 #ifdef __cplusplus
 }

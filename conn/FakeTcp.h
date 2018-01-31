@@ -2,8 +2,8 @@
 // Created by System Administrator on 1/16/18.
 //
 
-#ifndef RSOCK_RAWTCPCONN_H
-#define RSOCK_RAWTCPCONN_H
+#ifndef RSOCK_FAKETCP_H
+#define RSOCK_FAKETCP_H
 
 
 #include "INetConn.h"
@@ -11,9 +11,9 @@
 
 class FakeTcp : public INetConn {
 public:
-    using IRawTcpErrCb = std::function<void(FakeTcp *conn, int err)>;
+    using IFakeTcpErrCb = std::function<void(FakeTcp *conn, int err)>;
 
-    FakeTcp(uv_stream_t *tcp, const std::string &key);
+    FakeTcp(uv_stream_t *tcp, const std::string &key, const TcpInfo &info);
 
     int Init() override;
 
@@ -31,7 +31,7 @@ public:
 
     void SetAckISN(uint32_t isn);
 
-    void SetErrCb(const IRawTcpErrCb &cb);
+    void SetErrCb(const IFakeTcpErrCb &cb);
 
     bool IsUdp() override;
 
@@ -44,9 +44,8 @@ private:
 private:
     uv_stream_t *mTcp = nullptr;
     TcpInfo mInfo;
-    IRawTcpErrCb mErrCb = nullptr;
+    IFakeTcpErrCb mErrCb = nullptr;
     bool mAlive = true;
 };
 
-
-#endif //RSOCK_RAWTCPCONN_H
+#endif //RSOCK_FAKETCP_H

@@ -8,6 +8,8 @@
 #include <cassert>
 #include "ConnInfo.h"
 #include "../util/enc.h"
+#include "../util/rsutil.h"
+#include <algorithm>
 
 // cannot use conv as part of key!!!
 std::string ConnInfo::BuildKey(const ConnInfo &info) {
@@ -17,28 +19,20 @@ std::string ConnInfo::BuildKey(const ConnInfo &info) {
     } else {
         out << "tcp:";
     }
-    out << inet_ntoa({info.src}) << ":" << info.sp << "-";
-    out << inet_ntoa({info.dst}) << ":" << info.dst;
-    return out.str();
-}
-
-std::string ConnInfo::KeyForTcp(const ConnInfo *info) {
-    std::ostringstream out;
-    out << "tcp:";
-    out << inet_ntoa({info->src}) << ":" << info->sp << ":";
-    out << inet_ntoa({info->dst}) << ":" << info->dst;
+    out << std::string(InAddr2Ip({info.src})) << ":" << info.sp << "-";
+    out << std::string(InAddr2Ip({info.dst})) << ":" << info.dp;
     return out.str();
 }
 
 std::string ConnInfo::KeyForUdpBtm(uint32_t src, uint16_t sp) {
     std::ostringstream out;
-    out << "udp:" << inet_ntoa({src}) << ":" << sp;
+    out << "udp:" << InAddr2Ip({src}) << ":" << sp;
     return out.str();
 }
 
 std::string ConnInfo::BuildConnKey(uint32_t dst, uint32_t conv) {
     std::ostringstream out;
-    out << "conn:" << inet_ntoa({dst})  << ":" << conv;
+    out << "conn:" << InAddr2Ip({dst}) << ":" << conv;
     return out.str();
 }
 
@@ -69,7 +63,7 @@ std::string ConnInfo::BuildAddrKey(const struct sockaddr *addr) {
     if (addr->sa_family == AF_INET) {
         struct sockaddr_in *addr4 = (struct sockaddr_in *) addr;
         std::ostringstream out;
-        out << inet_ntoa(addr4->sin_addr) << ":" << ntohs(addr4->sin_port);
+        out << InAddr2Ip(addr4->sin_addr) << ":" << ntohs(addr4->sin_port);
         return out.str();
     } else if (addr->sa_family == AF_UNIX) {
         struct sockaddr_un *un = (struct sockaddr_un *) addr;
@@ -84,4 +78,16 @@ std::string ConnInfo::BuildAddrKey(const struct sockaddr *addr) {
 
 bool ConnInfo::EqualTo(const ConnInfo &info) const {
     return IsUdp() == info.IsUdp() && src == info.src && dst == info.dst && sp == info.sp && dp == info.dp;
+}
+
+std::string ConnInfo::ToStr() const {
+    std::ostringstream out;
+    out << "src:" << InAddr2Ip({src}) << ", sp:" << sp;
+    out << ", dst:" << InAddr2Ip({dst}) << ", dp: " << dp;
+    return out.str();
+}
+
+void ConnInfo::Reverse() {
+    std::swap<uint32_t>(src, dst);
+    std::swap<uint16_t>(sp, dp);
 }

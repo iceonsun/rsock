@@ -19,16 +19,15 @@ int IAppGroup::Init() {
     if (nret) {
         return nret;
     }
-    if (mFakeNetGroup) {
-        nret = mFakeNetGroup->Init();
-        if (nret) {
-            return nret;
-        }
-        auto out = std::bind(&IConn::Output, this, _1, _2);
-        mFakeNetGroup->SetOutputCb(out);
-        auto rcv = std::bind(&IConn::OnRecv, this, _1, _2);
-        mFakeNetGroup->SetOnRecvCb(rcv);
+    nret = mFakeNetGroup->Init();
+    if (nret) {
+        return nret;
     }
+    auto out = std::bind(&IConn::Output, this, _1, _2);
+    mFakeNetGroup->SetOutputCb(out);
+    auto rcv = std::bind(&IConn::OnRecv, this, _1, _2);
+    mFakeNetGroup->SetOnRecvCb(rcv);
+
     return 0;
 }
 
