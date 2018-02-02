@@ -171,9 +171,13 @@ void ISockApp::Close() {
     }
 
     if (mLoop) {
-        uv_stop(mLoop);
+        uv_stop(mLoop); // todo: move loop release to signal handler if any
         if (mConf.isDaemon) {   // it will crash if delete default loop
-            uv_loop_delete(mLoop);
+            if (!uv_loop_close(mLoop)) {
+                free(mLoop);
+            } else {
+                LOGE << "loop not closed properly";
+            }
         }
         mLoop = nullptr;
     }

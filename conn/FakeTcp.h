@@ -13,7 +13,7 @@ class FakeTcp : public INetConn {
 public:
     using IFakeTcpErrCb = std::function<void(FakeTcp *conn, int err)>;
 
-    FakeTcp(uv_stream_t *tcp, const std::string &key, const TcpInfo &info);
+    FakeTcp(uv_stream_t *tcp, const std::string &key);
 
     int Init() override;
 
@@ -23,7 +23,7 @@ public:
 
     void Close() override;
 
-    inline ConnInfo *GetInfo() override;
+    ConnInfo *GetInfo() override;
 
     bool Alive() override;
 
@@ -41,11 +41,20 @@ protected:
 private:
     static void read_cb(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf);
 
+    static void timer_cb(uv_timer_t *timer);
+
+    static void write_cb(uv_write_t* req, int status);
+
+    void checkAlive();
+
+    void destroyTimer();
 private:
     uv_stream_t *mTcp = nullptr;
     TcpInfo mInfo;
     IFakeTcpErrCb mErrCb = nullptr;
     bool mAlive = true;
+    uv_timer_t *mTimer = nullptr;
+    const uint64_t KEEP_ALIVE_INTERVAL = 2000;
 };
 
 #endif //RSOCK_FAKETCP_H

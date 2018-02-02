@@ -24,7 +24,7 @@ public:
 
     static FakeTcp *CreateTcpConn(uv_loop_t *loop, const TcpInfo &info);
 
-    static FakeTcp *CreateTcpConn(uv_tcp_t *tcp, const TcpInfo &info);
+    static FakeTcp *CreateTcpConn(uv_tcp_t *tcp);
 
     static uv_connect_t *ConnectTcp(uv_loop_t *loop, const ConnInfo &info, const uv_connect_cb &cb, void *data);
 

@@ -26,7 +26,7 @@ public:
 
     virtual ~INetManager() = default;
 
-    virtual int Add2Pool(INetConn *conn, const ConnInfo &info, bool closeIfFail);
+    virtual int Add2Pool(INetConn *conn, bool closeIfFail);
 
     virtual int Init();
 
@@ -41,7 +41,7 @@ public:
     INetConn *BindUdp(const ConnInfo &info);
 
 protected:
-    virtual int add2PoolAutoClose(INetConn *conn, const ConnInfo &info);
+    virtual int add2PoolAutoClose(INetConn *conn);
 
 private:
     static void timerCb(uv_timer_t *handle);

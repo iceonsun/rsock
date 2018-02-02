@@ -34,7 +34,9 @@ void ClientNetManager::Close() {
 INetConn *ClientNetManager::DialTcpSync(const TcpInfo &info) {
     INetConn *c = NetUtil::CreateTcpConn(mLoop, info);
     if (c) {    // dial succeeds. then there must be info of tcp ack
-        if (0 == add2PoolAutoClose(c, info)) {
+        TcpInfo *realInfo = dynamic_cast<TcpInfo *>(c->GetInfo());
+        assert(realInfo);
+        if (0 == add2PoolAutoClose(c)) {
             c = TransferConn(c->Key());
         } else {
             c = nullptr;
@@ -92,8 +94,8 @@ void ClientNetManager::onTcpConnect(uv_connect_t *req, int status) {
                 mTcpAckPool->RemoveInfo(tcpInfo);
             } else {
                 uv_tcp_t *tcp = reinterpret_cast<uv_tcp_t *>(req->handle);
-                INetConn *c = NetUtil::CreateTcpConn(tcp, tcpInfo);
-                add2PoolAutoClose(c, it->info);    // ignore the result
+                INetConn *c = NetUtil::CreateTcpConn(tcp);
+                add2PoolAutoClose(c);    // ignore the result
                 mPending.erase(it);
             }
             break;

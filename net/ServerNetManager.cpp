@@ -28,8 +28,8 @@ int ServerNetManager::Init() {
 void ServerNetManager::OnNewConnection(uv_tcp_t *tcp) {
     TcpInfo info;
     if (0 == GetTcpInfo(info, tcp)) {
-        auto c = NetUtil::CreateTcpConn(tcp, info);
-        add2PoolAutoClose(c, info);
+        auto c = NetUtil::CreateTcpConn(tcp);
+        add2PoolAutoClose(c);
     } else {    // get information failed
         uv_close(reinterpret_cast<uv_handle_t *>(tcp), close_cb);
     }

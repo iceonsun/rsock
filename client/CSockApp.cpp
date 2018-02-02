@@ -15,45 +15,19 @@
 CSockApp::CSockApp(uv_loop_t *loop) : ISockApp(false, loop) {}
 
 RCap *CSockApp::CreateCap(RConfig &conf) {
-    return new RCap(conf.param.dev, conf.param.selfCapIp, conf.param.selfCapPorts, conf.param.targetCapPorts,
+    return new RCap(conf.param.dev, conf.param.selfCapIp, {}, conf.param.targetCapPorts,
                     conf.param.targetIp, conf.param.interval, false);
+//    return new RCap(conf.param.dev, conf.param.selfCapIp, conf.param.selfCapPorts, conf.param.targetCapPorts,
+//                    conf.param.targetIp, conf.param.interval, false);
 }
 
 IConn *CSockApp::CreateBtmConn(RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool, int datalink) {
     RConn *rconn = new RConn(conf.param.hashKey, conf.param.dev, loop, ackPool, datalink, false);
-    auto ports = conf.param.selfCapPorts.GetRawList();
-    auto svr_ports = conf.param.targetCapPorts.GetRawList();
-    auto vec = createUdpConns(conf.param.selfCapInt, ports, conf.param.targetCapInt, svr_ports);
-    for (auto c: vec) {
-        rconn->AddUdpConn(c);
-    }
-
-//    TcpInfo info;
-//    info.src = conf.param.selfCapInt;
-//    info.dst = conf.param.targetCapInt;
-//    auto srcPorts = conf.param.selfCapPorts.GetRawList();
-//    auto dstPorts = conf.param.targetCapPorts.GetRawList();
-//    const int SIZE = std::min(srcPorts.size(), dstPorts.size());
-//    auto manager = GetNetManager();
-//
-//    ClientNetManager *clientNetManager = dynamic_cast<ClientNetManager *>(manager);
-//    assert(clientNetManager);
-//
-//    for (int i = 0; i < SIZE; i++) {
-//        info.sp = srcPorts[i];
-//        info.dp = dstPorts[i];
-//        auto c = clientNetManager->DialTcpSync(info);
-//        if (c) {
-//            if (0 == c->Init()) {
-//                rconn->AddUdpConn(c);
-//            } else {
-//                LOGE << "connection" << c->Key() << " init failed";
-//                c->Close();
-//                delete c;
-//            }
-//        } else {
-//            LOGE << "Dial tcp " << info.ToStr() << " failed";
-//        }
+//    auto ports = conf.param.selfCapPorts.GetRawList();
+//    auto svr_ports = conf.param.targetCapPorts.GetRawList();
+//    auto vec = createUdpConns(conf.param.selfCapInt, ports, conf.param.targetCapInt, svr_ports);
+//    for (auto c: vec) {
+//        rconn->AddUdpConn(c);
 //    }
 
     return rconn;
@@ -88,7 +62,8 @@ IConn *CSockApp::CreateBridgeConn(RConfig &conf, IConn *btm, uv_loop_t *loop, IN
     assert(clientNetManager);
 
     for (int i = 0; i < SIZE; i++) {
-        info.sp = srcPorts[i];
+//        info.sp = srcPorts[i];
+        info.sp = 0;
         info.dp = dstPorts[i];
         auto c = clientNetManager->DialTcpSync(info);
         if (c) {

@@ -271,3 +271,10 @@ const rbuf_t new_buf(int nread, const char *base, void *data) {
     };
     return result;
 }
+
+
+void *alloc_mem(size_t size) {
+    void *ptr = malloc(size);
+    memset(ptr, 0, size);
+    return ptr;
+}

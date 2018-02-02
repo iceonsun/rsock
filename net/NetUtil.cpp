@@ -44,12 +44,18 @@ FakeTcp *NetUtil::CreateTcpConn(uv_loop_t *loop, const TcpInfo &info) {
         LOGE << "uv_tcp_open failed: " << uv_strerror(nret);
         return nullptr;
     }
-    FakeTcp *conn = new FakeTcp(reinterpret_cast<uv_stream_t *>(tcp), ConnInfo::BuildKey(info), info);
+
+    TcpInfo realInfo;
+    GetTcpInfo(realInfo, tcp);
+
+    FakeTcp *conn = new FakeTcp(reinterpret_cast<uv_stream_t *>(tcp), ConnInfo::BuildKey(realInfo));
     return conn;
 }
 
-FakeTcp *NetUtil::CreateTcpConn(uv_tcp_t *tcp, const TcpInfo &info) {
-    FakeTcp *conn = new FakeTcp(reinterpret_cast<uv_stream_t *>(tcp), ConnInfo::BuildKey(info), info);
+FakeTcp *NetUtil::CreateTcpConn(uv_tcp_t *tcp) {
+    TcpInfo realInfo;
+    GetTcpInfo(realInfo, tcp);
+    FakeTcp *conn = new FakeTcp(reinterpret_cast<uv_stream_t *>(tcp), ConnInfo::BuildKey(realInfo));
     return conn;
 }
 

@@ -47,4 +47,6 @@ const rbuf_t new_buf(int nread, const rbuf_t &rbuf, void *data);
 
 const rbuf_t new_buf(int nread, const char *base, void *data);
 
+void *alloc_mem(size_t size);
+
 #endif //RSOCK_RSUTIL_H

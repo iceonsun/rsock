@@ -15,18 +15,23 @@ INetManager::INetManager(uv_loop_t *loop, TcpAckPool *ackPool) {
     mTcpAckPool = ackPool;
 }
 
-int INetManager::add2PoolAutoClose(INetConn *conn, const ConnInfo &info) {
-    return Add2Pool(conn, info, true);
+int INetManager::add2PoolAutoClose(INetConn *conn) {
+    return Add2Pool(conn, true);
 }
 
-int INetManager::Add2Pool(INetConn *conn, const ConnInfo &info, bool closeIfFail) {
+int INetManager::Add2Pool(INetConn *conn, bool closeIfFail) {
     if (!conn->IsUdp()) {   // tcp
         FakeTcp *c = dynamic_cast<FakeTcp *>(conn);
         assert(c);
-        TcpInfo tcpInfo(info);
+
+        // attention. info is alloced in FakeTcp. It will be freed if FakeTcp is deleted
+        TcpInfo *info = dynamic_cast<TcpInfo *>(c->GetInfo());
+        assert(info);
+
+        TcpInfo tcpInfo = *info;
         auto key = conn->Key();
         if (mTcpAckPool->Wait2Info(tcpInfo, BLOCK_WAIT_MS)) {    // get ack info from pool
-            LOGE << "Connection  " << c->Key() << " add to pool";
+            LOGV << "Connection  " << c->Key() << " add to pool";
             // during tcp 3-way handshake. client will receive pkt with SYN set. server will receive pkt with SYN && ACK set.
             // seq and ack for both side will remain
             c->SetISN(tcpInfo.ack + 1); // for client, this may be 1 larger than should be. but it has no effect on tcp
@@ -39,7 +44,7 @@ int INetManager::Add2Pool(INetConn *conn, const ConnInfo &info, bool closeIfFail
             c->Close();
             delete c;
         }
-        LOGW << "conn " << key << " has no record in pool, info: " << info.ToStr();
+        LOGW << "conn " << key << " has no record in pool, info: " << tcpInfo.ToStr();
         mTcpAckPool->RemoveInfo(tcpInfo);    // remove record if any
         return -1;
     }
@@ -81,7 +86,7 @@ int INetManager::Init() {
 
 void INetManager::timerCb(uv_timer_t *handle) {
     INetManager *manager = static_cast<INetManager *>(handle->data);
-//    manager->Flush(uv_now(manager->mLoop));
+    manager->Flush(uv_now(manager->mLoop));
 }
 
 void INetManager::setupTimer() {
@@ -105,8 +110,10 @@ void INetManager::Flush(uint64_t now) {
     for (auto it = mPool.begin(); it != mPool.end();) {
         auto &e = it->second;
         if (e.conn) {
-            if (now >= e.expireMs) {
-                LOGV << "closing conn " << e.conn->Key();
+            if (e.conn->Alive()) {
+                e.expireMs = now + POOL_PERSIST_MS;
+            } else if (now >= e.expireMs) {
+                LOGV << "expire. closing conn " << e.conn->Key();
                 e.conn->Close();
                 delete e.conn;
                 e.conn = nullptr;
