@@ -79,7 +79,7 @@ int ISockApp::doInit() {
         return -1;
     }
 
-    mAckPool = new TcpAckPool();
+    mAckPool = new TcpAckPool(mLoop);
 
     mNetManager = CreateNetManager(mConf, mLoop, mAckPool);
     nret = mNetManager->Init();

@@ -157,7 +157,7 @@ int RawTcp::RawInput(u_char *args, const pcap_pkthdr *hdr, const u_char *packet)
         if (mIsServer) {
             info.Reverse();
         }
-        mTcpAckPool->AddInfoFromPeer(info, tcp->th_flags, uv_now(mLoop));
+        mTcpAckPool->AddInfoFromPeer(info, tcp->th_flags);
         LOGV << "info pool: " << mTcpAckPool->Dump();
         return 0;
     }

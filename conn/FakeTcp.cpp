@@ -8,7 +8,7 @@
 #include "RConn.h"
 #include "../util/rsutil.h"
 
-// todo: send 1 bytes for a specific interval to check if alive
+// If send 1 bytes for a specific interval to check if alive. This will severely slow down speed
 FakeTcp::FakeTcp(uv_stream_t *tcp, const std::string &key) : INetConn(key) {
     mTcp = tcp;
 
@@ -22,11 +22,6 @@ int FakeTcp::Init() {
     assert(mTcp);
 
     mTcp->data = this;
-    mTimer = static_cast<uv_timer_t *>(malloc(sizeof(uv_timer_t)));
-
-    uv_timer_init(mTcp->loop, mTimer);
-    mTimer->data = this;
-    uv_timer_start(mTimer, timer_cb, KEEP_ALIVE_INTERVAL, KEEP_ALIVE_INTERVAL);
     return uv_read_start(mTcp, alloc_buf, read_cb);
 }
 
@@ -36,7 +31,6 @@ void FakeTcp::Close() {
         uv_close(reinterpret_cast<uv_handle_t *>(mTcp), close_cb);
         mTcp = nullptr;
     }
-    destroyTimer();
     mErrCb = nullptr;
     mAlive = false;
 }
@@ -57,7 +51,7 @@ int FakeTcp::OnRecv(ssize_t nread, const rbuf_t &buf) {
 
     int n = INetConn::OnRecv(nread, buf);
 
-    if (n >= 0) {   // todo: encapsnlate
+    if (n >= 0) {
         mInfo.UpdateAck((int) nread + mInfo.ack + RConn::HEAD_SIZE);
     }
 
@@ -76,7 +70,6 @@ void FakeTcp::read_cb(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
 void FakeTcp::OnTcpError(FakeTcp *conn, int err) {
     LOGE << "conn " << conn->Key() << ", err: " << err;
     mAlive = false;
-    destroyTimer();
     if (mErrCb) {
         mErrCb(conn, err);
     }
@@ -105,37 +98,3 @@ ConnInfo *FakeTcp::GetInfo() {
 bool FakeTcp::IsUdp() {
     return false;
 }
-
-void FakeTcp::timer_cb(uv_timer_t *timer) {
-    FakeTcp *tcp = static_cast<FakeTcp *>(timer->data);
-    tcp->checkAlive();
-}
-
-void FakeTcp::checkAlive() {
-    rwrite_req_t *req = static_cast<rwrite_req_t *>(malloc(sizeof(rwrite_req_t)));
-    char *base = static_cast<char *>(malloc(1));
-    base[0] = 'a';
-    req->buf = uv_buf_init(base, 1);
-    req->write.data = this;
-
-    uv_write(reinterpret_cast<uv_write_t *>(req), mTcp, &req->buf, 1, write_cb);
-}
-
-void FakeTcp::write_cb(uv_write_t *req, int status) {
-    rwrite_req_t *req1 = reinterpret_cast<rwrite_req_t *>(req);
-    if (status < 0 && status != UV_ECANCELED) {
-        LOGE << "err: " << uv_strerror(status);
-        FakeTcp *tcp = static_cast<FakeTcp *>(req1->write.data);
-        tcp->OnTcpError(tcp, status);
-    }
-    free_rwrite_req(req1);
-}
-
-void FakeTcp::destroyTimer() {
-    if (mTimer) {
-        uv_timer_stop(mTimer);
-        uv_close(reinterpret_cast<uv_handle_t *>(mTimer), close_cb);
-        mTimer = nullptr;
-    }
-}
-

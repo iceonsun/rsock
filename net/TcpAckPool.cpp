@@ -5,8 +5,12 @@
 #include <plog/Log.h>
 #include "TcpAckPool.h"
 
+TcpAckPool::TcpAckPool(uv_loop_t *loop) {
+    mLoop = loop;
+}
+
 // because pcap will only capture output packet
-bool TcpAckPool::AddInfoFromPeer(const TcpInfo &infoFromPeer, uint8_t flags, uint64_t ts) {
+bool TcpAckPool::AddInfoFromPeer(const TcpInfo &infoFromPeer, uint8_t flags) {
     if (infoFromPeer.sp == 0 || infoFromPeer.dp == 0 || 0 == (flags & TH_SYN)) {
         LOGW << "sp or dp is zero:  " << infoFromPeer.ToStr() << " or flag err " << flags;
         return false;
@@ -14,7 +18,7 @@ bool TcpAckPool::AddInfoFromPeer(const TcpInfo &infoFromPeer, uint8_t flags, uin
 
     LOGV << "Add tcpInfo: " << infoFromPeer.ToStr();
     std::unique_lock<std::mutex> lk(mMutex);
-    mInfoPool[infoFromPeer] = ts;    // just overwrite if exists
+    mInfoPool[infoFromPeer] = uv_now(mLoop) + EXPIRE_INTERVAL;    // just overwrite if exists. Bug!!! shoud add expire interval
     mCondVar.notify_one();
     return true;
 }

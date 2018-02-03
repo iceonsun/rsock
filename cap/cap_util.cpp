@@ -18,7 +18,7 @@
 #include "../util/rsutil.h"
 
 int ipv4OfDev(const char *dev, char *ip_buf, char *err) {
-    pcap_if_t *dev_list;
+    pcap_if_t *dev_list = nullptr;
     int nret = 0;
     do {
         if (-1 == (nret = pcap_findalldevs(&dev_list, err))) {
