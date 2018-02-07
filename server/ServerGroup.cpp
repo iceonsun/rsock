@@ -21,6 +21,14 @@ ServerGroup::ServerGroup(const std::string &groupId, uv_loop_t *loop, const stru
     mNetManager = netManager;
 }
 
+void ServerGroup::Close() {
+    IGroup::Close();
+    if (mTarget) {
+        free(mTarget);
+        mTarget = nullptr;
+    }
+}
+
 int ServerGroup::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
     if (nread > 0) {
         ConnInfo *info = static_cast<ConnInfo *>(rbuf.data);
@@ -30,7 +38,7 @@ int ServerGroup::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
         auto groupId = IdBuf2Str(hd->id_buf);
         auto conn = ConnOfKey(groupId);
         if (!conn) {
-            conn = newConn(groupId, mLoop, mTarget);
+            conn = newConn(groupId, mLoop, mTarget, *info);
         }
         if (conn) {
             return conn->Input(nread, rbuf);
@@ -42,10 +50,10 @@ int ServerGroup::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
 
 }
 
-IConn *ServerGroup::newConn(const std::string &groupId, uv_loop_t *loop, const struct sockaddr *target) {
+IConn *ServerGroup::newConn(const std::string &groupId, uv_loop_t *loop, const struct sockaddr *target, const ConnInfo &info) {
     auto fakenet = new SNetGroup(groupId, loop, mNetManager);
     auto conn = new SubGroup(groupId, loop, target, fakenet, nullptr);
-    LOGV << "new group: " << groupId;
+    LOGD << "new group: " << GetDstAddrStr(info) <<  ", groupId: " << groupId;
     if (conn->Init()) {
         conn->Close();
         delete conn;

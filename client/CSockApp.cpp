@@ -23,6 +23,7 @@ RCap *CSockApp::CreateCap(RConfig &conf) {
 
 IConn *CSockApp::CreateBtmConn(RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool, int datalink) {
     RConn *rconn = new RConn(conf.param.hashKey, conf.param.dev, loop, ackPool, datalink, false);
+    // dial udp conn
 //    auto ports = conf.param.selfCapPorts.GetRawList();
 //    auto svr_ports = conf.param.targetCapPorts.GetRawList();
 //    auto vec = createUdpConns(conf.param.selfCapInt, ports, conf.param.targetCapInt, svr_ports);
@@ -37,8 +38,11 @@ IConn *CSockApp::CreateBridgeConn(RConfig &conf, IConn *btm, uv_loop_t *loop, IN
     IGroup *btmGroup = dynamic_cast<IGroup *>(btm);
     assert(btmGroup);
 
-//    const auto &conns = btmGroup->GetAllConns();
     auto group = new CNetGroup(IdBuf2Str(conf.param.id), loop); // test tcp first
+    auto fn = std::bind(&CSockApp::OnConnErr, this, std::placeholders::_1);
+    group->SetNetConnErrCb(fn);
+    // add udp conns
+//    const auto &conns = btmGroup->GetAllConns();
 //    for (auto &e: conns) {
 //        auto *conn = dynamic_cast<INetConn *>(e.second);
 //        auto info = conn->GetInfo();
@@ -62,13 +66,11 @@ IConn *CSockApp::CreateBridgeConn(RConfig &conf, IConn *btm, uv_loop_t *loop, IN
     assert(clientNetManager);
 
     for (int i = 0; i < SIZE; i++) {
-//        info.sp = srcPorts[i];
         info.sp = 0;
         info.dp = dstPorts[i];
         auto c = clientNetManager->DialTcpSync(info);
         if (c) {
             if (0 == c->Init()) {
-                LOGV << "connection " << c->Key() << " added to cnetgroup";
                 group->AddNetConn(c);
             } else {
                 LOGE << "connection" << c->Key() << " init failed";
@@ -86,4 +88,25 @@ IConn *CSockApp::CreateBridgeConn(RConfig &conf, IConn *btm, uv_loop_t *loop, IN
 
 INetManager *CSockApp::CreateNetManager(RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool) {
     return new ClientNetManager(loop, ackPool);
+}
+
+void CSockApp::OnConnErr(const ConnInfo &info) {
+    if (!info.IsUdp()) {
+        auto manager = GetNetManager();
+        auto *clientNetManager = dynamic_cast<ClientNetManager *>(manager);
+        assert(clientNetManager);
+
+        LOGE << "conn " << info.ToStr() << ", err, reconnect it";
+        auto cb = std::bind(&CSockApp::TcpDialAsyncCb, this, std::placeholders::_1, std::placeholders::_2);
+        clientNetManager->DialTcpAsync(info, cb);
+    }
+}
+
+void CSockApp::TcpDialAsyncCb(INetConn *conn, const ConnInfo &info) {
+    auto *clientGroup = dynamic_cast<ClientGroup *>(GetBridgeConn());
+    assert(clientGroup);
+    LOGD << "reconnecting conn " << info.ToStr() << " succeeds.";
+    if (conn) {
+        clientGroup->GetNetGroup()->AddNetConn(conn);
+    }
 }

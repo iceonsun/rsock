@@ -26,11 +26,17 @@ public:
 
     void Close() override;
 
-    bool CheckAndClose() override;
+    void Flush(uint64_t now) override;
 
     virtual int size();
 
     std::map<std::string, IConn*>& GetAllConns();
+
+    // if false, parent will continue to process. if true, parent will not process
+    virtual bool OnConnDead(IConn *conn) { return false;}
+
+    bool Alive() override;
+
 protected:
     std::map<std::string, IConn *> mConns;
     IConn *mBtm = nullptr;

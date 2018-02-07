@@ -31,6 +31,8 @@ public:
 
     int Output(ssize_t nread, const rbuf_t &rbuf) override;
 
+    bool Alive() override;
+
 private:
     void udpRecv(ssize_t nread, const uv_buf_t *buf, const struct sockaddr *addr);
 

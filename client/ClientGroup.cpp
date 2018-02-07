@@ -73,18 +73,6 @@ int ClientGroup::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
     return nread;
 }
 
-//int ClientGroup::Output(ssize_t nread, const rbuf_t &rbuf) {
-//    CConn *conn = static_cast<CConn *>(rbuf.data);
-//    assert(conn);
-//    mHead.conv = conn->Conv();
-//    const rbuf_t buf = {
-//            .base = rbuf.base,
-//            .len = (int)nread,
-//            .data = &mHead,
-//    };
-//    return IAppGroup::Output(nread, buf);
-//}
-
 int ClientGroup::send2Origin(ssize_t nread, const rbuf_t &rbuf, const sockaddr *addr) {
     if (addr->sa_family == AF_UNIX) {   // if unix domain socket. send on it.
         return unSendOrigin(nread, rbuf, (sockaddr_un *) addr);
@@ -171,7 +159,7 @@ void ClientGroup::pollCb(uv_poll_t *handle, int status, int events) {
 }
 
 void ClientGroup::Close() {
-    IGroup::Close();
+    IAppGroup::Close();
 
     if (mUdp) {
         uv_close(reinterpret_cast<uv_handle_t *>(mUdp), close_cb);
@@ -227,7 +215,7 @@ int ClientGroup::subconnRecv(ssize_t nread, const rbuf_t &rbuf) {
 }
 
 void ClientGroup::RemoveConn(IConn *conn, bool removeCb) {
-    IGroup::RemoveConn(conn, removeCb);
+    IAppGroup::RemoveConn(conn, removeCb);
     auto *cConn = dynamic_cast<CConn *>(conn);
     assert(cConn != nullptr);
     mConvMap.erase(cConn->Conv());
@@ -239,3 +227,16 @@ int ClientGroup::cconSend(ssize_t nread, const rbuf_t &rbuf) {
     rbuf_t buf = new_buf(nread, rbuf, &mHead);
     return Send(nread, buf);
 }
+
+bool ClientGroup::OnConnDead(IConn *conn) {
+    CConn *c = dynamic_cast<CConn *>(conn);
+    if (c) {
+        RemoveConn(c, true);
+        c->Close();
+        delete c;
+        return true;
+    }
+    return false;
+}
+
+// todo: override Alive to enable auto restart

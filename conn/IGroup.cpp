@@ -78,29 +78,36 @@ void IGroup::AddConn(IConn *conn, const IConn::IConnCb &outCb, const IConn::ICon
     }
 }
 
-bool IGroup::CheckAndClose() {
-    std::vector<std::pair<std::string, IConn *>> vec;
-    int size = mConns.size();
+void IGroup::Flush(uint64_t now) {
+    std::vector<std::pair<std::string, IConn *>> fails;
+
     for (auto &e: mConns) {
-        if (e.second->CheckAndClose()) {
-            vec.emplace_back(e);
+        if (!e.second->Alive()) {
+            fails.emplace_back(e);
         }
     }
-    bool can = false;
-    if (vec.size() == size) {
-        can = true;
-    }
-    for (auto &e: vec) {
-        mConns.erase(e.first);
-        e.second->Close();
-        delete e.second;
 
+    for (auto &e: fails) {
+        if (!OnConnDead(e.second)) {
+            LOGD << "close and remove dead conn " << e.second->Key();
+            mConns.erase(e.first);
+            e.second->Close();
+            delete e.second;
+        }
     }
-    if (!vec.empty()) {
-        LOGV << "can: " << can << ", closed " << vec.size() << " conns. original size: " << size << ", new size: "
-             << mConns.size();
+
+    if (mConns.empty()) {
+        LOGW << "group: " << Key() << ", all conns are dead";
     }
-    return can;
+}
+
+bool IGroup::Alive() {
+    for (auto &e: mConns) {
+        if (e.second->Alive()) {
+            return true;
+        }
+    }
+    return false;
 }
 
 int IGroup::size() {

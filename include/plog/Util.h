@@ -83,7 +83,7 @@ namespace plog
         inline void ftime(Time* t)
         {
             timeval tv;
-            ::gettimeofday(&tv, NULL);
+//            ::gettimeofday(&tv, NULL);
 
             t->time = tv.tv_sec;
             t->millitm = static_cast<unsigned short>(tv.tv_usec / 1000);

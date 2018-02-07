@@ -62,9 +62,8 @@ int ipv4OfDev(const char *dev, char *ip_buf, char *err) {
     return nret;
 }
 
-const std::string
-BuildFilterStr(const std::string &proto, const std::string &srcIp, const std::string &dstIp, RPortList &srcPorts,
-               RPortList &dstPorts, bool isServer) {
+const std::string BuildFilterStr(const std::string &proto, const std::string &srcIp, const std::string &dstIp,
+                                 RPortList &srcPorts, RPortList &dstPorts, bool isServer) {
     std::ostringstream out;
     out << proto;
 

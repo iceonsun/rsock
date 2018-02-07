@@ -17,7 +17,6 @@
 
 #include "enc.h"
 #include "rsutil.h"
-#include "../rcommon.h"
 #include "../conn/ConnInfo.h"
 
 struct sockaddr *new_addr(const struct sockaddr *addr) {
@@ -272,9 +271,24 @@ const rbuf_t new_buf(int nread, const char *base, void *data) {
     return result;
 }
 
-
 void *alloc_mem(size_t size) {
     void *ptr = malloc(size);
     memset(ptr, 0, size);
     return ptr;
+}
+
+std::string GetSrcAddrStr(const ConnInfo &info) {
+    SA4 src = {0};
+    src.sin_family = AF_INET;
+    src.sin_port = htons(info.sp);
+    src.sin_addr.s_addr = info.src;
+    return Addr2Str((SA *) &src);
+}
+
+std::string GetDstAddrStr(const ConnInfo &info) {
+    SA4 dst = {0};
+    dst.sin_family = AF_INET;
+    dst.sin_port = htons(info.dp);
+    dst.sin_addr.s_addr = info.dst;
+    return Addr2Str((SA *) &dst);
 }

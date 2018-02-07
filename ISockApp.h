@@ -29,7 +29,7 @@ class ISockApp {
 public:
     ISockApp(bool is_server, uv_loop_t *loop);
 
-    virtual ~ISockApp() = default;
+    virtual ~ISockApp();
 
     int Parse(int argc, const char *const *argv);
 
@@ -55,12 +55,21 @@ public:
 
     virtual INetManager *CreateNetManager(RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool) = 0;
 
-    INetManager *GetNetManager() { return mNetManager; }
+    INetManager *GetNetManager() const { return mNetManager; }
+
+    IConn *GetBridgeConn() const { return mBridge; }
 
 protected:
     std::vector<INetConn *> createUdpConns(uint32_t src, const std::vector<uint16_t> &ports, uint32_t dst,
                                            const std::vector<uint16_t> &svr_ports);
 
+    virtual void onExitSignal();
+
+    virtual void watchExitSignal();
+
+    static void close_signal_handler(uv_signal_t *handle, int signum);
+
+    static const int SIG_EXIT = SIGUSR1;
 private:
     int doInit();
 
@@ -83,6 +92,7 @@ private:
     bool mInited = false;
     INetManager *mNetManager = nullptr;
     TcpAckPool *mAckPool = nullptr;
+    uv_signal_t* mExitSig = nullptr;
 };
 
 

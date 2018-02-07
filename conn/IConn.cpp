@@ -46,24 +46,26 @@ int IConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
     return 0;
 }
 
-bool IConn::CheckAndClose() {
-    return mStat.canCloseCheck();
+IConn::~IConn() {
+    assert(mOutputCb == nullptr);
+    assert(mOnRecvCb == nullptr);
 }
 
 void IConn::DataStat::afterInput(ssize_t nread) {
     if (nread > 0) {
-        curr_cnt++;
+        curr_in++;
     }
 }
 
 void IConn::DataStat::afterSend(ssize_t nread) {
     if (nread > 0) {
-        curr_cnt++;
+        curr_out++;
     }
 }
 
-bool IConn::DataStat::canCloseCheck() {
-    bool canclose = (prev_cnt == curr_cnt);
-    prev_cnt = curr_cnt;
-    return canclose;
+bool IConn::DataStat::Alive() {
+    bool alive = (prev_in != curr_in && prev_out != curr_out);
+    prev_in = curr_in;
+    prev_out = curr_out;
+    return alive;
 }

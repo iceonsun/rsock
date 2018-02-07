@@ -167,6 +167,7 @@ int RawTcp::RawInput(u_char *args, const pcap_pkthdr *hdr, const u_char *packet)
         return 0;
     }
 
+    info.seq += payload_len;
     return cap2uv(&info, payload, payload_len);
 }
 
@@ -196,13 +197,12 @@ void RawTcp::pollCb(uv_poll_t *handle, int status, int events) {
         RawTcp *conn = static_cast<RawTcp *>(handle->data);
         char buf[OM_MAX_PKT_SIZE] = {0};
         ssize_t nread = read(conn->mReadFd, buf, OM_MAX_PKT_SIZE);
-        if (nread <= sizeof(TcpInfo)) {
-            return;
-        }
-
         TcpInfo info;
         const char *p = info.Decode(buf, nread);
-        assert(p);
+        if (!p) {   // failed to decode
+            LOGV << "failed to decode tcp info";
+            return;
+        }
         int len = nread - (p - buf);
         const rbuf_t rbuf = new_buf(len, p, &info);
         conn->Input(len, rbuf);
@@ -267,9 +267,7 @@ int RawTcp::SendRawTcp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT1
         LOGE << "libnet_write failed: " << libnet_geterror(l);
         return -1;
     } else {
-        std::string src_str = InAddr2Ip({src});
-        std::string dst_str = InAddr2Ip({dst});
-        LOGV << "libnet_write " << n << " bytes. " << src_str << ":" << sp << "<->" << dst_str << ":" << dp;
+        LOGV << "libnet_write " << n << " bytes. " << InAddr2Ip({src}) << ":" << sp << "<->" << InAddr2Ip({dst}) << ":" << dp;
 
     }
     return payload_len;
@@ -319,7 +317,8 @@ int RawTcp::SendRawUdp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT1
         LOGE << "libnet_write failed: " << libnet_geterror(l);
         return -1;
     } else {
-        LOGV << "libnet_write " << n << " bytes " << InAddr2Ip({src}) << ":" << sp << "<->" << InAddr2Ip({dst}) << ":" << dp;
+        LOGV << "libnet_write " << n << " bytes " << InAddr2Ip({src}) << ":" << sp << "<->" << InAddr2Ip({dst}) << ":"
+             << dp;
     }
     return payload_len;
 }

@@ -33,25 +33,22 @@ int IAppGroup::Init() {
 
 void IAppGroup::Close() {
     IGroup::Close();
-    mFakeNetGroup->Close();
+    if (mFakeNetGroup) {
+        mFakeNetGroup->Close(); // todo: delete mFakeNetGroup, 内存泄露!!!
+        delete mFakeNetGroup;
+        mFakeNetGroup = nullptr;
+    }
 }
 
 int IAppGroup::Send(ssize_t nread, const rbuf_t &rbuf) {
     return mFakeNetGroup->Send(nread, rbuf);
 }
 
-void IAppGroup::AddNetConn(INetConn *conn) {
-    mFakeNetGroup->AddNetConn(conn);
-}
-
 int IAppGroup::Input(ssize_t nread, const rbuf_t &rbuf) {
     return mFakeNetGroup->Input(nread, rbuf);
 }
 
-void IAppGroup::RemoveNetConn(INetConn *conn) {
-    mFakeNetGroup->RemoveConn(conn, true);
-}
-
-INetConn *IAppGroup::NetConnOfKey(const std::string &key) {
-    return dynamic_cast<INetConn *>(mFakeNetGroup->ConnOfKey(key));
+void IAppGroup::Flush(uint64_t now) {
+    IGroup::Flush(now);
+    mFakeNetGroup->Flush(now);
 }

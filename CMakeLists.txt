@@ -5,18 +5,21 @@ set(CMAKE_CXX_STANDARD 11)
 
 include_directories(./include)
 
-set(SOURCE_FILES rcommon.c RConfig.cpp ISockApp.cpp conn/IConn.cpp PortMapper.cpp OHead.cpp
-        util/enc.c util/rsutil.cpp util/FdUtil.cpp util/rhash.cpp util/RTimer.cpp util/TextUtils.h util/RPortList.cpp util/PortPair.cpp util/ProcUtil.cpp
+set(SOURCE_FILES rcommon.c RConfig.cpp ISockApp.cpp conn/IConn.cpp
+        util/enc.c util/rsutil.cpp util/FdUtil.cpp util/rhash.cpp util/RTimer.cpp util/TextUtils.h util/RPortList.cpp
+        util/PortPair.cpp util/ProcUtil.cpp util/Handler.cpp util/ShotHandler.cpp
         cap/cap_util.cpp cap/RCap.cpp
         thirdparty/md5.c thirdparty/json11.cpp
-        tcp/TcpConnector.cpp tcp/SockMon.cpp tcp/LSockMon.cpp
         conn/INetConn.cpp conn/BtmUdpConn.cpp EncHead.cpp conn/FakeTcp.cpp conn/TcpInfo.cpp
         conn/INetGroup.cpp conn/IGroup.cpp conn/ConnInfo.cpp conn/FakeUdp.cpp
         conn/RConn.cpp conn/RawTcp.cpp conn/IAppGroup.cpp
-        net/NetUtil.cpp net/ClientNetManager.cpp net/TcpAckPool.cpp net/NetListenPool.cpp net/INetManager.cpp net/ServerNetManager.cpp)
+        net/NetUtil.cpp net/ClientNetManager.cpp net/TcpAckPool.cpp net/NetListenPool.cpp net/INetManager.cpp
+        net/ServerNetManager.cpp)
 
-set(SVR_SOURCE_FILES ${SOURCE_FILES} server/SConn.cpp server/SSockApp.cpp server/ssock.cpp server/SNetGroup.cpp server/ServerGroup.cpp server/SubGroup.cpp)
-set(CLI_SOURCE_FILES ${SOURCE_FILES} client/CConn.cpp client/csock.cpp client/CSockApp.cpp client/ClientGroup.cpp client/CNetGroup.cpp)
+set(SVR_SOURCE_FILES ${SOURCE_FILES} server/SConn.cpp server/SSockApp.cpp server/ssock.cpp server/SNetGroup.cpp
+        server/ServerGroup.cpp server/SubGroup.cpp)
+set(CLI_SOURCE_FILES ${SOURCE_FILES} client/CConn.cpp client/csock.cpp client/CSockApp.cpp client/ClientGroup.cpp
+        client/CNetGroup.cpp)
 
 add_executable(ssock ${SVR_SOURCE_FILES} server/main.cpp)
 set_target_properties(
@@ -44,7 +47,7 @@ add_executable(test_client ${CLI_SOURCE_FILES} test/test_client.cpp)
 add_executable(echo_server rcommon.c test/udp_echo_server.cpp)
 add_executable(echo_client rcommon.c test/udp_echo_client.cpp)
 
-add_definitions(-Wall)
+add_definitions(-Wall -pg -g)
 #add_definitions(-DRLOG_FILE_PATH="/var/log/rsock/rsock.log")
 
 # library

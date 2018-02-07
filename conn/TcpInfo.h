@@ -25,11 +25,11 @@ struct TcpInfo : ConnInfo {
 
     std::string ToStr() const override;
 
-    TcpInfo() = default;
+    TcpInfo();
 
     TcpInfo(const TcpInfo &info) = default;
 
-    explicit TcpInfo(const ConnInfo &info);
+    TcpInfo(const ConnInfo &info);
 
     void Reverse() override;
 };

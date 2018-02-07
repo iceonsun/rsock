@@ -28,7 +28,7 @@ BtmUdpConn *NetUtil::CreateBtmUdpConn(uv_loop_t *loop, const ConnInfo &info) {
     return btm;
 }
 
-FakeTcp *NetUtil::CreateTcpConn(uv_loop_t *loop, const TcpInfo &info) {
+FakeTcp *NetUtil::CreateTcpConn(uv_loop_t *loop, const ConnInfo &info) {
     int sock = NetUtil::createTcpSock(info);
     if (sock < 0) {
         LOGE << "init tcp socket failed: " << strerror(errno);

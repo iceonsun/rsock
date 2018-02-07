@@ -31,10 +31,10 @@ void ClientNetManager::Close() {
     mPending.clear();
 }
 
-INetConn *ClientNetManager::DialTcpSync(const TcpInfo &info) {
+INetConn *ClientNetManager::DialTcpSync(const ConnInfo &info) {
     INetConn *c = NetUtil::CreateTcpConn(mLoop, info);
     if (c) {    // dial succeeds. then there must be info of tcp ack
-        TcpInfo *realInfo = dynamic_cast<TcpInfo *>(c->GetInfo());
+        auto *realInfo = dynamic_cast<TcpInfo *>(c->GetInfo());
         assert(realInfo);
         if (0 == add2PoolAutoClose(c)) {
             c = TransferConn(c->Key());
@@ -45,7 +45,7 @@ INetConn *ClientNetManager::DialTcpSync(const TcpInfo &info) {
     return c;
 }
 
-int ClientNetManager::DialTcpAsync(const TcpInfo &info, const ClientNetManager::NetDialCb &cb) {
+int ClientNetManager::DialTcpAsync(const ConnInfo &info, const ClientNetManager::NetDialCb &cb) {
     DialHelper helper;
     helper.info = info;
     helper.cb = cb;

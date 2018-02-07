@@ -93,10 +93,6 @@ int RConn::Output(ssize_t nread, const rbuf_t &rbuf) {
 }
 
 
-void RConn::AddConn(IConn *conn, const IConn::IConnCb &outCb, const IConn::IConnCb &recvCb) {
-    IGroup::AddConn(conn, outCb, recvCb);
-}
-
 void RConn::CapInputCb(u_char *args, const pcap_pkthdr *hdr, const u_char *packet) {
     RConn *conn = reinterpret_cast<RConn *>(args);
     conn->mRawTcp->RawInput(nullptr, hdr, packet);

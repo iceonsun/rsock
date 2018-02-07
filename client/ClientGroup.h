@@ -30,7 +30,7 @@ public:
 
     void RemoveConn(IConn *conn, bool removeCb) override;
 
-//    int Output(ssize_t nread, const rbuf_t &rbuf) override;
+    bool OnConnDead(IConn *conn) override;
 
 private:
     int subconnRecv(ssize_t nread, const rbuf_t &rbuf);

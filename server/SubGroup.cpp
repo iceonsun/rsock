@@ -9,8 +9,8 @@
 #include "../util/rsutil.h"
 #include "../conn/ConnInfo.h"
 #include "SConn.h"
-#include "../EncHead.h"
 #include "../util/rhash.h"
+#include "../conn/INetGroup.h"
 
 using namespace std::placeholders;
 
@@ -62,7 +62,7 @@ IConn *SubGroup::newConn(const std::string &key, uint32_t conv) {
     auto out = std::bind(&SubGroup::sconnSend, this, _1, _2);
     AddConn(conn, out, nullptr);
 
-    LOGV << "new SConn, key: " << conn->Key();
+    LOGD << "new SConn, key: " << conn->Key();
 
     return conn;
 }
@@ -72,4 +72,8 @@ int SubGroup::sconnSend(ssize_t nread, const rbuf_t &rbuf) {
     mHead.conv = conn->Conv();
     const rbuf_t buf = new_buf(nread, rbuf, &mHead);
     return Send(nread, buf);
+}
+
+bool SubGroup::Alive() {
+    return IAppGroup::Alive() && NetGroup()->Alive();
 }

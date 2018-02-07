@@ -7,8 +7,7 @@
 #include "ConnInfo.h"
 #include "../util/rsutil.h"
 
-INetConn::INetConn(const std::string &key)
-        : IConn(key) {
+INetConn::INetConn(const std::string &key) : IConn(key) {
 }
 
 int INetConn::Output(ssize_t nread, const rbuf_t &rbuf) {
@@ -18,4 +17,19 @@ int INetConn::Output(ssize_t nread, const rbuf_t &rbuf) {
     info->head = hd;
     const rbuf_t buf = new_buf(nread, rbuf.base, info);
     return IConn::Output(nread, buf);
+}
+
+void INetConn::SetOnErrCb(const INetConn::ErrCb &cb) {
+    mErrCb = cb;
+}
+
+void INetConn::OnNetConnErr(INetConn *conn, int err) {
+    if (conn && mErrCb) {
+        mErrCb(conn, err);
+    }
+}
+
+void INetConn::Close() {
+    IConn::Close();
+    mErrCb = nullptr;
 }

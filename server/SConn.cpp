@@ -56,6 +56,7 @@ void SConn::udpRecvCb(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf, cons
     } else if (nread < 0) {
         LOGE << "receive error: " << uv_strerror(nread);
     }
+    free(buf->base);
 }
 
 uint32_t SConn::Conv() {

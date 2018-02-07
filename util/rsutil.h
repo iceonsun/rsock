@@ -49,4 +49,8 @@ const rbuf_t new_buf(int nread, const char *base, void *data);
 
 void *alloc_mem(size_t size);
 
+std::string GetDstAddrStr(const ConnInfo &info);
+
+std::string GetSrcAddrStr(const ConnInfo &info);
+
 #endif //RSOCK_RSUTIL_H

@@ -10,6 +10,7 @@
 #include "../util/enc.h"
 #include "../util/rsutil.h"
 #include <algorithm>
+#include <rscomm.h>
 
 // cannot use conv as part of key!!!
 std::string ConnInfo::BuildKey(const ConnInfo &info) {
@@ -69,11 +70,7 @@ std::string ConnInfo::BuildAddrKey(const struct sockaddr *addr) {
         struct sockaddr_un *un = (struct sockaddr_un *) addr;
         return un->sun_path;
     }
-#ifndef NNDEBUG
-    assert(0);
-#else
     return "";
-#endif
 }
 
 bool ConnInfo::EqualTo(const ConnInfo &info) const {
@@ -82,6 +79,7 @@ bool ConnInfo::EqualTo(const ConnInfo &info) const {
 
 std::string ConnInfo::ToStr() const {
     std::ostringstream out;
+    out << (udp ? "udp" : "tcp") << ":";
     out << "src:" << InAddr2Ip({src}) << ", sp:" << sp;
     out << ", dst:" << InAddr2Ip({dst}) << ", dp: " << dp;
     return out.str();

@@ -42,7 +42,7 @@ public:
     static const int HEAD_SIZE;
 
 private:
-    void AddConn(IConn *conn, const IConnCb &outCb, const IConnCb &recvCb) override;
+    using IGroup::AddConn;
 
 private:
     RawTcp *mRawTcp = nullptr;

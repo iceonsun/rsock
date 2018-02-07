@@ -15,12 +15,6 @@ class IAppGroup : public IGroup {
 public:
     IAppGroup(const std::string &groupId, INetGroup *fakeNetGroup, IConn *btm);
 
-    virtual void AddNetConn(INetConn *conn);
-
-    virtual void RemoveNetConn(INetConn *conn);
-
-    virtual INetConn * NetConnOfKey(const std::string &key);
-
     int Init() override;
 
     void Close() override;
@@ -29,6 +23,11 @@ public:
 
     int Input(ssize_t nread, const rbuf_t &rbuf) override;
 
+    INetGroup *GetNetGroup() const { return mFakeNetGroup; }
+
+    void Flush(uint64_t now) override;
+
+    INetGroup *NetGroup() { return mFakeNetGroup; }
 private:
     INetGroup *mFakeNetGroup = nullptr;
 

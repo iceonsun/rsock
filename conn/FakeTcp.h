@@ -11,7 +11,6 @@
 
 class FakeTcp : public INetConn {
 public:
-    using IFakeTcpErrCb = std::function<void(FakeTcp *conn, int err)>;
 
     FakeTcp(uv_stream_t *tcp, const std::string &key);
 
@@ -31,20 +30,16 @@ public:
 
     void SetAckISN(uint32_t isn);
 
-    void SetErrCb(const IFakeTcpErrCb &cb);
-
-    bool IsUdp() override ;
-
-protected:
-    virtual void OnTcpError(FakeTcp *conn, int err);
+    bool IsUdp() override;
 
 private:
+    void onTcpError(FakeTcp *conn, int err);
+
     static void read_cb(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf);
 
 private:
     uv_stream_t *mTcp = nullptr;
     TcpInfo mInfo;
-    IFakeTcpErrCb mErrCb = nullptr;
     bool mAlive = true;
 };
 

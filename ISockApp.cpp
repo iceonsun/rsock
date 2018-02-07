@@ -72,6 +72,7 @@ int ISockApp::doInit() {
     if (makeDaemon(mConf.isDaemon)) {
         return -1;
     }
+    LOGV << "pid: " << getpid();
 
     int nret = initLog();
     if (nret) {
@@ -110,6 +111,7 @@ int ISockApp::doInit() {
         return -1;
     }
 
+    watchExitSignal();
 
     mInited = true;
     srand(time(NULL));
@@ -141,16 +143,22 @@ int ISockApp::initLog() {
 int ISockApp::Start() {
     assert(mInited);
 
-    StartTimer(mConf.param.interval * 1000 * 2, mConf.param.interval * 1000);
+    StartTimer(20000, 20000);   // 10s to flush
 
     return uv_run(mLoop, UV_RUN_DEFAULT);
 }
 
 void ISockApp::Flush(void *arg) {
-    mBridge->CheckAndClose();
+    mBridge->Flush(uv_now(mLoop));
 }
 
 void ISockApp::Close() {
+    LOGD << "";
+    if (mExitSig) {
+        uv_signal_stop(mExitSig);
+        uv_close(reinterpret_cast<uv_handle_t *>(mExitSig), close_cb);
+        mExitSig = nullptr;
+    }
     if (mTimer) {
         mTimer->Stop();
         delete mTimer;
@@ -170,18 +178,6 @@ void ISockApp::Close() {
         mBtmConn = nullptr;
     }
 
-    if (mLoop) {
-        uv_stop(mLoop); // todo: move loop release to signal handler if any
-        if (mConf.isDaemon) {   // it will crash if delete default loop
-            if (!uv_loop_close(mLoop)) {
-                free(mLoop);
-            } else {
-                LOGE << "loop not closed properly";
-            }
-        }
-        mLoop = nullptr;
-    }
-
     if (mNetManager) {
         mNetManager->Close();
         delete mNetManager;
@@ -192,6 +188,18 @@ void ISockApp::Close() {
         mAckPool->Close();
         delete mAckPool;
         mAckPool = nullptr;
+    }
+
+    if (mLoop) {
+        uv_stop(mLoop);
+        if (mConf.isDaemon) {   // it will crash if delete default loop
+            if (!uv_loop_close(mLoop)) {
+                free(mLoop);
+            } else {
+                LOGE << "loop not closed properly";
+            }
+        }
+        mLoop = nullptr;
     }
 }
 
@@ -243,4 +251,34 @@ std::vector<INetConn *> ISockApp::createUdpConns(uint32_t src, const std::vector
         }
     }
     return vec;
+}
+
+void ISockApp::close_signal_handler(uv_signal_t *handle, int signum) {
+    ISockApp *app = static_cast<ISockApp *>(handle->data);
+    app->onExitSignal();
+}
+
+void ISockApp::onExitSignal() {
+    LOGD << "Receive exit signal. Exit!";
+    Close();
+}
+
+void ISockApp::watchExitSignal() {
+    if (!mExitSig) {
+        mExitSig = static_cast<uv_signal_t *>(malloc(sizeof(uv_signal_t)));
+        uv_signal_init(mLoop, mExitSig);
+        mExitSig->data = this;
+        uv_signal_start(mExitSig, close_signal_handler, SIG_EXIT);
+    }
+}
+
+ISockApp::~ISockApp() {
+    if (mFileAppender) {
+        delete mFileAppender;
+        mFileAppender = nullptr;
+    }
+    if (mConsoleAppender) {
+        delete mConsoleAppender;
+        mConsoleAppender = nullptr;
+    }
 }

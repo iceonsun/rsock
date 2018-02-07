@@ -15,7 +15,7 @@ SNetGroup::SNetGroup(const std::string &groupId, uv_loop_t *loop, INetManager *n
     assert(mNetManager);
 }
 
-INetConn *SNetGroup::CreateNewConn(const std::string &key, const ConnInfo *info) {
+INetConn *SNetGroup::CreateNetConn(const std::string &key, const ConnInfo *info) {
     if (info->IsUdp()) {
         FakeUdp *udp = new FakeUdp(key, *info);
         return udp;
@@ -25,6 +25,6 @@ INetConn *SNetGroup::CreateNewConn(const std::string &key, const ConnInfo *info)
         return c;
     }
 
-    LOGW << "no such conn: " << key;
+    LOGW << "Cannot create conn, no netconn: " << key;
     return nullptr;
 }

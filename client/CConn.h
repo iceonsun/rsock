@@ -21,6 +21,8 @@ public:
 
     SA *GetAddr() { return mAddr; }
 
+    void Close() override;
+
 private:
     uint32_t mConv = 0;
     SA *mAddr = nullptr;

@@ -18,10 +18,10 @@ struct ConnInfo {
     uint32_t dst = 0;
     uint16_t sp = 0;
     uint16_t dp = 0;
-
+    bool udp = true;
     EncHead *head = nullptr;    // not responsable to free this pointer
 
-    virtual bool IsUdp() const { return true; }
+    virtual bool IsUdp() const { return udp; }
 
     virtual char *Encode(char *buf, int len) const;
 

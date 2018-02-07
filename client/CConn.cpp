@@ -2,12 +2,21 @@
 // Created by System Administrator on 12/25/17.
 //
 
+#include <cstdlib>
 #include "CConn.h"
 #include "../util/rsutil.h"
 
 CConn::CConn(const std::string &key, const SA *addr, uint32_t conv) : IConn(key) {
     mAddr = new_addr(addr);
     mConv = conv;
+}
+
+void CConn::Close() {
+    IConn::Close();
+    if (mAddr) {
+        free(mAddr);
+        mAddr = nullptr;
+    }
 }
 
 uint32_t CConn::Conv() {

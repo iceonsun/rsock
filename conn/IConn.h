@@ -18,7 +18,7 @@ public:
 
     explicit IConn(const std::string &key);
 
-    virtual ~IConn() = default;
+    virtual ~IConn();
 
     virtual void Close();
 
@@ -44,10 +44,10 @@ public:
     virtual const std::string &Key() { return mKey; }
 
     // if no data send/input since last check, return true.
-    virtual bool CheckAndClose();
+    virtual void Flush(uint64_t now) {};
 
     // TODO: return alive according dataset. return false if no data flowed on `both` directions
-    virtual bool Alive() { return true; }
+    virtual bool Alive() { return mStat.Alive(); }
 
     IConn &operator=(const IConn &) = delete;
 
@@ -58,11 +58,13 @@ private:
 
         void afterSend(ssize_t nread);
 
-        bool canCloseCheck();
+        bool Alive();
 
     private:
-        uint32_t prev_cnt = 0;
-        uint32_t curr_cnt = 0;
+        uint32_t prev_in = 0;
+        uint32_t prev_out = 0;
+        uint32_t curr_in = 1;
+        uint32_t curr_out = 1;
     };
 
 private:

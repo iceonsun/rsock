@@ -50,11 +50,16 @@ std::string TcpInfo::ToStr() const {
 }
 
 TcpInfo::TcpInfo(const ConnInfo &info) : ConnInfo(info) {
+    udp = false;
     seq = 0;
     ack = 0;
 }
 
 void TcpInfo::Reverse() {
     ConnInfo::Reverse();
-    std::swap<uint32_t >(seq, ack);
+    std::swap<uint32_t>(seq, ack);
+}
+
+TcpInfo::TcpInfo() : ConnInfo() {
+    udp = false;
 }

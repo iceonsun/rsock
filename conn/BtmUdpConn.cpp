@@ -112,3 +112,7 @@ void BtmUdpConn::fillInfo(const struct sockaddr *addr) {
 bool BtmUdpConn::IsUdp() {
     return true;
 }
+
+bool BtmUdpConn::Alive() {
+    return true;
+}

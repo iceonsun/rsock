@@ -11,6 +11,7 @@
 // If send 1 bytes for a specific interval to check if alive. This will severely slow down speed
 FakeTcp::FakeTcp(uv_stream_t *tcp, const std::string &key) : INetConn(key) {
     mTcp = tcp;
+    assert(mTcp);
 
     GetTcpInfo(mInfo, reinterpret_cast<uv_tcp_t *>(mTcp));
 
@@ -31,14 +32,13 @@ void FakeTcp::Close() {
         uv_close(reinterpret_cast<uv_handle_t *>(mTcp), close_cb);
         mTcp = nullptr;
     }
-    mErrCb = nullptr;
     mAlive = false;
 }
 
 int FakeTcp::Output(ssize_t nread, const rbuf_t &rbuf) {
     int n = INetConn::Output(nread, rbuf);
     if (n >= 0) {
-        mInfo.UpdateSeq((int) nread + mInfo.seq + RConn::HEAD_SIZE);
+        mInfo.UpdateSeq((int) nread + mInfo.seq + RConn::HEAD_SIZE);    // todo: when add aes or encrpytion, here need to change
     }
     return n;
 }
@@ -52,7 +52,9 @@ int FakeTcp::OnRecv(ssize_t nread, const rbuf_t &buf) {
     int n = INetConn::OnRecv(nread, buf);
 
     if (n >= 0) {
-        mInfo.UpdateAck((int) nread + mInfo.ack + RConn::HEAD_SIZE);
+        if (mInfo.ack < info->seq) {
+            mInfo.UpdateAck(info->seq);
+        }
     }
 
     return n;
@@ -62,21 +64,15 @@ void FakeTcp::read_cb(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
     if (nread < 0 && nread != UV_ECANCELED) {
         LOGE << "err: " << uv_strerror(nread);
         FakeTcp *conn = static_cast<FakeTcp *>(stream->data);
-        conn->OnTcpError(conn, nread);
+        conn->onTcpError(conn, nread);
     }
     free(buf->base);
 }
 
-void FakeTcp::OnTcpError(FakeTcp *conn, int err) {
+void FakeTcp::onTcpError(FakeTcp *conn, int err) {
     LOGE << "conn " << conn->Key() << ", err: " << err;
     mAlive = false;
-    if (mErrCb) {
-        mErrCb(conn, err);
-    }
-}
-
-void FakeTcp::SetErrCb(const FakeTcp::IFakeTcpErrCb &cb) {
-    mErrCb = cb;
+    OnNetConnErr(conn, err);
 }
 
 void FakeTcp::SetISN(uint32_t isn) {

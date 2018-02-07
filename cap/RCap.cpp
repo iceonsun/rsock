@@ -126,6 +126,7 @@ void RCap::capHandler(u_char *args, const struct pcap_pkthdr *hdr, const u_char 
 
 int RCap::Close() {
     if (mCap) {
+        pcap_breakloop(mCap);
         pcap_close(mCap);
         mCap = nullptr;
     }

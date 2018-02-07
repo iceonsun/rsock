@@ -24,9 +24,9 @@ public:
 
     void Close() override;
 
-    INetConn *DialTcpSync(const TcpInfo &info);
+    INetConn *DialTcpSync(const ConnInfo &info);
     
-    int DialTcpAsync(const TcpInfo &info, const NetDialCb &cb);
+    int DialTcpAsync(const ConnInfo &info, const NetDialCb &cb);
 
     void Flush(uint64_t now) override;
 
