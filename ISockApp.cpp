@@ -8,13 +8,13 @@
 #include <string>
 
 #include "uv.h"
-
 #include "ISockApp.h"
 #include "conn/IConn.h"
 #include "plog/Log.h"
 #include "plog/Appenders/ConsoleAppender.h"
 #include "util/FdUtil.h"
 #include "util/ProcUtil.h"
+#include "util/RTimer.h"
 #include "conn/INetConn.h"
 #include "net/INetManager.h"
 #include "net/TcpAckPool.h"
@@ -28,9 +28,6 @@ ISockApp::ISockApp(bool is_server, uv_loop_t *loop) : mServer(is_server) {
 int ISockApp::Init(RConfig &conf) {
     if (!conf.Inited()) {
         fprintf(stderr, "conf must be inited\n");
-#ifndef NNDEBUG
-        assert(0);
-#endif
         return -1;
     }
     mConf = conf;
@@ -57,11 +54,7 @@ int ISockApp::Parse(int argc, const char *const *argv) {
 int ISockApp::Init() {
     if (!mConf.Inited()) {
         fprintf(stderr, "configuration not inited.\n");
-#ifndef NNDEBUG
         assert(0);
-#else
-        return -1;
-#endif
     }
     return doInit();
 }
@@ -72,49 +65,45 @@ int ISockApp::doInit() {
     if (makeDaemon(mConf.isDaemon)) {
         return -1;
     }
-    LOGV << "pid: " << getpid();
+    fprintf(stdout, "pid: %d\n", getpid());
 
     int nret = initLog();
     if (nret) {
         fprintf(stderr, "failed to init logger, nret: %d\n", nret);
         return -1;
     }
+    LOGD << "conf: " << mConf.to_json().dump();
 
     mAckPool = new TcpAckPool(mLoop);
 
     mNetManager = CreateNetManager(mConf, mLoop, mAckPool);
-    nret = mNetManager->Init();
-
-    if (nret) {
+    if (mNetManager->Init()) {
         LOGE << "NetManager init failed";
-        return nret;
+        return -1;
     }
 
+    assert(mNetManager);
     mTimer = new RTimer(mLoop);
-    LOGD << "conf: " << mConf.to_json().dump();
     mCap = CreateCap(mConf);
     if (!mCap || mCap->Init()) {
+        LOGE << "pcap init failed";
         return -1;
     }
 
     mBtmConn = CreateBtmConn(mConf, mLoop, mAckPool, mCap->Datalink());
-//    if (!mBtmConn || mBtmConn->Init()) {
-    if (!mBtmConn) {
-        return -1;
-    }
-
+    assert(mBtmConn);
+    mBtmConn->Attach(this);
+    // cap#Start must be called before CreateBridgeConn because create btmconn will connect tcp
     mCap->Start(RConn::CapInputCb, reinterpret_cast<u_char *>(mBtmConn));
 
     mBridge = CreateBridgeConn(mConf, mBtmConn, mLoop, mNetManager);
-
-    if (!mBridge || mBridge->Init()) {
+    if (mBridge->Init()) {
         return -1;
     }
-
     watchExitSignal();
-
     mInited = true;
     srand(time(NULL));
+
     return 0;
 }
 
@@ -142,9 +131,7 @@ int ISockApp::initLog() {
 
 int ISockApp::Start() {
     assert(mInited);
-
-    StartTimer(20000, 20000);   // 10s to flush
-
+    StartTimer(10000, 10000);   // 10s to flush
     return uv_run(mLoop, UV_RUN_DEFAULT);
 }
 
@@ -154,11 +141,14 @@ void ISockApp::Flush(void *arg) {
 
 void ISockApp::Close() {
     LOGD << "";
+    mClosing = true;
+
     if (mExitSig) {
         uv_signal_stop(mExitSig);
         uv_close(reinterpret_cast<uv_handle_t *>(mExitSig), close_cb);
         mExitSig = nullptr;
     }
+
     if (mTimer) {
         mTimer->Stop();
         delete mTimer;
@@ -171,11 +161,15 @@ void ISockApp::Close() {
         mCap = nullptr;
     }
 
+    if (mBtmConn) {
+        mBtmConn->Detach(this); // it will be closed when closing bridge
+    }
+
     if (mBridge) {
         mBridge->Close();
         delete mBridge;
         mBridge = nullptr;
-        mBtmConn = nullptr;
+        mBtmConn = nullptr; // it's closed in bridge
     }
 
     if (mNetManager) {
@@ -281,4 +275,15 @@ ISockApp::~ISockApp() {
         delete mConsoleAppender;
         mConsoleAppender = nullptr;
     }
+}
+
+bool ISockApp::OnFinOrRst(const TcpInfo &info) {
+    if (!IsClosing()) { // if app is closing, don't call super class
+        auto * c = dynamic_cast<ITcpObserver *>(mBridge);
+        assert(c);
+        if (c) {
+            return c->OnFinOrRst(info);
+        }
+    }
+    return false;
 }

@@ -27,25 +27,27 @@ char *TcpInfo::Encode(char *buf, int len) const {
     }
     p = encode_uint32(seq, p);
     p = encode_uint32(ack, p);
+    p = encode_uint8(flag, p);
     return p;
 }
 
 const char *TcpInfo::Decode(const char *buf, int len) {
-    if (len < sizeof(*this)) {
-        return nullptr;
-    }
     auto p = ConnInfo::Decode(buf, len);
     if (!p) {
         return nullptr;
     }
+    if (p - buf < (sizeof(seq) + sizeof(ack) + sizeof(flag))) {
+        return nullptr;
+    }
     p = decode_uint32(&seq, p);
     p = decode_uint32(&ack, p);
+    p = decode_uint8(&flag, p);
     return p;
 }
 
 std::string TcpInfo::ToStr() const {
     auto s = ConnInfo::ToStr();
-    s += ", seq:" + std::to_string(seq) + ", ack: " + std::to_string(ack);
+    s += ", seq:" + std::to_string(seq) + ", ack: " + std::to_string(ack) + ", flag: " + std::to_string(flag);
     return s;
 }
 

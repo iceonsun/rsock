@@ -18,7 +18,7 @@ RCap *SSockApp::CreateCap(RConfig &conf) {
     return new RCap(conf.param.dev, conf.param.selfCapIp, conf.param.selfCapPorts, {}, "", conf.param.interval, true);
 }
 
-IConn *SSockApp::CreateBtmConn(RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool, int datalink) {
+RConn *SSockApp::CreateBtmConn(RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool, int datalink) {
     // todo: listen tcp later
     RConn *rconn = new RConn(conf.param.hashKey, conf.param.dev, loop, ackPool, datalink, true);
     auto ports = conf.param.selfCapPorts.GetRawList();

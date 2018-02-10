@@ -15,7 +15,7 @@ class INetConn : public IConn {
 public:
     explicit INetConn(const std::string &key);
 
-    using ErrCb = std::function<void(INetConn*, int err)>; // todo: consider using connkey as first parameter
+    using ErrCb = std::function<void(INetConn *, int err)>; // todo: consider using connkey as first parameter
 
     void Close() override;
 
@@ -26,8 +26,9 @@ public:
     // set ConnInfo.data = EncHead;
     int Output(ssize_t nread, const rbuf_t &rbuf) override;
 
-    void SetOnErrCb(const ErrCb &cb);;
+    void SetOnErrCb(const ErrCb &cb);
 
+protected:
     virtual void OnNetConnErr(INetConn *conn, int err);
 
 private:

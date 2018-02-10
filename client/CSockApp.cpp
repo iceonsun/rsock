@@ -17,12 +17,10 @@ CSockApp::CSockApp(uv_loop_t *loop) : ISockApp(false, loop) {}
 RCap *CSockApp::CreateCap(RConfig &conf) {
     return new RCap(conf.param.dev, conf.param.selfCapIp, {}, conf.param.targetCapPorts,
                     conf.param.targetIp, conf.param.interval, false);
-//    return new RCap(conf.param.dev, conf.param.selfCapIp, conf.param.selfCapPorts, conf.param.targetCapPorts,
-//                    conf.param.targetIp, conf.param.interval, false);
 }
 
-IConn *CSockApp::CreateBtmConn(RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool, int datalink) {
-    RConn *rconn = new RConn(conf.param.hashKey, conf.param.dev, loop, ackPool, datalink, false);
+RConn *CSockApp::CreateBtmConn(RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool, int datalink) {
+    auto *rconn = new RConn(conf.param.hashKey, conf.param.dev, loop, ackPool, datalink, false);
     // dial udp conn
 //    auto ports = conf.param.selfCapPorts.GetRawList();
 //    auto svr_ports = conf.param.targetCapPorts.GetRawList();
@@ -30,7 +28,6 @@ IConn *CSockApp::CreateBtmConn(RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPo
 //    for (auto c: vec) {
 //        rconn->AddUdpConn(c);
 //    }
-
     return rconn;
 }
 
@@ -91,7 +88,7 @@ INetManager *CSockApp::CreateNetManager(RConfig &conf, uv_loop_t *loop, TcpAckPo
 }
 
 void CSockApp::OnConnErr(const ConnInfo &info) {
-    if (!info.IsUdp()) {
+    if (!IsClosing() && !info.IsUdp()) {
         auto manager = GetNetManager();
         auto *clientNetManager = dynamic_cast<ClientNetManager *>(manager);
         assert(clientNetManager);
@@ -105,8 +102,16 @@ void CSockApp::OnConnErr(const ConnInfo &info) {
 void CSockApp::TcpDialAsyncCb(INetConn *conn, const ConnInfo &info) {
     auto *clientGroup = dynamic_cast<ClientGroup *>(GetBridgeConn());
     assert(clientGroup);
-    LOGD << "reconnecting conn " << info.ToStr() << " succeeds.";
+    LOGD << "reconnecting conn " << info.ToStr() << ((conn != nullptr) ? " succeeds." : "failed");
     if (conn) {
         clientGroup->GetNetGroup()->AddNetConn(conn);
     }
+}
+
+bool CSockApp::OnFinOrRst(const TcpInfo &info) {
+    bool ok = ISockApp::OnFinOrRst(info);
+    if (ok) {
+        OnConnErr(info);    // dial tcp
+    }
+    return ok;
 }

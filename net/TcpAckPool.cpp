@@ -9,6 +9,7 @@ TcpAckPool::TcpAckPool(uv_loop_t *loop) {
     mLoop = loop;
 }
 
+// must be added from pcap thread.
 // because pcap will only capture output packet
 bool TcpAckPool::AddInfoFromPeer(const TcpInfo &infoFromPeer, uint8_t flags) {
     if (infoFromPeer.sp == 0 || infoFromPeer.dp == 0 || 0 == (flags & TH_SYN)) {

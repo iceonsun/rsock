@@ -7,8 +7,6 @@
 
 
 #include "../ISockApp.h"
-#include "../conn/IGroup.h"
-class TcpAckPool;
 
 class SSockApp : public ISockApp {
 public:
@@ -16,7 +14,7 @@ public:
 
     RCap *CreateCap(RConfig &conf) override;
 
-    IConn *CreateBtmConn(RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool, int datalink) override;
+    RConn *CreateBtmConn(RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool, int datalink) override;
 
     IConn *CreateBridgeConn(RConfig &conf, IConn *btm, uv_loop_t *loop, INetManager *netManager) override;
 

@@ -70,11 +70,6 @@ void INetManager::Close() {
         }
     }
     destroyTimer();
-
-//    if (mTcpAckPool) {
-//        delete mTcpAckPool;
-//        mTcpAckPool = nullptr;
-//    }
     mTcpAckPool = nullptr;
 }
 

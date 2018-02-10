@@ -6,9 +6,9 @@
 #define RSOCK_RCONN_H
 
 #include <cstdint>
-#include <map>
 #include "IConn.h"
 #include "IGroup.h"
+#include "../ITcpInformer.h"
 
 class BtmUdpConn;
 
@@ -20,10 +20,13 @@ struct pcap_pkthdr;
 
 class TcpAckPool;
 
-class RConn : public IGroup {
+class RConn : public IGroup, public ITcpInformer {
 public:
+
     RConn(const std::string &hashKey, const std::string &dev, uv_loop_t *loop, TcpAckPool *ackPool, int datalink,
           bool isServer);
+
+    static const int HEAD_SIZE;
 
     virtual void AddUdpConn(INetConn *conn);
 
@@ -35,11 +38,9 @@ public:
 
     int Init() override;
 
-    void Close() override;;
+    void Close() override;
 
     static void CapInputCb(u_char *args, const pcap_pkthdr *hdr, const u_char *packet);
-
-    static const int HEAD_SIZE;
 
 private:
     using IGroup::AddConn;

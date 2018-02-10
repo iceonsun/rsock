@@ -10,6 +10,8 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <sys/un.h>
+#include <sys/time.h>
+
 #include <rscomm.h>
 
 #include "uv.h"
@@ -291,4 +293,10 @@ std::string GetDstAddrStr(const ConnInfo &info) {
     dst.sin_port = htons(info.dp);
     dst.sin_addr.s_addr = info.dst;
     return Addr2Str((SA *) &dst);
+}
+
+uint64_t rsk_now_ms() {
+    struct timeval val;
+    gettimeofday(&val, 0);
+    return (uint64_t) val.tv_sec * 1000 + val.tv_usec / 1000;
 }

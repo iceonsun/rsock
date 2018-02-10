@@ -69,7 +69,8 @@ void ClientNetManager::flushPending(uint64_t now) {
         }
 
         // not running and timeout
-        if (!helper.req && now <= helper.nextRetryMs) {
+        if (!helper.req && now >= helper.nextRetryMs) {
+            LOGD << "retry to connect " << helper.info.ToStr();
             auto req = NetUtil::ConnectTcp(mLoop, helper.info, connectCb, this);
             if (req) {
                 helper.req = req;
@@ -95,7 +96,11 @@ void ClientNetManager::onTcpConnect(uv_connect_t *req, int status) {
             } else {
                 uv_tcp_t *tcp = reinterpret_cast<uv_tcp_t *>(req->handle);
                 INetConn *c = NetUtil::CreateTcpConn(tcp);
-                add2PoolAutoClose(c);    // ignore the result
+                if (0 == add2PoolAutoClose(c)) {
+                    c = TransferConn(c->Key());
+                    it->cb(c, tcpInfo);
+
+                };
                 mPending.erase(it);
             }
             break;

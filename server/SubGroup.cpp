@@ -3,7 +3,6 @@
 //
 
 #include <cstdlib>
-#include <cassert>
 #include "plog/Log.h"
 #include "SubGroup.h"
 #include "../util/rsutil.h"
@@ -45,6 +44,7 @@ int SubGroup::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
         if (conn) {
             return conn->Input(nread, rbuf);
         }
+        LOGD << "no such conn: " << key;
         return -1;
     }
     return nread;

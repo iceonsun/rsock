@@ -61,6 +61,8 @@ void INetGroup::AddNetConn(INetConn *conn) {
     auto out = std::bind(&IConn::Output, this, _1, _2);
     auto rcv = std::bind(&IConn::OnRecv, this, _1, _2);
     LOGD << "Add INetConn: " << conn->Key();
+    auto err = std::bind(&INetGroup::childConnErrCb, this, _1, _2);
+    conn->SetOnErrCb(err);
     AddConn(conn, out, rcv);
 }
 
@@ -89,7 +91,7 @@ int INetGroup::Send(ssize_t nread, const rbuf_t &rbuf) {
 void INetGroup::childConnErrCb(INetConn *conn, int err) {
     if (conn) {
         LOGE << "remove conn " << conn->Key() << " err: " << err;
-        RemoveConn(conn, true);     // remove it here or in handler
+        RemoveConn(conn);     // remove it here or in handler
         auto m = mHandler->ObtainMessage(CONN_ERR, err, "", conn);
         mHandler->RemoveMessage(m);
         m.SendToTarget();
@@ -104,7 +106,7 @@ void INetGroup::handleMessage(const Handler::Message &message) {
 
             LOGE << "closing conn: " << conn->Key() << ", err: " << message.what;
             ConnInfo info(*conn->GetInfo());
-            conn->Close();
+            conn->Close();  // it's already removed
             delete conn;
             netConnErr(info);
             break;
@@ -152,5 +154,5 @@ void INetGroup::destroyTimer() {
 
 void INetGroup::timer_cb(uv_timer_t *timer) {
     INetGroup *group = static_cast<INetGroup *>(timer->data);
-//    group->Flush(uv_now(group->mLoop));
+    group->Flush(uv_now(group->mLoop));
 }

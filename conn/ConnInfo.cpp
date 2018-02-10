@@ -49,7 +49,7 @@ char *ConnInfo::Encode(char *buf, int len) const {
 }
 
 const char *ConnInfo::Decode(const char *buf, int len) {
-    if (len < sizeof(*this)) {
+    if (len < sizeof(src) + sizeof(dst) + sizeof(sp) + sizeof(dp)) {
         return nullptr;
     }
     auto p = decode_uint32(&src, buf);

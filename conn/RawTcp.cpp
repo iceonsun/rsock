@@ -124,7 +124,7 @@ int RawTcp::RawInput(u_char *args, const pcap_pkthdr *hdr, const u_char *packet)
 
     const int payload_len = ntohs(ip->ip_len) - ((const u_char *) payload - (const u_char *) ip);
 
-    if (payload_len > 0 || (tcp->th_flags & ~(TH_ACK))) {
+    if (payload_len >= 0 ) {
         std::string flag;
         if (tcp->th_flags & TH_SYN) {
             flag += "SYN|";
@@ -141,8 +141,16 @@ int RawTcp::RawInput(u_char *args, const pcap_pkthdr *hdr, const u_char *packet)
         if (tcp->th_flags & TH_FIN) {
             flag += "FIN";
         }
-        LOGV << "receive " << payload_len << " bytes from " << InAddr2Ip({ip->ip_src}) << ":" << ntohs(tcp->th_sport)
-             << "<->" << InAddr2Ip({ip->ip_dst}) << ":" << ntohs(tcp->th_dport) << ", flag: " << flag;
+
+        if (plog::get()->getMaxSeverity() > plog::verbose) {
+            if (tcp->th_flags & (~TH_ACK)) {
+                LOGD << "receive " << payload_len << " bytes from " << InAddr2Ip({ip->ip_src}) << ":" << ntohs(tcp->th_sport)
+                     << "<->" << InAddr2Ip({ip->ip_dst}) << ":" << ntohs(tcp->th_dport) << ", flag: " << flag;
+            }
+        } else {
+            LOGV << "receive " << payload_len << " bytes from " << InAddr2Ip({ip->ip_src}) << ":" << ntohs(tcp->th_sport)
+                 << "<->" << InAddr2Ip({ip->ip_dst}) << ":" << ntohs(tcp->th_dport) << ", flag: " << flag;
+        }
     }
 
     TcpInfo info;
@@ -152,21 +160,22 @@ int RawTcp::RawInput(u_char *args, const pcap_pkthdr *hdr, const u_char *packet)
     info.dp = ntohs(tcp->th_sport);
     info.seq = ntohl(tcp->th_seq);
     info.ack = ntohl(tcp->th_ack);
+    info.flag = tcp->th_flags;
 
     if ((tcp->th_flags & TH_SYN) && mTcpAckPool) {   // todo: don't process here
         if (mIsServer) {
             info.Reverse();
         }
+        // must be called in this thread. because it may cause dead lock if in same thread.
         mTcpAckPool->AddInfoFromPeer(info, tcp->th_flags);
-        LOGV << "info pool: " << mTcpAckPool->Dump();
-        return 0;
-    }
-    // this check is necessary.
-    // because we may receive rst with length zero. if we don't check, we may cause illegal memory access error
-    if (payload_len < HASH_BUF_SIZE + 1) {  // data len must >= 1
         return 0;
     }
 
+    // this check is necessary.
+    // because we may receive rst with length zero. if we don't check, we may cause illegal memory access error
+    if (payload_len < HASH_BUF_SIZE + 1 && !info.HasCloseFlag()) {  // don't deliver unnecessary data
+        return 0;
+    }
     info.seq += payload_len;
     return cap2uv(&info, payload, payload_len);
 }

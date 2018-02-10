@@ -55,12 +55,11 @@ void IGroup::Close() {
     }
 }
 
-void IGroup::RemoveConn(IConn *conn, bool removeCb) {
-    mConns.erase(conn->Key());
-    if (removeCb) {
-        conn->SetOnRecvCb(nullptr);
-        conn->SetOutputCb(nullptr);
-    }
+bool IGroup::RemoveConn(IConn *conn) {
+    auto n = mConns.erase(conn->Key());
+    conn->SetOnRecvCb(nullptr);
+    conn->SetOutputCb(nullptr);
+    return n != 0;
 }
 
 IConn *IGroup::ConnOfKey(const std::string &key) {
@@ -89,15 +88,12 @@ void IGroup::Flush(uint64_t now) {
 
     for (auto &e: fails) {
         if (!OnConnDead(e.second)) {
-            LOGD << "close and remove dead conn " << e.second->Key();
-            mConns.erase(e.first);
-            e.second->Close();
-            delete e.second;
+            CloseConn(e.second);
         }
     }
 
     if (mConns.empty()) {
-        LOGW << "group: " << Key() << ", all conns are dead";
+        LOGD << "group: " << Key() << ", all conns are dead";
     }
 }
 
@@ -110,10 +106,19 @@ bool IGroup::Alive() {
     return false;
 }
 
-int IGroup::size() {
-    return mConns.size();
-}
-
 std::map<std::string, IConn *> &IGroup::GetAllConns() {
     return mConns;
+}
+
+bool IGroup::CloseConn(IConn *conn) {
+    if (conn) {
+        LOGD << "closing conn " << conn->Key();
+        assert(conn->Key() != Key());
+        assert(conn == ConnOfKey(conn->Key()));
+        mConns.erase(conn->Key());
+        conn->Close();
+        delete conn;
+        return true;
+    }
+    return false;
 }

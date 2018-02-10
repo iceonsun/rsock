@@ -7,6 +7,7 @@
 #include "RConn.h"
 #include "../util/rhash.h"
 #include "../util/rsutil.h"
+#include "TcpInfo.h"
 
 using namespace std::placeholders;
 
@@ -41,15 +42,22 @@ void RConn::AddUdpConn(INetConn *conn) {
 int RConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
     const int MIN_LEN = HASH_BUF_SIZE + EncHead::GetEncBufSize();
     const char *hashed_buf = rbuf.base;
+    ConnInfo *info = static_cast<ConnInfo *>(rbuf.data);
     if (nread > MIN_LEN) {    // nread == HASH_BUF_SIZE will not work
         EncHead head;
         const char *p = hashed_buf + HASH_BUF_SIZE;
         p = EncHead::DecodeBuf(head, p, nread - HASH_BUF_SIZE);
         if (p && hash_equal(hashed_buf, mHashKey, p, nread - (p - hashed_buf))) {
-            ConnInfo *info = static_cast<ConnInfo *>(rbuf.data);
             info->head = &head;
             const rbuf_t buf = new_buf(nread - (p - hashed_buf), p, info);
             return IGroup::OnRecv(buf.len, buf);
+        }
+    } else if (!info->IsUdp()) {
+        TcpInfo *tcpInfo = reinterpret_cast<TcpInfo *>(info);
+        assert(tcpInfo);
+        if (tcpInfo->HasCloseFlag()) {
+            Notify(*tcpInfo);
+            return 0;
         }
     }
     return -1;

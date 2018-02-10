@@ -6,8 +6,10 @@
 #define RSOCK_ISOCKAPP_H
 
 #include <uv.h>
-#include "util/RTimer.h"
 #include "RConfig.h"
+#include "ITcpObserver.h"
+
+class RTimer;
 
 struct RConfig;
 
@@ -25,7 +27,9 @@ class TcpAckPool;
 
 class RCap;
 
-class ISockApp {
+class RConn;
+
+class ISockApp : public ITcpObserver {
 public:
     ISockApp(bool is_server, uv_loop_t *loop);
 
@@ -47,9 +51,9 @@ public:
 
     virtual RCap *CreateCap(RConfig &conf) = 0;
 
-    virtual void StartTimer(IUINT32 timeout_ms, IUINT32 repeat_ms);
+    virtual void StartTimer(uint32_t timeout_ms, uint32_t repeat_ms);
 
-    virtual IConn *CreateBtmConn(RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool, int datalink) = 0;
+    virtual RConn *CreateBtmConn(RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool, int datalink) = 0;
 
     virtual IConn *CreateBridgeConn(RConfig &conf, IConn *btm, uv_loop_t *loop, INetManager *netManager) = 0;
 
@@ -58,6 +62,12 @@ public:
     INetManager *GetNetManager() const { return mNetManager; }
 
     IConn *GetBridgeConn() const { return mBridge; }
+
+//    RConn *GetBtmConn() { return mBtmConn; }
+
+    bool IsClosing() { return mClosing; }
+
+    bool OnFinOrRst(const TcpInfo &info) override;
 
 protected:
     std::vector<INetConn *> createUdpConns(uint32_t src, const std::vector<uint16_t> &ports, uint32_t dst,
@@ -87,12 +97,13 @@ private:
     bool mServer;
     RCap *mCap = nullptr;
     IConn *mBridge = nullptr;
-    IConn *mBtmConn = nullptr;
+    RConn *mBtmConn = nullptr;
     RConfig mConf;
     bool mInited = false;
     INetManager *mNetManager = nullptr;
     TcpAckPool *mAckPool = nullptr;
-    uv_signal_t* mExitSig = nullptr;
+    uv_signal_t *mExitSig = nullptr;
+    bool mClosing = false;
 };
 
 

@@ -28,9 +28,7 @@ public:
 
     static int SendRawTcp(libnet_t *libnet, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT16 dp, IUINT32 seq, IUINT32 ack,
                           const IUINT8 *payload, IUINT16 payload_s, IUINT16 ip_id, libnet_ptag_t &tcp,
-                          libnet_ptag_t &ip,
-                          IUINT8 tcp_flag);
-
+                          libnet_ptag_t &ip, IUINT8 tcp_flag);
 
     static void CapInputCb(u_char *args, const pcap_pkthdr *hdr, const u_char *packet);
 
@@ -63,8 +61,8 @@ private:
     libnet_t *mTcpNet = nullptr;
 
     int mSockPair[2];
-    int mReadFd;
-    int mWriteFd;
+    int mReadFd = -1;
+    int mWriteFd = -1;
 
     uv_loop_t *mLoop = nullptr;
     uv_poll_t *mUnixDgramPoll = nullptr;

@@ -8,8 +8,9 @@
 #include <atomic>
 #include <deque>
 #include <mutex>
-
 #include <random>
+#include <memory>
+#include <sys/time.h>
 #include "uv.h"
 
 class Handler {
@@ -69,7 +70,7 @@ public:
 
         inline bool operator==(std::nullptr_t) const { return handler == nullptr; }
 
-        inline operator bool() const { return handler == nullptr; }
+        inline operator bool() const { return handler != nullptr; }
 
     public:
         int what = 0;
@@ -129,6 +130,8 @@ public:
     ssize_t Size();
 
     virtual void Close();
+
+    static uint64_t now_ms();
 
 protected:
     virtual Message SendMessage(Message &message);

@@ -10,12 +10,12 @@
 #include "../util/rsutil.h"
 #include "SNetGroup.h"
 #include "../net/INetManager.h"
+#include "SubGroup.h"
 
 using namespace std::placeholders;
 
 ServerGroup::ServerGroup(const std::string &groupId, uv_loop_t *loop, const struct sockaddr *target, IConn *btm,
-                         INetManager *netManager)
-        : IGroup(groupId, btm) {
+                         INetManager *netManager) : IGroup(groupId, btm) {
     mLoop = loop;
     mTarget = new_addr(target);
     mNetManager = netManager;
@@ -50,10 +50,11 @@ int ServerGroup::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
 
 }
 
-IConn *ServerGroup::newConn(const std::string &groupId, uv_loop_t *loop, const struct sockaddr *target, const ConnInfo &info) {
+IConn *ServerGroup::newConn(const std::string &groupId, uv_loop_t *loop, const struct sockaddr *target,
+                            const ConnInfo &info) {
     auto fakenet = new SNetGroup(groupId, loop, mNetManager);
     auto conn = new SubGroup(groupId, loop, target, fakenet, nullptr);
-    LOGD << "new group: " << GetDstAddrStr(info) <<  ", groupId: " << groupId;
+    LOGD << "new group: " << GetDstAddrStr(info) << ", groupId: " << groupId;
     if (conn->Init()) {
         conn->Close();
         delete conn;
@@ -62,4 +63,16 @@ IConn *ServerGroup::newConn(const std::string &groupId, uv_loop_t *loop, const s
     auto out = std::bind(&IConn::Send, this, _1, _2);
     AddConn(conn, out, nullptr);
     return conn;
+}
+
+bool ServerGroup::OnFinOrRst(const TcpInfo &info) {
+    auto &conns = GetAllConns();
+    for (auto &e: conns) {
+        auto *observer = reinterpret_cast<ITcpObserver *>(e.second);
+        assert(observer);
+        if (observer->OnFinOrRst(info)) {
+            return true;
+        }
+    }
+    return false;
 }

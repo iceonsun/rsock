@@ -115,9 +115,9 @@ void ClientGroup::udpRecvCb(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf
                             unsigned flags) {
     auto *conn = static_cast<ClientGroup *>(handle->data);
     if (nread > 0) {
-        auto *addr4 = (const struct sockaddr_in *) addr;
-        LOGV << "client, receive " << nread << " bytes from " << InAddr2Ip(addr4->sin_addr) << ":"
-             << ntohs(addr4->sin_port);
+//        auto *addr4 = (const struct sockaddr_in *) addr;
+//        LOGV << "client, receive " << nread << " bytes from " << InAddr2Ip(addr4->sin_addr) << ":"
+//             << ntohs(addr4->sin_port);
         conn->onLocalRecv(nread, buf->base, addr);
     } else if (nread < 0) {
         // todo: error processing
@@ -214,11 +214,12 @@ int ClientGroup::subconnRecv(ssize_t nread, const rbuf_t &rbuf) {
     return send2Origin(nread, rbuf, cConn->GetAddr());
 }
 
-void ClientGroup::RemoveConn(IConn *conn, bool removeCb) {
-    IAppGroup::RemoveConn(conn, removeCb);
+bool ClientGroup::RemoveConn(IConn *conn) {
+    auto ok = IAppGroup::RemoveConn(conn);
     auto *cConn = dynamic_cast<CConn *>(conn);
     assert(cConn != nullptr);
     mConvMap.erase(cConn->Conv());
+    return ok;
 }
 
 int ClientGroup::cconSend(ssize_t nread, const rbuf_t &rbuf) {
@@ -231,12 +232,11 @@ int ClientGroup::cconSend(ssize_t nread, const rbuf_t &rbuf) {
 bool ClientGroup::OnConnDead(IConn *conn) {
     CConn *c = dynamic_cast<CConn *>(conn);
     if (c) {
-        RemoveConn(c, true);
+        RemoveConn(c);
         c->Close();
         delete c;
         return true;
     }
     return false;
 }
-
 // todo: override Alive to enable auto restart

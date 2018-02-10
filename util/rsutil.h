@@ -53,4 +53,6 @@ std::string GetDstAddrStr(const ConnInfo &info);
 
 std::string GetSrcAddrStr(const ConnInfo &info);
 
+uint64_t rsk_now_ms();
+
 #endif //RSOCK_RSUTIL_H

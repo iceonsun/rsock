@@ -25,10 +25,7 @@ public:
 
     void Close() override;
 
-    // empty implementation
-//    void AddConn(IConn *conn, bool bindOutput = true) override {};
-
-    void RemoveConn(IConn *conn, bool removeCb) override;
+    bool RemoveConn(IConn *conn) override;
 
     bool OnConnDead(IConn *conn) override;
 
@@ -51,6 +48,7 @@ private:
     static void pollCb(uv_poll_t *handle, int status, int events);
 
     int cconSend(ssize_t nread, const rbuf_t &rbuf);
+
 
 private:
 

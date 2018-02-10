@@ -3,9 +3,11 @@
 //
 
 #include <cassert>
+#include <plog/Log.h>
 #include "IGroup.h"
 #include "IAppGroup.h"
 #include "INetGroup.h"
+#include "TcpInfo.h"
 
 using namespace std::placeholders;
 
@@ -34,7 +36,7 @@ int IAppGroup::Init() {
 void IAppGroup::Close() {
     IGroup::Close();
     if (mFakeNetGroup) {
-        mFakeNetGroup->Close(); // todo: delete mFakeNetGroup, 内存泄露!!!
+        mFakeNetGroup->Close();
         delete mFakeNetGroup;
         mFakeNetGroup = nullptr;
     }
@@ -51,4 +53,15 @@ int IAppGroup::Input(ssize_t nread, const rbuf_t &rbuf) {
 void IAppGroup::Flush(uint64_t now) {
     IGroup::Flush(now);
     mFakeNetGroup->Flush(now);
+}
+
+bool IAppGroup::OnFinOrRst(const TcpInfo &info) {
+    auto key = ConnInfo::BuildKey(info);
+    auto conn = mFakeNetGroup->ConnOfKey(key);
+    if (conn) {
+        LOGV << "Close conn " << key;
+        mFakeNetGroup->CloseConn(conn);
+        return true;
+    }
+    return false;
 }

@@ -6,13 +6,14 @@
 #define RSOCK_SERVERGROUP_H
 
 
-#include "SubGroup.h"
+#include "../conn/IGroup.h"
+#include "../ITcpObserver.h"
 
 struct ConnInfo;
 
 class INetManager;
 
-class ServerGroup : public IGroup {
+class ServerGroup : public IGroup, public ITcpObserver {
 public:
     ServerGroup(const std::string &groupId, uv_loop_t *loop, const struct sockaddr *target, IConn *btm,
                 INetManager *netManager);
@@ -21,9 +22,12 @@ public:
 
     void Close() override;
 
+    bool OnFinOrRst(const TcpInfo &info) override;
+
 private:
     IConn *newConn(const std::string &groupId, uv_loop_t *loop, const struct sockaddr *target, const ConnInfo &info);
 
+private:
     uv_loop_t *mLoop = nullptr;
     sockaddr *mTarget = nullptr;
     INetManager *mNetManager = nullptr;

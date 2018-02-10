@@ -53,7 +53,7 @@ private:
     void flushPending(uint64_t now);
 
 private:
-    const int mRetry = 3;                   // maximum number of times to try to dial
+    const int mRetry = 10;                   // maximum number of times to try to dial
 
     std::list<DialHelper> mPending;
 };

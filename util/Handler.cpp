@@ -41,7 +41,7 @@ void Handler::destroyIdle() {
 // is ensured dirty by idle_cb
 void Handler::OnIdle() {
     if (!mTaskList.empty() || !mMessageList.empty()) {
-        uint64_t now = uv_now(mLoop);
+        uint64_t now = now_ms();
         Task task;
         Message msg;
         {
@@ -113,7 +113,7 @@ void Handler::RemoveAll() {
 }
 
 void Handler::Post(const Handler::Task &task) {
-    doPost(task, uv_now(mLoop));
+    doPost(task, now_ms());
 }
 
 Handler::Task Handler::Post(const Handler::ITask &task) {
@@ -123,7 +123,7 @@ Handler::Task Handler::Post(const Handler::ITask &task) {
 }
 
 void Handler::PostDelayed(const Handler::Task &task, uint64_t delay) {
-    doPost(task, uv_now(mLoop) + delay);
+    doPost(task, now_ms() + delay);
 }
 
 Handler::Task Handler::PostDelayed(const Handler::ITask &task, uint64_t delay) {
@@ -133,7 +133,7 @@ Handler::Task Handler::PostDelayed(const Handler::ITask &task, uint64_t delay) {
 }
 
 void Handler::PostAtTime(const Handler::Task &task, uint64_t ts) {
-    uint64_t now = uv_now(mLoop);
+    uint64_t now = now_ms();
     if (ts <= now) {
         ts = now;
     }
@@ -248,13 +248,17 @@ void Handler::setDirty(bool dirty) {
 }
 
 void Handler::startIdle(uv_idle_t *idle, uv_idle_cb cb) {
-    fprintf(stdout, "startIdle\n");
     uv_idle_start(idle, cb);
 }
 
 void Handler::stopIdle(uv_idle_t *idle) {
-    fprintf(stdout, "stopIdle\n");
     uv_idle_stop(idle);
+}
+
+uint64_t Handler::now_ms() {
+    struct timeval val;
+    gettimeofday(&val, 0);
+    return ((uint64_t) val.tv_sec * 1000) + val.tv_usec / 1000;
 }
 
 std::default_random_engine Handler::Task::RAND_ENGINE;

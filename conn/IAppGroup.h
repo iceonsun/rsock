@@ -6,12 +6,13 @@
 #define RSOCK_IAPPCONN_H
 
 #include "IGroup.h"
+#include "../ITcpObserver.h"
 
 class INetGroup;
 
 class INetConn;
 
-class IAppGroup : public IGroup {
+class IAppGroup : public IGroup, public ITcpObserver {
 public:
     IAppGroup(const std::string &groupId, INetGroup *fakeNetGroup, IConn *btm);
 
@@ -28,6 +29,9 @@ public:
     void Flush(uint64_t now) override;
 
     INetGroup *NetGroup() { return mFakeNetGroup; }
+
+    bool OnFinOrRst(const TcpInfo &info) override;
+
 private:
     INetGroup *mFakeNetGroup = nullptr;
 

@@ -12,6 +12,7 @@
 struct TcpInfo : ConnInfo {
     uint32_t seq = 0;
     uint32_t ack = 0;
+    uint8_t flag = 0;
 
     uint32_t UpdateAck(uint32_t ack);
 
@@ -32,6 +33,11 @@ struct TcpInfo : ConnInfo {
     TcpInfo(const ConnInfo &info);
 
     void Reverse() override;
+
+    bool HasCloseFlag() {
+        return static_cast<bool>(flag & (TH_FIN | TH_RST));
+
+    }
 };
 
 #endif //RSOCK_TCPINFO_H

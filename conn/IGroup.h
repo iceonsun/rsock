@@ -17,10 +17,10 @@ public:
 
     virtual IConn *ConnOfKey(const std::string &key);
 
-    virtual void AddConn(IConn *conn, const IConnCb &outCb , const IConnCb &recvCb);
+    virtual void AddConn(IConn *conn, const IConnCb &outCb, const IConnCb &recvCb);
 
     // will not close conn or delete conn
-    virtual void RemoveConn(IConn *conn, bool removeCb);
+    virtual bool RemoveConn(IConn *conn);
 
     int Init() override;
 
@@ -28,14 +28,14 @@ public:
 
     void Flush(uint64_t now) override;
 
-    virtual int size();
-
-    std::map<std::string, IConn*>& GetAllConns();
+    std::map<std::string, IConn *> &GetAllConns();
 
     // if false, parent will continue to process. if true, parent will not process
-    virtual bool OnConnDead(IConn *conn) { return false;}
+    virtual bool OnConnDead(IConn *conn) { return false; }
 
     bool Alive() override;
+
+    virtual bool CloseConn(IConn *conn);
 
 protected:
     std::map<std::string, IConn *> mConns;
