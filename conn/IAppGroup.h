@@ -32,6 +32,8 @@ public:
 
     bool OnFinOrRst(const TcpInfo &info) override;
 
+    bool Alive() override;
+
 private:
     INetGroup *mFakeNetGroup = nullptr;
 

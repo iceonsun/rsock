@@ -49,7 +49,9 @@ int INetGroup::Input(ssize_t nread, const rbuf_t &rbuf) {
         }
 
         if (conn) {
-            return conn->Input(nread, rbuf);
+            int n = conn->Input(nread, rbuf);
+            afterInput(n);
+            return n;
         }
         LOGD << "Cannot input, no such conn: " << key;
         return -1;
@@ -75,7 +77,9 @@ int INetGroup::Send(ssize_t nread, const rbuf_t &rbuf) {
             auto it = mConns.begin();
             std::advance(it, n);
             if (it->second->Alive()) {
-                return it->second->Send(nread, rbuf);   // udp or tcp conn
+                int n = it->second->Send(nread, rbuf);   // udp or tcp conn
+                afterSend(n);
+                return n;
             }
             LOGW << "send, conn " << it->second->Key() << " is dead but not removed";
             fails.emplace(it->first, it->second);

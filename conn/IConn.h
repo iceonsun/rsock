@@ -44,21 +44,28 @@ public:
     virtual const std::string &Key() { return mKey; }
 
     // if no data send/input since last check, return true.
-    virtual void Flush(uint64_t now) {};
+    virtual void Flush(uint64_t now);
 
     // TODO: return alive according dataset. return false if no data flowed on `both` directions
     virtual bool Alive() { return mStat.Alive(); }
 
     IConn &operator=(const IConn &) = delete;
 
+protected:
+    inline void afterInput(ssize_t nread);
+
+    inline void afterSend(ssize_t nread);
+
 private:
     class DataStat {
     public:
-        void afterInput(ssize_t nread);
+        inline void afterInput(ssize_t nread);
 
-        void afterSend(ssize_t nread);
+        inline void afterSend(ssize_t nread);
 
-        bool Alive();
+        inline bool Alive();
+
+        inline void Flush();
 
     private:
         uint32_t prev_in = 0;

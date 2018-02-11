@@ -21,7 +21,7 @@ void IConn::Close() {
 // non overridable
 int IConn::Send(ssize_t nread, const rbuf_t &rbuf) {
     int n = Output(nread, rbuf);
-    mStat.afterSend(n);
+    afterSend(n);
     return n;
 }
 
@@ -29,13 +29,13 @@ int IConn::Output(ssize_t nread, const rbuf_t &rbuf) {
     if (mOutputCb) {
         return mOutputCb(nread, rbuf);
     }
-    return nread;
+    return 0;
 }
 
 // non overridable
 int IConn::Input(ssize_t nread, const rbuf_t &rbuf) {
     int n = OnRecv(nread, rbuf);
-    mStat.afterInput(n);
+    afterInput(n);
     return n;
 }
 
@@ -51,6 +51,18 @@ IConn::~IConn() {
     assert(mOnRecvCb == nullptr);
 }
 
+void IConn::Flush(uint64_t now) {
+    mStat.Flush();
+}
+
+void IConn::afterInput(ssize_t nread) {
+    mStat.afterInput(nread);
+}
+
+void IConn::afterSend(ssize_t nread) {
+    mStat.afterSend(nread);
+}
+
 void IConn::DataStat::afterInput(ssize_t nread) {
     if (nread > 0) {
         curr_in++;
@@ -64,8 +76,10 @@ void IConn::DataStat::afterSend(ssize_t nread) {
 }
 
 bool IConn::DataStat::Alive() {
-    bool alive = (prev_in != curr_in && prev_out != curr_out);
+    return (prev_in != curr_in && prev_out != curr_out);
+}
+
+void IConn::DataStat::Flush() {
     prev_in = curr_in;
     prev_out = curr_out;
-    return alive;
 }

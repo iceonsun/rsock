@@ -62,8 +62,8 @@ int FakeTcp::OnRecv(ssize_t nread, const rbuf_t &buf) {
 
 void FakeTcp::read_cb(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
     if (nread < 0 && nread != UV_ECANCELED) {
-        LOGE << "err: " << uv_strerror(nread);
         FakeTcp *conn = static_cast<FakeTcp *>(stream->data);
+        LOGE << "conn " << conn->Key() << " err: " << uv_strerror(nread);
         conn->onTcpError(conn, nread);
     }
     free(buf->base);
@@ -84,7 +84,7 @@ void FakeTcp::SetAckISN(uint32_t isn) {
 }
 
 bool FakeTcp::Alive() {
-    return mAlive;
+    return mAlive && INetConn::Alive();
 }
 
 ConnInfo *FakeTcp::GetInfo() {

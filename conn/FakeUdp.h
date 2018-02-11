@@ -14,8 +14,6 @@ public:
 
     ConnInfo *GetInfo() override;
 
-    inline bool Alive() override;
-
     inline bool IsUdp() override;
 
 private:

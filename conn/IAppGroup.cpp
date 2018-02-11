@@ -65,3 +65,7 @@ bool IAppGroup::OnFinOrRst(const TcpInfo &info) {
     }
     return false;
 }
+
+bool IAppGroup::Alive() {
+    return mFakeNetGroup->Alive();  // return FakeNetGroup::Alive will do
+}

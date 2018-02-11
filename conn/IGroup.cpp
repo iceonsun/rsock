@@ -6,8 +6,6 @@
 #include <vector>
 #include "plog/Log.h"
 #include "IGroup.h"
-#include "../util/rsutil.h"
-#include "../util/rhash.h"
 
 using namespace std::placeholders;
 
@@ -86,7 +84,9 @@ void IGroup::Flush(uint64_t now) {
         }
     }
 
+    // remove dead conns first
     for (auto &e: fails) {
+        LOGV << "conn " << e.second->Key() << " is dead";
         if (!OnConnDead(e.second)) {
             CloseConn(e.second);
         }
@@ -95,15 +95,25 @@ void IGroup::Flush(uint64_t now) {
     if (mConns.empty()) {
         LOGD << "group: " << Key() << ", all conns are dead";
     }
+
+    // then flush
+    for (auto &e: mConns) {
+        e.second->Flush(now);
+    }
 }
 
 bool IGroup::Alive() {
-    for (auto &e: mConns) {
-        if (e.second->Alive()) {
-            return true;
-        }
-    }
-    return false;
+    return IConn::Alive();
+//    if (!IConn::Alive()) {
+//        return false;
+//    }
+//
+//    for (auto &e: mConns) {
+//        if (e.second->Alive()) {
+//            return true;
+//        }
+//    }
+//    return false;
 }
 
 std::map<std::string, IConn *> &IGroup::GetAllConns() {

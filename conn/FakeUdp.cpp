@@ -13,10 +13,6 @@ ConnInfo *FakeUdp::GetInfo() {
     return &mInfo;
 }
 
-bool FakeUdp::Alive() {
-    return true;
-}
-
 bool FakeUdp::IsUdp() {
     return true;
 }

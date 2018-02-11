@@ -131,7 +131,7 @@ int ISockApp::initLog() {
 
 int ISockApp::Start() {
     assert(mInited);
-    StartTimer(10000, 10000);   // 10s to flush
+    StartTimer(20000, 20000);   // 20s to flush
     return uv_run(mLoop, UV_RUN_DEFAULT);
 }
 

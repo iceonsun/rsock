@@ -95,7 +95,9 @@ void CSockApp::OnConnErr(const ConnInfo &info) {
 
         LOGE << "conn " << info.ToStr() << ", err, reconnect it";
         auto cb = std::bind(&CSockApp::TcpDialAsyncCb, this, std::placeholders::_1, std::placeholders::_2);
-        clientNetManager->DialTcpAsync(info, cb);
+        ConnInfo newInfo = info;
+        newInfo.sp = 0;     // sp = 0;
+        clientNetManager->DialTcpAsync(newInfo, cb);
     }
 }
 

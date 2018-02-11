@@ -19,7 +19,7 @@ RCap *SSockApp::CreateCap(RConfig &conf) {
 }
 
 RConn *SSockApp::CreateBtmConn(RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool, int datalink) {
-    // todo: listen tcp later
+    // todo: listen tcp later, tcp is listened in ServerNetManager
     RConn *rconn = new RConn(conf.param.hashKey, conf.param.dev, loop, ackPool, datalink, true);
     auto ports = conf.param.selfCapPorts.GetRawList();
     std::vector<uint16_t> zeros(ports.size(), 0);

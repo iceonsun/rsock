@@ -6,7 +6,6 @@
 #include "ServerNetManager.h"
 #include "../conn/TcpInfo.h"
 #include "../util/rsutil.h"
-#include "../rcommon.h"
 #include "NetUtil.h"
 #include "../conn/FakeTcp.h"
 

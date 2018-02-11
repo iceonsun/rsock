@@ -17,7 +17,6 @@ SubGroup::SubGroup(const std::string &groupId, uv_loop_t *loop, const struct soc
                    INetGroup *fakeNetGroup, IConn *btm) : IAppGroup(groupId, fakeNetGroup, btm) {
     mLoop = loop;
     mTarget = new_addr(target);
-
     mHead.id_buf = Str2IdBuf(groupId);
 }
 
