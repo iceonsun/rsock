@@ -29,17 +29,17 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
     ValueFlag<std::string> targetAddr(required, "taddr",
                                       "The target address.(e.g. client, 8.8.8.8 . server, 7.7.7.7:80. "
                                               "Port is ignored if it's client.)", {"taddr"}, "127.0.0.1:10030");
+
+
     Group opt(parser, "Optional arguments");
 
     HelpFlag help(opt, "help", "Display this help menu", {'h', "help"});
     ValueFlag<std::string> json(opt, "/path/to/config_file", "json config file path", {'f'});
     ValueFlag<std::string> selfCapIp(opt, "", "Optional. Local capture IP. e.g: 192.168.1.4", {"lcapIp"});
-    ValueFlag<std::string> selfCapPorts(opt, "", "Local capture port list. "
-            "(e.g.3000,3001,4000-4050. No blank spaces or other characters allowed)", {"lcapPorts"});
-
     ValueFlag<std::string> localUn(opt, "", "Local listening unix domain socket path.", {"unPath"});
     ValueFlag<std::string> localUdp(opt, "", "Local listening udp port.", {"ludp"});;
-    ValueFlag<std::string> serverCapPorts(opt, "", "Server capture ports. (Only valid for client)", {"tcapPorts"});
+    ValueFlag<std::string> capPorts(opt, "", "Capture port list. "
+            "(e.g.3000,3001,4000-4050. No blank spaces or other characters allowed)", {"ports"});
     ValueFlag<int> interval(opt, "",
                             "Interval(sec) to invalid connection. Client need to set to same value with server. "
                                     "(default 20s. min: 10s, max: 40s.)", {"duration"});
@@ -75,12 +75,12 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
                 param.selfCapIp = selfCapIp.Get();
             }
 
-            if (selfCapPorts) {
-                if (!RPortList::FromString(param.selfCapPorts, selfCapPorts.Get())) {
-                    throw args::Error("Unable to parse self capture ports: " + selfCapPorts.Get());
+            if (capPorts) {
+                if (!RPortList::FromString(param.capPorts, capPorts.Get())) {
+                    throw args::Error("Unable to parse string for capture ports: " + capPorts.Get());
                 }
             } else {
-                LOGV << "use default ports: " << RPortList::ToString(param.selfCapPorts);
+                LOGV << "use default ports: " << RPortList::ToString(param.capPorts);
             }
 
             if (localUn) {
@@ -101,11 +101,6 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
                 throw args::Error("You must specify target address.");
             }
 
-            if (serverCapPorts && !is_server) {
-                if (!RPortList::FromString(param.targetCapPorts, serverCapPorts.Get())) {
-                    throw args::Error("Unable to parse server capture ports: " + selfCapPorts.Get());
-                }
-            }
             if (interval) {
                 param.interval = interval.Get();
             }
@@ -180,12 +175,8 @@ void RConfig::CheckValidation(const RConfig &c) {
     assert(!p.targetIp.empty());
     assert(ValidIp4(p.targetIp));
 
-    assert(!p.selfCapPorts.empty());
-    if (!c.isServer) {
-        assert(!p.targetCapPorts.empty());
-    } else {
-        assert(p.targetPort != 0);
-    }
+    assert(!p.capPorts.empty());
+
     assert(p.selfCapInt != 0);
     assert(p.targetCapInt != 0);
     assert(!EmptyIdBuf(p.id));
@@ -246,13 +237,13 @@ void RConfig::ParseJsonString(RConfig &c, const std::string &content, std::strin
         if (o["lcapIp"].is_string()) {
             p.selfCapIp = o["lcapIp"].string_value();
         }
-        if (o["lcapPorts"].is_string()) {
-            auto s = o["lcapPorts"].string_value();
-            if (!RPortList::FromString(p.selfCapPorts, s)) {
-                throw args::Error("Unable to parse self capture ports: " + s);
+        if (o["ports"].is_string()) {
+            auto s = o["ports"].string_value();
+            if (!RPortList::FromString(p.capPorts, s)) {
+                throw args::Error("Unable to parse capture port list: " + s);
             }
         } else {
-            LOGV << "use default ports: " << RPortList::ToString(p.selfCapPorts);
+            LOGV << "use default ports: " << RPortList::ToString(p.capPorts);
         }
 
         if (o["unPath"].is_string()) {
@@ -270,12 +261,7 @@ void RConfig::ParseJsonString(RConfig &c, const std::string &content, std::strin
                 throw args::Error("Unable to parse target address: " + s);
             }
         }
-        if (!c.isServer && o["tcapPorts"].is_string()) {
-            auto s = o["tcapPorts"].string_value();
-            if (!RPortList::FromString(p.targetCapPorts, s)) {
-                throw args::Error("Unable to parse server capture ports: " + s);
-            }
-        }
+
         if (o["duration"].is_number()) {
             p.interval = o["duration"].int_value();
         }
@@ -299,7 +285,7 @@ json11::Json RConfig::to_json() const {
             {"daemon",  isDaemon},
             {"server",  isServer},
             {"verbose", log_level == plog::verbose},
-            {"log", log_path},
+            {"log",     log_path},
             {
              "param",   Json::object {
                     {"dev",       param.dev},
@@ -307,10 +293,9 @@ json11::Json RConfig::to_json() const {
                     {"ludp",      isServer ? param.localUdpIp :
                                   (param.localUdpIp + ":" + std::to_string(param.localUdpPort))},
                     {"lcapIp",    param.selfCapIp},
-                    {"lcapPorts", RPortList::ToString(param.selfCapPorts)},
+                    {"ports", RPortList::ToString(param.capPorts)},
                     {"taddr",     isServer ? (param.targetIp + ":" + std::to_string(param.targetPort))
                                            : param.targetIp},
-                    {"tcapPorts", isServer ? "" : RPortList::ToString(param.targetCapPorts)},
                     {"duration",  (int) param.interval},
                     {"type",      strOfType(param.type)},
                     {"hash",      param.hashKey},

@@ -15,7 +15,7 @@
 CSockApp::CSockApp(uv_loop_t *loop) : ISockApp(false, loop) {}
 
 RCap *CSockApp::CreateCap(RConfig &conf) {
-    return new RCap(conf.param.dev, conf.param.selfCapIp, {}, conf.param.targetCapPorts,
+    return new RCap(conf.param.dev, conf.param.selfCapIp, {}, conf.param.capPorts,
                     conf.param.targetIp, conf.param.interval, false);
 }
 
@@ -54,17 +54,15 @@ IConn *CSockApp::CreateBridgeConn(RConfig &conf, IConn *btm, uv_loop_t *loop, IN
     TcpInfo info;
     info.src = conf.param.selfCapInt;
     info.dst = conf.param.targetCapInt;
-    auto srcPorts = conf.param.selfCapPorts.GetRawList();
-    auto dstPorts = conf.param.targetCapPorts.GetRawList();
-    const int SIZE = std::min(srcPorts.size(), dstPorts.size());
-    auto manager = GetNetManager();
+    auto dstPorts = conf.param.capPorts.GetRawList();
 
+    auto manager = GetNetManager();
     auto *clientNetManager = dynamic_cast<ClientNetManager *>(manager);
     assert(clientNetManager);
 
-    for (int i = 0; i < SIZE; i++) {
+    for (auto dp : dstPorts) {
         info.sp = 0;
-        info.dp = dstPorts[i];
+        info.dp = dp;
         auto c = clientNetManager->DialTcpSync(info);
         if (c) {
             if (0 == c->Init()) {

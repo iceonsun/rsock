@@ -68,9 +68,15 @@ IConn *ServerGroup::newConn(const std::string &groupId, uv_loop_t *loop, const s
 bool ServerGroup::OnFinOrRst(const TcpInfo &info) {
     auto &conns = GetAllConns();
     for (auto &e: conns) {
-        auto *observer = reinterpret_cast<ITcpObserver *>(e.second);
+        // if cast ot observer, there may crash. reinterpret_cast problem of multiple inheritance
+//        auto *observer = reinterpret_cast<ITcpObserver *>(e.second);
+        auto *observer = dynamic_cast<SubGroup *>(e.second);
+
         assert(observer);
         if (observer->OnFinOrRst(info)) {
+            if (!e.second->Alive()) {
+                CloseConn(e.second);    // close and remove group if dead
+            }
             return true;
         }
     }

@@ -33,7 +33,7 @@ std::string ConnInfo::KeyForUdpBtm(uint32_t src, uint16_t sp) {
 
 std::string ConnInfo::BuildConnKey(uint32_t dst, uint32_t conv) {
     std::ostringstream out;
-    out << "conn:" << InAddr2Ip({dst}) << ":" << conv;
+    out << "conv:" << InAddr2Ip({dst}) << ":" << conv;
     return out.str();
 }
 

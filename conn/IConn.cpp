@@ -3,6 +3,7 @@
 //
 
 #include <cassert>
+#include <plog/Log.h>
 #include "IConn.h"
 
 IConn::IConn(const std::string &key) {

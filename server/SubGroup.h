@@ -18,8 +18,6 @@ public:
 
     int OnRecv(ssize_t nread, const rbuf_t &rbuf) override;
 
-    bool Alive() override;
-
 private:
     IConn *newConn(const std::string &key, uint32_t conv);
 

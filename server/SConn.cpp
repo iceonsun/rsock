@@ -80,7 +80,6 @@ int SConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
 void SConn::sendCb(uv_udp_send_t *req, int status) {
     rudp_send_t *udp = reinterpret_cast<rudp_send_t *>(req);
     SConn *conn = static_cast<SConn *>(udp->udp_send.data);
-    LOGV << "sending " << udp->buf.len << " bytes to " << Addr2Str((SA*)conn->mTarget);
     if (status) {
 //        todo: add err processing
         LOGE << "udp send error, err " << status << ": " << uv_strerror(status);

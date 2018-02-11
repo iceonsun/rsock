@@ -228,15 +228,4 @@ int ClientGroup::cconSend(ssize_t nread, const rbuf_t &rbuf) {
     rbuf_t buf = new_buf(nread, rbuf, &mHead);
     return Send(nread, buf);
 }
-
-bool ClientGroup::OnConnDead(IConn *conn) {
-    CConn *c = dynamic_cast<CConn *>(conn);
-    if (c) {
-        RemoveConn(c);
-        c->Close();
-        delete c;
-        return true;
-    }
-    return false;
-}
 // todo: override Alive to enable auto restart

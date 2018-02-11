@@ -125,7 +125,7 @@ bool IGroup::CloseConn(IConn *conn) {
         LOGD << "closing conn " << conn->Key();
         assert(conn->Key() != Key());
         assert(conn == ConnOfKey(conn->Key()));
-        mConns.erase(conn->Key());
+        RemoveConn(conn);
         conn->Close();
         delete conn;
         return true;

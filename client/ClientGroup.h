@@ -27,8 +27,6 @@ public:
 
     bool RemoveConn(IConn *conn) override;
 
-    bool OnConnDead(IConn *conn) override;
-
 private:
     int subconnRecv(ssize_t nread, const rbuf_t &rbuf);
 

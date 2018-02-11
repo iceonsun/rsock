@@ -43,11 +43,15 @@ void IAppGroup::Close() {
 }
 
 int IAppGroup::Send(ssize_t nread, const rbuf_t &rbuf) {
-    return mFakeNetGroup->Send(nread, rbuf);
+    int n = mFakeNetGroup->Send(nread, rbuf);
+    afterSend(n);
+    return n;
 }
 
 int IAppGroup::Input(ssize_t nread, const rbuf_t &rbuf) {
-    return mFakeNetGroup->Input(nread, rbuf);
+    int n = mFakeNetGroup->Input(nread, rbuf);
+    afterInput(n);
+    return n;
 }
 
 void IAppGroup::Flush(uint64_t now) {
@@ -67,5 +71,5 @@ bool IAppGroup::OnFinOrRst(const TcpInfo &info) {
 }
 
 bool IAppGroup::Alive() {
-    return mFakeNetGroup->Alive();  // return FakeNetGroup::Alive will do
+    return mFakeNetGroup->Alive() && IGroup::Alive();  // if no data flows it'll report dead
 }

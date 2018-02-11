@@ -15,13 +15,13 @@
 SSockApp::SSockApp(uv_loop_t *loop) : ISockApp(true, loop) {}
 
 RCap *SSockApp::CreateCap(RConfig &conf) {
-    return new RCap(conf.param.dev, conf.param.selfCapIp, conf.param.selfCapPorts, {}, "", conf.param.interval, true);
+    return new RCap(conf.param.dev, conf.param.selfCapIp, conf.param.capPorts, {}, "", conf.param.interval, true);
 }
 
 RConn *SSockApp::CreateBtmConn(RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool, int datalink) {
     // todo: listen tcp later, tcp is listened in ServerNetManager
     RConn *rconn = new RConn(conf.param.hashKey, conf.param.dev, loop, ackPool, datalink, true);
-    auto ports = conf.param.selfCapPorts.GetRawList();
+    auto ports = conf.param.capPorts.GetRawList();
     std::vector<uint16_t> zeros(ports.size(), 0);
     auto vec = createUdpConns(conf.param.selfCapInt, ports, 0, zeros);
     for (auto c: vec) {
@@ -40,5 +40,5 @@ IConn *SSockApp::CreateBridgeConn(RConfig &conf, IConn *btm, uv_loop_t *loop, IN
 }
 
 INetManager *SSockApp::CreateNetManager(RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool) {
-    return new ServerNetManager(loop, conf.param.selfCapPorts, conf.param.selfCapIp, ackPool);
+    return new ServerNetManager(loop, conf.param.capPorts, conf.param.selfCapIp, ackPool);
 }

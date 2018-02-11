@@ -42,23 +42,11 @@ struct RConfig {
 
         // these are ports used for communications between server and clients.
         // after 0, 0, all are port range.
-
-#ifdef RSOCK_IS_SERVER_
-        RPortList selfCapPorts = {{80, 0}, {443, 0}, {10010, 10020}};
-#else
-        RPortList selfCapPorts = {{8090, 0}, {9090, 0}, {20000, 20010}};
-#endif
+        RPortList capPorts = {{80, 0}, {443, 0}, {10010, 10020}};
 
         std::string targetIp;
         uint16_t targetPort = 0;
 
-        // only valid for client
-        // for server. only element[0] is valid and it's used for target port for server
-#ifdef RSOCK_IS_SERVER_
-        RPortList targetCapPorts;    // if same machine this may not work
-#else
-        RPortList targetCapPorts = {{80, 0}, {443, 0}, {10010, 10020}};
-#endif
         uint16_t interval = 40;
         uint32_t selfCapInt = 0;
         uint32_t targetCapInt = 0;

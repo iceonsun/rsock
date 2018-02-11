@@ -72,7 +72,3 @@ int SubGroup::sconnSend(ssize_t nread, const rbuf_t &rbuf) {
     const rbuf_t buf = new_buf(nread, rbuf, &mHead);
     return Send(nread, buf);
 }
-
-bool SubGroup::Alive() {
-    return IAppGroup::Alive() && NetGroup()->Alive();
-}
