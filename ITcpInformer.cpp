@@ -17,7 +17,7 @@ void ITcpInformer::Detach(ITcpObserver *observer) {
 void ITcpInformer::Notify(const TcpInfo &info) {
     bool ok = false;
     for (auto e: mObservers) {
-        if (e->OnFinOrRst(info)) {
+        if (e->OnTcpFinOrRst(info)) {
             ok = true;
             break;
         }
@@ -26,6 +26,9 @@ void ITcpInformer::Notify(const TcpInfo &info) {
 }
 
 ITcpInformer::~ITcpInformer() {
+#ifndef RSOCK_NNDEBUG
     assert(mObservers.empty());
-//    mObservers.clear();
+#else
+    mObservers.clear();
+#endif
 }

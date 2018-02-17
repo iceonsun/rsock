@@ -10,20 +10,47 @@
 
 struct EncHead {
 public:
+    enum TYPE {
+        TYPE_DATA = 0,
+        TYPE_TCP_RST = 1,
+        TYPE_UDP_RST = 2,
+        TYPE_CONV_RST = 3,
+    };
+
+private:
     // fields that are gonna encoded. {
-    uint8_t len = EncHead::GetEncBufSize();
+    uint8_t len = EncHead::GetMinEncSize(); // head len
+    uint8_t mCmd = TYPE_DATA;
+    IdBufType mIdBuf{{0}};
+    uint32_t mConv = 0;
     uint8_t resereved = 0;
-    uint8_t conn_type = 0;
-    IdBufType id_buf{{0}};
-    uint32_t conv = 0;
     // }
 
-    // must correspond to fields that are gonna encoded;
-    static uint8_t GetEncBufSize();
+public:
+    // must correspond to fields that are gonna encoded; 15 bytes right now
+    static uint8_t GetMinEncSize();
 
-    static const char *DecodeBuf(EncHead &, const char *p, int len);
+    uint8_t GetSize();
+    
+    static const char *DecodeBuf(EncHead &, const char *p, int buf_len);
 
-    char *Enc2Buf(char *p, int len);
+    char *Enc2Buf(char *p, int buf_len);
+
+    EncHead &operator=(const EncHead &) = default;
+
+    uint8_t Cmd() { return mCmd; }
+
+    void SetCmd(uint8_t cmd) { mCmd = cmd; }
+
+    IdBufType IdBuf() { return mIdBuf; }
+
+    void SetIdBuf(const IdBufType &idBufType) { mIdBuf = idBufType; }
+
+    uint32_t Conv() { return mConv; }
+
+    void SetConv(uint32_t conv) { mConv = conv; }
+
+    static bool IsRstFlag(uint8_t cmd) { return cmd == TYPE_TCP_RST || cmd == TYPE_UDP_RST || cmd == TYPE_CONV_RST; }
 };
 
 #endif //RSOCK_ENCHEAD_H

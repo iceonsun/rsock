@@ -7,6 +7,7 @@
 #include <plog/Log.h>
 #include "INetGroup.h"
 #include "ConnInfo.h"
+#include "TcpInfo.h"
 
 using namespace std::placeholders;
 
@@ -23,15 +24,14 @@ int INetGroup::Init() {
 
     auto cb = std::bind(&INetGroup::handleMessage, this, std::placeholders::_1);
     mHandler = Handler::NewHandler(mLoop, cb);
-    setupTimer();
     return 0;
 }
 
 void INetGroup::Close() {
     IGroup::Close();
-    destroyTimer();
     mErrCb = nullptr;
     mHandler = nullptr; // handler will automatically remove all pending messages and tasks
+    mNoConnCb = nullptr;
 }
 
 int INetGroup::Input(ssize_t nread, const rbuf_t &rbuf) {
@@ -53,7 +53,8 @@ int INetGroup::Input(ssize_t nread, const rbuf_t &rbuf) {
             afterInput(n);
             return n;
         }
-        LOGD << "Cannot input, no such conn: " << key;
+        LOGD << "Cannot input, no such conn: " << key;  // todo: send conn rst
+        onNoConn(*info);
         return -1;
     }
     return nread;
@@ -68,7 +69,6 @@ void INetGroup::AddNetConn(INetConn *conn) {
     AddConn(conn, out, rcv);
 }
 
-// 找send的conn有问题 todo: remove failed conns
 int INetGroup::Send(ssize_t nread, const rbuf_t &rbuf) {
     if (nread > 0) {
         decltype(mConns) fails;
@@ -84,7 +84,7 @@ int INetGroup::Send(ssize_t nread, const rbuf_t &rbuf) {
             LOGW << "send, conn " << it->second->Key() << " is dead but not removed";
             fails.emplace(it->first, it->second);
         }
-        for (auto &e: fails) {
+        for (auto &e: fails) {  // remove dead conn
             childConnErrCb(dynamic_cast<INetConn *>(e.second), -1);
         }
         return -1;
@@ -107,12 +107,20 @@ void INetGroup::handleMessage(const Handler::Message &message) {
         case CONN_ERR: {
             auto *conn = static_cast<INetConn *>(message.obj);
             assert(conn);
-
             LOGE << "closing conn: " << conn->Key() << ", err: " << message.what;
-            ConnInfo info(*conn->GetInfo());
+//            ConnInfo *info = nullptr;
+//            ConnInfo *connInfo = conn->GetInfo();
+//            if (connInfo->IsUdp()) {
+//                info = new ConnInfo(*connInfo);
+//            } else {
+//                info = new TcpInfo();
+//                *info = dynamic_cast<TcpInfo>(*connInfo);
+//            }
+            ConnInfo info(*conn->GetInfo());    // todo: allocate memory according to info
             conn->Close();  // it's already removed
             delete conn;
             netConnErr(info);
+//            delete info;
             break;
         }
         default:
@@ -120,12 +128,7 @@ void INetGroup::handleMessage(const Handler::Message &message) {
     }
 }
 
-void INetGroup::netConnErr(const ConnInfo &info) {
-    if (mErrCb) {
-        mErrCb(info);
-    }
-}
-
+// todo: server should use method do deal with wrong conn
 void INetGroup::SetNetConnErrCb(const NetConnErrCb &cb) {
     mErrCb = cb;
 }
@@ -139,24 +142,18 @@ bool INetGroup::OnConnDead(IConn *conn) {
     return false;
 }
 
-void INetGroup::setupTimer() {
-    if (mFlushTimer) {
-        mFlushTimer = static_cast<uv_timer_t *>(malloc(sizeof(uv_timer_t)));
-        uv_timer_init(mLoop, mFlushTimer);
-        mFlushTimer->data = this;
-        uv_timer_start(mFlushTimer, timer_cb, FLUSH_INTERVAL * 4, FLUSH_INTERVAL);
+void INetGroup::onNoConn(const ConnInfo &info) {
+    if (mNoConnCb) {
+        mNoConnCb(info);
     }
 }
 
-void INetGroup::destroyTimer() {
-    if (mFlushTimer) {
-        uv_timer_stop(mFlushTimer);
-        uv_close(reinterpret_cast<uv_handle_t *>(mFlushTimer), close_cb);
-        mFlushTimer = nullptr;
-    }
+void INetGroup::SetNonConnCb(const INetGroup::NoConnCb &cb) {
+    mNoConnCb = cb;
 }
 
-void INetGroup::timer_cb(uv_timer_t *timer) {
-    INetGroup *group = static_cast<INetGroup *>(timer->data);
-    group->Flush(uv_now(group->mLoop));
+void INetGroup::netConnErr(const ConnInfo &info) {
+    if (mErrCb) {
+        mErrCb(info);
+    }
 }

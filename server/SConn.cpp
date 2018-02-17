@@ -49,8 +49,9 @@ void SConn::udpRecvCb(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf, cons
                 LOGE << "getsockname failed, err " << err << ": " << strerror(errno);
                 assert(0);
             }
-            LOGV << "sconn addr: " << InAddr2Ip(conn->mSelfAddr->sin_addr) << ":" << ntohs(conn->mSelfAddr->sin_port);
+            LOGV << "sconn addr: " << Addr2Str((SA *) conn->mSelfAddr);
         }
+        LOGV << "receive " << nread << " bytes from " << Addr2Str(addr);
         const rbuf_t rbuf = new_buf(nread, buf->base, conn);
         conn->Send(nread, rbuf);
     } else if (nread < 0) {

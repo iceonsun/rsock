@@ -85,17 +85,22 @@ INetManager *CSockApp::CreateNetManager(RConfig &conf, uv_loop_t *loop, TcpAckPo
     return new ClientNetManager(loop, ackPool);
 }
 
+// todo: add udp reconnect
 void CSockApp::OnConnErr(const ConnInfo &info) {
-    if (!IsClosing() && !info.IsUdp()) {
+    if (!IsClosing()) {
         auto manager = GetNetManager();
         auto *clientNetManager = dynamic_cast<ClientNetManager *>(manager);
         assert(clientNetManager);
-
         LOGE << "conn " << info.ToStr() << ", err, reconnect it";
-        auto cb = std::bind(&CSockApp::TcpDialAsyncCb, this, std::placeholders::_1, std::placeholders::_2);
-        ConnInfo newInfo = info;
-        newInfo.sp = 0;     // sp = 0;
-        clientNetManager->DialTcpAsync(newInfo, cb);
+        if (!info.IsUdp()) {
+            auto cb = std::bind(&CSockApp::TcpDialAsyncCb, this, std::placeholders::_1, std::placeholders::_2);
+            ConnInfo newInfo = info;
+            newInfo.sp = 0;     // sp = 0;
+            clientNetManager->DialTcpAsync(newInfo, cb);
+        } else {
+            // todo: dial udp. succeeds immediately
+        }
+
     }
 }
 
@@ -106,12 +111,4 @@ void CSockApp::TcpDialAsyncCb(INetConn *conn, const ConnInfo &info) {
     if (conn) {
         clientGroup->GetNetGroup()->AddNetConn(conn);
     }
-}
-
-bool CSockApp::OnFinOrRst(const TcpInfo &info) {
-    bool ok = ISockApp::OnFinOrRst(info);
-    if (ok) {
-        OnConnErr(info);    // dial tcp
-    }
-    return ok;
 }

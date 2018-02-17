@@ -94,7 +94,7 @@ int ISockApp::doInit() {
     assert(mBtmConn);
     mBtmConn->Attach(this);
     // cap#Start must be called before CreateBridgeConn because create btmconn will connect tcp
-    mCap->Start(RConn::CapInputCb, reinterpret_cast<u_char *>(mBtmConn));
+    mCap->Start(RConn::CapInputCb, (u_char *) (mBtmConn));
 
     mBridge = CreateBridgeConn(mConf, mBtmConn, mLoop, mNetManager);
     if (mBridge->Init()) {
@@ -277,12 +277,12 @@ ISockApp::~ISockApp() {
     }
 }
 
-bool ISockApp::OnFinOrRst(const TcpInfo &info) {
+bool ISockApp::OnTcpFinOrRst(const TcpInfo &info) {
     if (!IsClosing()) { // if app is closing, don't call super class
-        auto * c = dynamic_cast<ITcpObserver *>(mBridge);
+        auto *c = dynamic_cast<ITcpObserver *>(mBridge);
         assert(c);
         if (c) {
-            return c->OnFinOrRst(info);
+            return c->OnTcpFinOrRst(info);
         }
     }
     return false;

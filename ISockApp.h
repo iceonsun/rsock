@@ -67,7 +67,7 @@ public:
 
     bool IsClosing() { return mClosing; }
 
-    bool OnFinOrRst(const TcpInfo &info) override;
+    bool OnTcpFinOrRst(const TcpInfo &info) override;
 
 protected:
     std::vector<INetConn *> createUdpConns(uint32_t src, const std::vector<uint16_t> &ports, uint32_t dst,

@@ -14,7 +14,7 @@
 
 // RawConn has key of nullptr to expose errors as fast as it can if any.
 RawTcp::RawTcp(const std::string &dev, uv_loop_t *loop, TcpAckPool *ackPool, int datalinkType, bool server)
-        : IConn("RawTcp"), mLoop(loop), mDatalink(datalinkType), mDev(dev) {
+        : IConn("RawTcp"), mDatalink(datalinkType), mLoop(loop), mDev(dev) {
     mTcpAckPool = ackPool;
     mIsServer = server;
 }
@@ -54,6 +54,7 @@ void RawTcp::Close() {
         uv_close(reinterpret_cast<uv_handle_t *>(mUnixDgramPoll), close_cb);
         mUnixDgramPoll = nullptr;
     }
+
     if (mTcpNet) {
         libnet_destroy(mTcpNet);
         mTcpNet = nullptr;
@@ -61,13 +62,12 @@ void RawTcp::Close() {
 }
 
 int RawTcp::Output(ssize_t nread, const rbuf_t &rbuf) {
-    if (nread > 0) {
+    if (nread >= 0) {
         TcpInfo *info = static_cast<TcpInfo *>(rbuf.data);
         assert(info);
 
-        IUINT8 flag = TH_ACK;
         return SendRawTcp(mTcpNet, info->src, info->sp, info->dst, info->dp, info->seq, info->ack,
-                          reinterpret_cast<const IUINT8 *>(rbuf.base), nread, mIpId++, mTcp, mIpForTcp, flag);
+                          reinterpret_cast<const IUINT8 *>(rbuf.base), nread, mIpId++, mTcp, mIpForTcp, info->flag);
     }
 
     return nread;
@@ -124,7 +124,7 @@ int RawTcp::RawInput(u_char *args, const pcap_pkthdr *hdr, const u_char *packet)
 
     const int payload_len = ntohs(ip->ip_len) - ((const u_char *) payload - (const u_char *) ip);
 
-    if (payload_len >= 0 ) {
+    if (payload_len >= 0) {
         std::string flag;
         if (tcp->th_flags & TH_SYN) {
             flag += "SYN|";
@@ -144,11 +144,13 @@ int RawTcp::RawInput(u_char *args, const pcap_pkthdr *hdr, const u_char *packet)
 
         if (plog::get()->getMaxSeverity() > plog::verbose) {
             if (tcp->th_flags & (~TH_ACK)) {
-                LOGD << "receive " << payload_len << " bytes from " << InAddr2Ip({ip->ip_src}) << ":" << ntohs(tcp->th_sport)
+                LOGD << "receive " << payload_len << " bytes from " << InAddr2Ip({ip->ip_src}) << ":"
+                     << ntohs(tcp->th_sport)
                      << "<->" << InAddr2Ip({ip->ip_dst}) << ":" << ntohs(tcp->th_dport) << ", flag: " << flag;
             }
         } else {
-            LOGV << "receive " << payload_len << " bytes from " << InAddr2Ip({ip->ip_src}) << ":" << ntohs(tcp->th_sport)
+            LOGV << "receive " << payload_len << " bytes from " << InAddr2Ip({ip->ip_src}) << ":"
+                 << ntohs(tcp->th_sport)
                  << "<->" << InAddr2Ip({ip->ip_dst}) << ":" << ntohs(tcp->th_dport) << ", flag: " << flag;
         }
     }
@@ -248,6 +250,7 @@ int RawTcp::SendRawTcp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT1
         LOGE << "failed to build tcp: " << libnet_geterror(l);
         return tcp;
     }
+
     ip = libnet_build_ipv4(
             payload_len + LIBNET_TCP_H + LIBNET_IPV4_H, /* ip_len total length of the IP packet including all subsequent
                                                  data (subsequent data includes any IP options and IP options padding)*/
@@ -265,7 +268,6 @@ int RawTcp::SendRawTcp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT1
             ip               // ptag protocol tag to modify an existing header, 0 to build a new one
 
     );
-
     if (ip == -1) {
         LOGE << "failed to build ipv4: " << libnet_geterror(l);
         return ip;
@@ -276,7 +278,8 @@ int RawTcp::SendRawTcp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT1
         LOGE << "libnet_write failed: " << libnet_geterror(l);
         return -1;
     } else {
-        LOGV << "libnet_write " << n << " bytes. " << InAddr2Ip({src}) << ":" << sp << "<->" << InAddr2Ip({dst}) << ":" << dp;
+        LOGV << "libnet_write " << n << " bytes. " << InAddr2Ip({src}) << ":" << sp << "<->" << InAddr2Ip({dst}) << ":"
+             << dp;
 
     }
     return payload_len;

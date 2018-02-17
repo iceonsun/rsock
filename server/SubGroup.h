@@ -23,10 +23,9 @@ private:
 
     int sconnSend(ssize_t nread, const rbuf_t &rbuf);
 
-protected:
+private:
     uv_loop_t *mLoop = nullptr;
     struct sockaddr *mTarget = nullptr;
-    EncHead mHead;
 };
 
 

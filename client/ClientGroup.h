@@ -8,7 +8,6 @@
 #include <sys/un.h>
 
 #include "../conn/IAppGroup.h"
-#include "../EncHead.h"
 
 class CConn;
 
@@ -47,9 +46,7 @@ private:
 
     int cconSend(ssize_t nread, const rbuf_t &rbuf);
 
-
 private:
-
     uint32_t mConvCounter = 1;
 
     uv_udp_t *mUdp = nullptr;
@@ -60,8 +57,8 @@ private:
     struct sockaddr_un *mUnAddr = nullptr;
 
     uv_loop_t *mLoop = nullptr;
+    // necessary. it map clientAddr to conv, use this conv to communicate with server
     std::map<uint32_t, CConn *> mConvMap;
-    EncHead mHead;
 };
 
 

@@ -84,7 +84,8 @@ void FakeTcp::SetAckISN(uint32_t isn) {
 }
 
 bool FakeTcp::Alive() {
-    return mAlive && INetConn::Alive();
+    return mAlive;  // it's very unlikely that server don't send rst|fin if conn is closed during per flush
+//    return mAlive && INetConn::Alive();
 }
 
 ConnInfo *FakeTcp::GetInfo() {

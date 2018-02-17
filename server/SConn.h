@@ -17,8 +17,6 @@ class SConn : public IConn {
 public:
     explicit SConn(const std::string &key, uv_loop_t *loop, const SA *target, uint32_t conv);
 
-    ~SConn() override = default;
-
     void Close() override;
 
     // to target

@@ -10,7 +10,6 @@
 #include "ClientGroup.h"
 #include "../util/rsutil.h"
 #include "../conn/ConnInfo.h"
-#include "../util/rhash.h"
 
 using namespace std::placeholders;
 
@@ -27,7 +26,6 @@ ClientGroup::ClientGroup(const std::string &groupId, const std::string &listenUn
         assert(mUnAddr != nullptr);
     }
 
-    mHead.id_buf = Str2IdBuf(groupId);
     mLoop = loop;
 }
 
@@ -47,11 +45,11 @@ int ClientGroup::Init() {
 
     if (mUnAddr) {
         mUnPoll = om_listen_unix_dgram(mUnAddr, mLoop, pollCb, this, &nret);
-        if (nret) {
+        if (!mUnPoll) {
             return nret;
         }
         mUnSock = nret;
-        LOGE << "client, listening on unix socket: " << mUnAddr->sun_path;
+        LOGD << "client, listening on unix socket: " << mUnAddr->sun_path;
     }
     return 0;
 }
@@ -62,12 +60,13 @@ int ClientGroup::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
     if (nread > 0) {
         ConnInfo *info = static_cast<ConnInfo *>(rbuf.data);
         EncHead *head = info->head;
-        uint32_t conv = head->conv;
+        uint32_t conv = head->Conv();
         auto it = mConvMap.find(conv);
         if (it != mConvMap.end()) {
             return it->second->Input(nread, rbuf);
         } else {
-            return 0;
+            LOGD << "no such conv: " << conv;
+            return SendConvRst(conv);
         }
     }
     return nread;
@@ -224,7 +223,7 @@ bool ClientGroup::RemoveConn(IConn *conn) {
 
 int ClientGroup::cconSend(ssize_t nread, const rbuf_t &rbuf) {
     auto *cConn = static_cast<CConn *>(rbuf.data);
-    mHead.conv = cConn->Conv();
+    mHead.SetConv(cConn->Conv());
     rbuf_t buf = new_buf(nread, rbuf, &mHead);
     return Send(nread, buf);
 }

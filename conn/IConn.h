@@ -14,7 +14,6 @@
 class IConn {
 public:
     typedef std::function<int(ssize_t nread, const rbuf_t &rbuf)> IConnCb;
-    //    typedef std::shared_ptr<IConn *> SPConn;
 
     explicit IConn(const std::string &key);
 
@@ -24,54 +23,49 @@ public:
 
     virtual int Init();
 
-    // non overridable to ensure child class don't override this method.
-    // if child class want to process data, override Output for sending data, OnRecv for input data
     virtual int Send(ssize_t nread, const rbuf_t &rbuf);
-//    virtual int Send(ssize_t nread, const rbuf_t &rbuf);
 
     virtual int Output(ssize_t nread, const rbuf_t &rbuf);
 
-    // non overridable
     virtual int Input(ssize_t nread, const rbuf_t &rbuf);
-//    virtual int Input(ssize_t nread, const rbuf_t &rbuf);
 
     virtual int OnRecv(ssize_t nread, const rbuf_t &rbuf);
 
-    virtual void SetOutputCb(const IConnCb &cb) { mOutputCb = cb; };
+    void SetOutputCb(const IConnCb &cb) { mOutputCb = cb; };
 
-    virtual void SetOnRecvCb(const IConnCb &cb) { mOnRecvCb = cb; };
+    void SetOnRecvCb(const IConnCb &cb) { mOnRecvCb = cb; };
 
     virtual const std::string &Key() { return mKey; }
 
     // if no data send/input since last check, return true.
-    virtual void Flush(uint64_t now);
+    virtual void Flush(uint64_t now) { mStat.Flush(); };
 
-    // TODO: return alive according dataset. return false if no data flowed on `both` directions
     virtual bool Alive() { return mStat.Alive(); }
 
     IConn &operator=(const IConn &) = delete;
 
 protected:
-    inline void afterInput(ssize_t nread);
+    void afterInput(ssize_t nread) { mStat.afterInput(nread); };
 
-    inline void afterSend(ssize_t nread);
+    void afterSend(ssize_t nread) { mStat.afterSend(nread); };
 
 private:
     class DataStat {
     public:
-        inline void afterInput(ssize_t nread);
+        void afterInput(ssize_t nread);
 
-        inline void afterSend(ssize_t nread);
+        void afterSend(ssize_t nread);
 
-        inline bool Alive();
+        bool Alive() { return mAlive; };
 
-        inline void Flush();
+        void Flush();;
 
     private:
         uint32_t prev_in = 0;
         uint32_t prev_out = 0;
-        uint32_t curr_in = 1;
-        uint32_t curr_out = 1;
+        uint32_t curr_in = 0;
+        uint32_t curr_out = 0;
+        bool mAlive = true;
     };
 
 private:

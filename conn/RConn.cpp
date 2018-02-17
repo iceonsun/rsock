@@ -11,7 +11,8 @@
 
 using namespace std::placeholders;
 
-const int RConn::HEAD_SIZE = EncHead::GetEncBufSize() + HASH_BUF_SIZE;
+// todo: this will change if add some other headers
+const int RConn::HEAD_SIZE = EncHead::GetMinEncSize() + HASH_BUF_SIZE;
 
 RConn::RConn(const std::string &hashKey, const std::string &dev, uv_loop_t *loop, TcpAckPool *ackPool, int datalink,
              bool isServer) : IGroup("RConn", nullptr), mHashKey(hashKey) {
@@ -40,7 +41,7 @@ void RConn::AddUdpConn(INetConn *conn) {
 }
 
 int RConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
-    const int MIN_LEN = HASH_BUF_SIZE + EncHead::GetEncBufSize();
+    const int MIN_LEN = HASH_BUF_SIZE + EncHead::GetMinEncSize();
     const char *hashed_buf = rbuf.base;
     ConnInfo *info = static_cast<ConnInfo *>(rbuf.data);
     if (nread > MIN_LEN) {    // nread == HASH_BUF_SIZE will not work
@@ -53,9 +54,8 @@ int RConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
             return IGroup::OnRecv(buf.len, buf);
         }
     } else if (!info->IsUdp()) {
-        TcpInfo *tcpInfo = reinterpret_cast<TcpInfo *>(info);
-        assert(tcpInfo);
-        if (tcpInfo->HasCloseFlag()) {
+        TcpInfo *tcpInfo = dynamic_cast<TcpInfo *>(info);
+        if (tcpInfo && tcpInfo->HasCloseFlag()) {
             Notify(*tcpInfo);
             return 0;
         }
@@ -68,16 +68,13 @@ int RConn::Output(ssize_t nread, const rbuf_t &rbuf) {
     assert(info);
     EncHead *head = info->head;
 
-    const int ENC_SIZE = EncHead::GetEncBufSize();
+    const int ENC_SIZE = head->GetSize();
     if (HASH_BUF_SIZE + ENC_SIZE + nread > OM_MAX_PKT_SIZE) {
         LOGE << "packet exceeds MTU. redefine MTU. MTU: " << OM_MAX_PKT_SIZE << ", HASH_BUF_SIZE: " << HASH_BUF_SIZE
              << ", ENC_SIZE: " << ENC_SIZE << ", nread: " << nread;
-#ifndef NNDEBUG
-        assert(HASH_BUF_SIZE + ENC_SIZE + nread <= OM_MAX_PKT_SIZE);
-#else
         return -1;
-#endif
     }
+
     char base[OM_MAX_PKT_SIZE] = {0};
     char *p = compute_hash((char *) base, mHashKey, rbuf.base, nread);
     p = head->Enc2Buf(p, OM_MAX_PKT_SIZE - (p - base));
@@ -97,11 +94,14 @@ int RConn::Output(ssize_t nread, const rbuf_t &rbuf) {
     } else {
         return mRawTcp->Send(buf.len, buf);
     }
+
     return -1;
 }
 
 
 void RConn::CapInputCb(u_char *args, const pcap_pkthdr *hdr, const u_char *packet) {
-    RConn *conn = reinterpret_cast<RConn *>(args);
+    RConn *conn = (RConn *) (args);
     conn->mRawTcp->RawInput(nullptr, hdr, packet);
 }
+
+// todo: override flush

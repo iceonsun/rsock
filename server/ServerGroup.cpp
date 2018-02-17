@@ -35,7 +35,7 @@ int ServerGroup::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
         assert(info);
         EncHead *hd = info->head;
         assert(hd);
-        auto groupId = IdBuf2Str(hd->id_buf);
+        auto groupId = IdBuf2Str(hd->IdBuf());
         auto conn = ConnOfKey(groupId);
         if (!conn) {
             conn = newConn(groupId, mLoop, mTarget, *info);
@@ -65,7 +65,7 @@ IConn *ServerGroup::newConn(const std::string &groupId, uv_loop_t *loop, const s
     return conn;
 }
 
-bool ServerGroup::OnFinOrRst(const TcpInfo &info) {
+bool ServerGroup::OnTcpFinOrRst(const TcpInfo &info) {
     auto &conns = GetAllConns();
     for (auto &e: conns) {
         // if cast ot observer, there may crash. reinterpret_cast problem of multiple inheritance
@@ -73,7 +73,7 @@ bool ServerGroup::OnFinOrRst(const TcpInfo &info) {
         auto *observer = dynamic_cast<SubGroup *>(e.second);
 
         assert(observer);
-        if (observer->OnFinOrRst(info)) {
+        if (observer->OnTcpFinOrRst(info)) {
             if (!e.second->Alive()) {
                 CloseConn(e.second);    // close and remove group if dead
             }

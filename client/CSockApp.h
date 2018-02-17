@@ -22,8 +22,6 @@ public:
 
     INetManager *CreateNetManager(RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool) override;
 
-    bool OnFinOrRst(const TcpInfo &info) override;
-
 protected:
     virtual void OnConnErr(const ConnInfo &info);
 

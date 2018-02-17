@@ -31,7 +31,7 @@ std::string ConnInfo::KeyForUdpBtm(uint32_t src, uint16_t sp) {
     return out.str();
 }
 
-std::string ConnInfo::BuildConnKey(uint32_t dst, uint32_t conv) {
+std::string ConnInfo::BuildConvKey(uint32_t dst, uint32_t conv) {
     std::ostringstream out;
     out << "conv:" << InAddr2Ip({dst}) << ":" << conv;
     return out.str();
@@ -73,10 +73,6 @@ std::string ConnInfo::BuildAddrKey(const struct sockaddr *addr) {
     return "";
 }
 
-bool ConnInfo::EqualTo(const ConnInfo &info) const {
-    return IsUdp() == info.IsUdp() && src == info.src && dst == info.dst && sp == info.sp && dp == info.dp;
-}
-
 std::string ConnInfo::ToStr() const {
     std::ostringstream out;
     out << (udp ? "udp" : "tcp") << ":";
@@ -88,4 +84,12 @@ std::string ConnInfo::ToStr() const {
 void ConnInfo::Reverse() {
     std::swap<uint32_t>(src, dst);
     std::swap<uint16_t>(sp, dp);
+}
+
+char *ConnInfo::EncodeBase(char *buf, int len) const {
+    return this->ConnInfo::Encode(buf, len);
+}
+
+const char *ConnInfo::DecodeBase(const char *buf, int len) {
+    return this->ConnInfo::Decode(buf, len);
 }

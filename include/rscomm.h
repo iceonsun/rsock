@@ -9,18 +9,9 @@
 extern "C" {
 #endif
 
-
-#ifndef OFFSETOF
-#define OFFSETOF(TYPE, MEMBER) \
-    ((size_t)&(((TYPE *)0)->MEMBER))
-#endif
-
-#ifndef ADDRESS_FOR
-#define ADDRESS_FOR(TYPE, MEMBER, mem_addr) \
-    ((TYPE*)(((char *)(mem_addr)) - OFFSETOF(TYPE, MEMBER)))
-#endif
-
+#ifndef OM_TTL_OUT
 #define OM_TTL_OUT 64
+#endif
 
 #define MAC_LEN 6
 #define OM_MAX_PKT_SIZE 1500
@@ -32,11 +23,8 @@ extern "C" {
 
 #define OM_PIPE_TCP (OM_PIPE_TCP_RECV|OM_PIPE_TCP_SEND)
 #define OM_PIPE_UDP (OM_PIPE_UDP_SEND|OM_PIPE_UDP_RECV)
-#define OM_PIPE_DEF (OM_PIPE_TCP)
 
-#define OM_PIPE_ALL (OM_PIPE_TCP_RECV|OM_PIPE_TCP_SEND|OM_PIPE_UDP_SEND|OM_PIPE_UDP_RECV)
-
-#define OM_DEF_PORT 80
+#define OM_PIPE_ALL (OM_PIPE_TCP|OM_PIPE_UDP)
 
 #define MD5_LEN 16
 
@@ -44,14 +32,10 @@ extern "C" {
 #define RLOG_FILE_PATH "/var/log/rsock/rsock.log"
 #endif
 
-#define OM_INIT_ACK 1
-#define OM_INIT_ACK_SYN 2
-#define OM_ACK 3
-
 typedef struct sockaddr SA;
 typedef struct sockaddr_in SA4;
 
-#define OM_ACKPOOL_FLUSH_SEC 5
+//#define OM_ACKPOOL_FLUSH_SEC 5
 
 #ifdef __cplusplus
 }

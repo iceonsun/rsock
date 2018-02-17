@@ -3,7 +3,6 @@
 //
 
 #include <cassert>
-#include <plog/Log.h>
 #include "IConn.h"
 
 IConn::IConn(const std::string &key) {
@@ -19,7 +18,6 @@ void IConn::Close() {
     mOutputCb = nullptr;
 }
 
-// non overridable
 int IConn::Send(ssize_t nread, const rbuf_t &rbuf) {
     int n = Output(nread, rbuf);
     afterSend(n);
@@ -33,7 +31,6 @@ int IConn::Output(ssize_t nread, const rbuf_t &rbuf) {
     return 0;
 }
 
-// non overridable
 int IConn::Input(ssize_t nread, const rbuf_t &rbuf) {
     int n = OnRecv(nread, rbuf);
     afterInput(n);
@@ -48,26 +45,16 @@ int IConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
 }
 
 IConn::~IConn() {
+#ifndef RSOCK_NNDEBUG
     assert(mOutputCb == nullptr);
     assert(mOnRecvCb == nullptr);
+#endif
 }
 
-void IConn::Flush(uint64_t now) {
-    mStat.Flush();
-}
-
-void IConn::afterInput(ssize_t nread) {
-    mStat.afterInput(nread);
-}
-
-void IConn::afterSend(ssize_t nread) {
-    mStat.afterSend(nread);
-}
-
-void IConn::DataStat::afterInput(ssize_t nread) {
-    if (nread > 0) {
-        curr_in++;
-    }
+void IConn::DataStat::Flush() {
+    mAlive = (prev_in != curr_in && prev_out != curr_out);
+    prev_in = curr_in;
+    prev_out = curr_out;
 }
 
 void IConn::DataStat::afterSend(ssize_t nread) {
@@ -76,11 +63,8 @@ void IConn::DataStat::afterSend(ssize_t nread) {
     }
 }
 
-bool IConn::DataStat::Alive() {
-    return (prev_in != curr_in && prev_out != curr_out);
-}
-
-void IConn::DataStat::Flush() {
-    prev_in = curr_in;
-    prev_out = curr_out;
+void IConn::DataStat::afterInput(ssize_t nread) {
+    if (nread > 0) {
+        curr_in++;
+    }
 }

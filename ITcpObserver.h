@@ -9,6 +9,6 @@ struct TcpInfo;
 
 class ITcpObserver {
 public:
-    virtual bool OnFinOrRst(const TcpInfo &info) = 0;
+    virtual bool OnTcpFinOrRst(const TcpInfo &info) = 0;
 };
 #endif //RSOCK_TCPOBSERVER_H

@@ -5,11 +5,10 @@
 #include <cstdlib>
 #include "plog/Log.h"
 #include "SubGroup.h"
-#include "../util/rsutil.h"
 #include "../conn/ConnInfo.h"
 #include "SConn.h"
-#include "../util/rhash.h"
 #include "../conn/INetGroup.h"
+#include "../util/rsutil.h"
 
 using namespace std::placeholders;
 
@@ -17,7 +16,6 @@ SubGroup::SubGroup(const std::string &groupId, uv_loop_t *loop, const struct soc
                    INetGroup *fakeNetGroup, IConn *btm) : IAppGroup(groupId, fakeNetGroup, btm) {
     mLoop = loop;
     mTarget = new_addr(target);
-    mHead.id_buf = Str2IdBuf(groupId);
 }
 
 void SubGroup::Close() {
@@ -35,16 +33,16 @@ int SubGroup::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
         EncHead *head = info->head;
         assert(head);
 
-        auto key = ConnInfo::BuildConnKey(info->dst, head->conv);
+        auto key = ConnInfo::BuildConvKey(info->dst, head->Conv());
         auto conn = ConnOfKey(key);
         if (!conn) {
-            conn = newConn(key, head->conv);
+            conn = newConn(key, head->Conv());
         }
         if (conn) {
             return conn->Input(nread, rbuf);
         }
         LOGD << "no such conn: " << key;
-        return -1;
+        return SendConvRst(head->Conv());
     }
     return nread;
 }
@@ -68,7 +66,7 @@ IConn *SubGroup::newConn(const std::string &key, uint32_t conv) {
 
 int SubGroup::sconnSend(ssize_t nread, const rbuf_t &rbuf) {
     SConn *conn = static_cast<SConn *>(rbuf.data);
-    mHead.conv = conn->Conv();
+    mHead.SetConv(conn->Conv());
     const rbuf_t buf = new_buf(nread, rbuf, &mHead);
     return Send(nread, buf);
 }

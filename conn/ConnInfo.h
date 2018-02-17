@@ -23,21 +23,25 @@ struct ConnInfo {
 
     virtual bool IsUdp() const { return udp; }
 
+    virtual void SetUdp(bool isUdp) { udp = isUdp; }
+
     virtual char *Encode(char *buf, int len) const;
 
+    char *EncodeBase(char *buf, int len) const;;
+
     virtual const char *Decode(const char *buf, int len);
+
+    const char *DecodeBase(const char *buf, int len);;
 
     static std::string BuildKey(const ConnInfo &info);
 
     static std::string KeyForUdpBtm(uint32_t src, uint16_t sp);
 
-    static std::string BuildConnKey(uint32_t dst, uint32_t conv);
+    static std::string BuildConvKey(uint32_t dst, uint32_t conv);
 
     static std::string BuildAddrKey(const sockaddr *addr);
 
     virtual std::string ToStr() const;
-
-    virtual bool EqualTo(const ConnInfo &info) const;
 
     ConnInfo() = default;
 

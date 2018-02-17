@@ -22,7 +22,7 @@ public:
 
     void Close() override;
 
-    bool OnFinOrRst(const TcpInfo &info) override;
+    bool OnTcpFinOrRst(const TcpInfo &info) override;
 
 private:
     IConn *newConn(const std::string &groupId, uv_loop_t *loop, const struct sockaddr *target, const ConnInfo &info);

@@ -19,6 +19,7 @@ public:
     INetGroup(const std::string &groupId, uv_loop_t *loop);
 
     using NetConnErrCb = std::function<void(const ConnInfo &info)>;
+    using NoConnCb = std::function<void(const ConnInfo &info)>;
 
     int Init() override;
 
@@ -38,30 +39,26 @@ public:
     // flush detect error
     bool OnConnDead(IConn *conn) override;
 
+    void SetNonConnCb(const NoConnCb &cb);
+
 private:
     using IGroup::AddConn;
 
     inline void netConnErr(const ConnInfo &info);
+
+    inline void onNoConn(const ConnInfo &info);
 
     void handleMessage(const Handler::Message &message);
 
     // netconn notify
     void childConnErrCb(INetConn *conn, int err);
 
-    inline void setupTimer();
-
-    inline void destroyTimer();
-
-    static void timer_cb(uv_timer_t *timer);
-
 private:
     static const int CONN_ERR = 0;
-    uv_timer_t *mFlushTimer = nullptr;
     uv_loop_t *mLoop = nullptr;
     Handler::SPHandler mHandler = nullptr;
     NetConnErrCb mErrCb = nullptr;
-
-    const uint64_t FLUSH_INTERVAL = 2000;    // 2s
+    NoConnCb mNoConnCb = nullptr;
 };
 
 
