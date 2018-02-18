@@ -103,17 +103,12 @@ void IGroup::Flush(uint64_t now) {
 }
 
 bool IGroup::Alive() {
-    return IConn::Alive();
-//    if (!IConn::Alive()) {
-//        return false;
-//    }
-//
-//    for (auto &e: mConns) {
-//        if (e.second->Alive()) {
-//            return true;
-//        }
-//    }
-//    return false;
+    for (auto &e: mConns) {
+        if (e.second->Alive()) {
+            return true;
+        }
+    }
+    return false;
 }
 
 std::map<std::string, IConn *> &IGroup::GetAllConns() {
