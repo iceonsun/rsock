@@ -199,12 +199,11 @@ CConn *ClientGroup::newConn(const std::string &key, const struct sockaddr *addr,
     CConn *conn = new CConn(key, addr, conv);
     auto outfn = std::bind(&ClientGroup::cconSend, this, _1, _2);
     auto recvfn = std::bind(&ClientGroup::subconnRecv, this, _1, _2);
+    conn->Init();
 
     AddConn(conn, outfn, recvfn);
     mConvMap.insert({conv, conn});
 
-    int nret = conn->Init();
-    assert(nret == 0);
     return conn;
 }
 

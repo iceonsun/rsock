@@ -110,6 +110,12 @@ void CSockApp::TcpDialAsyncCb(INetConn *conn, const ConnInfo &info) {
     assert(clientGroup);
     LOGD << "reconnecting conn " << info.ToStr() << ((conn != nullptr) ? " succeeds." : "failed");
     if (conn) {
+        if (conn->Init()) {
+            LOGE << "conn " << conn->ToStr() << " init failed";
+            conn->Close();
+            delete conn;
+            return;
+        }
         clientGroup->GetNetGroup()->AddNetConn(conn);
     }
 }
