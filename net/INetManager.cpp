@@ -123,6 +123,6 @@ void INetManager::Flush(uint64_t now) {
     mTcpAckPool->Flush(now);
 }
 
-INetConn *INetManager::BindUdp(const ConnInfo &info) {
+INetConn *INetManager::DialUdp(const ConnInfo &info) {
     return NetUtil::CreateBtmUdpConn(mLoop, info);
 }

@@ -26,6 +26,8 @@ public:
 
     bool RemoveConn(IConn *conn) override;
 
+    const std::string &ToStr() override;
+
 private:
     int subconnRecv(ssize_t nread, const rbuf_t &rbuf);
 

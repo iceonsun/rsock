@@ -52,7 +52,7 @@ IConn::~IConn() {
 }
 
 void IConn::DataStat::Flush() {
-    mAlive = (prev_in != curr_in && prev_out != curr_out);
+    mAlive = (prev_in != curr_in || prev_out != curr_out);
     prev_in = curr_in;
     prev_out = curr_out;
 }

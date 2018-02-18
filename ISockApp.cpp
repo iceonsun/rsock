@@ -229,7 +229,7 @@ std::vector<INetConn *> ISockApp::createUdpConns(uint32_t src, const std::vector
     for (int i = 0; i < n; i++) {
         info.sp = ports[i];
         info.dp = svr_ports[i];
-        auto conn = mNetManager->BindUdp(info);    // todo: add tcp later
+        auto conn = mNetManager->DialUdp(info);    // todo: add tcp later
         if (nullptr == conn) {
             LOGE << "dial udp failed";
             continue;

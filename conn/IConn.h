@@ -37,6 +37,8 @@ public:
 
     virtual const std::string &Key() { return mKey; }
 
+    virtual const std::string &ToStr() { return mKey; }
+
     // if no data send/input since last check, return true.
     virtual void Flush(uint64_t now) { mStat.Flush(); };
 

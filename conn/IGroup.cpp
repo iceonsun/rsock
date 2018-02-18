@@ -86,14 +86,14 @@ void IGroup::Flush(uint64_t now) {
 
     // remove dead conns first
     for (auto &e: fails) {
-        LOGV << "conn " << e.second->Key() << " is dead";
+        LOGV << "conn " << e.second->ToStr() << " is dead";
         if (!OnConnDead(e.second)) {
             CloseConn(e.second);
         }
     }
 
     if (mConns.empty()) {
-        LOGD << "group: " << Key() << ", all conns are dead";
+        LOGD << "group: " << ToStr() << ", all conns are dead";
     }
 
     // then flush

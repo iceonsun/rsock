@@ -11,8 +11,8 @@
 
 class SubGroup : public IAppGroup {
 public:
-    SubGroup(const std::string &groupId, uv_loop_t *loop, const struct sockaddr *target,
-             INetGroup *fakeNetGroup, IConn *btm);
+    SubGroup(const std::string &groupId, uv_loop_t *loop, const struct sockaddr *target, INetGroup *fakeNetGroup,
+                 IConn *btm, const std::string &printableStr = "");
 
     void Close() override;
 
@@ -24,6 +24,7 @@ private:
     int sconnSend(ssize_t nread, const rbuf_t &rbuf);
 
 private:
+
     uv_loop_t *mLoop = nullptr;
     struct sockaddr *mTarget = nullptr;
 };

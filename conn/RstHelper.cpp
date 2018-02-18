@@ -33,7 +33,7 @@ void RstHelper::SetOutputCb(const RstHelper::OutCallback &cb) {
 }
 
 int RstHelper::doSend(ssize_t nread, const rbuf_t &rbuf, uint8_t cmd) {
-    LOGV << "cmd: " << cmd;
+    LOGV << "cmd: " << (int)cmd;
     if (mOutCb) {
         return mOutCb(nread, rbuf, cmd);
     }
@@ -41,7 +41,7 @@ int RstHelper::doSend(ssize_t nread, const rbuf_t &rbuf, uint8_t cmd) {
 }
 
 int RstHelper::Input(ssize_t nread, const rbuf_t &rbuf, uint8_t cmd) {
-    LOGV << "cmd: " << cmd;
+    LOGV << "cmd: " << (int) cmd;
     const char *base = rbuf.base;
     ConnInfo *info = static_cast<ConnInfo *>(rbuf.data);
     if (EncHead::TYPE_CONV_RST == cmd) {

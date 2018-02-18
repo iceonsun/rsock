@@ -15,7 +15,7 @@ using namespace std::placeholders;
 
 ClientGroup::ClientGroup(const std::string &groupId, const std::string &listenUnPath, const std::string &listenUdpIp,
                          uint16_t listenUdpPort, uv_loop_t *loop, INetGroup *fakeGroup, IConn *btm)
-        : IAppGroup(groupId, fakeGroup, btm) {
+        : IAppGroup(groupId, fakeGroup, btm, "ClientGroup") {
     assert(fakeGroup != nullptr);
     if (!listenUdpIp.empty()) {
         mUdpAddr = new_addr4(listenUdpIp.c_str(), listenUdpPort);
@@ -195,7 +195,7 @@ void ClientGroup::onLocalRecv(ssize_t nread, const char *base, const struct sock
 }
 
 CConn *ClientGroup::newConn(const std::string &key, const struct sockaddr *addr, uint32_t conv) {
-    LOGD << "new cconn:" << key;
+    LOGD << "new cconn:" << key << ", conv: " << conv;
     CConn *conn = new CConn(key, addr, conv);
     auto outfn = std::bind(&ClientGroup::cconSend, this, _1, _2);
     auto recvfn = std::bind(&ClientGroup::subconnRecv, this, _1, _2);
@@ -228,3 +228,7 @@ int ClientGroup::cconSend(ssize_t nread, const rbuf_t &rbuf) {
     return Send(nread, buf);
 }
 // todo: override Alive to enable auto restart
+
+const std::string &ClientGroup::ToStr() {
+    return IConn::ToStr();
+}

@@ -14,12 +14,18 @@
 
 using namespace std::placeholders;
 
-IAppGroup::IAppGroup(const std::string &groupId, INetGroup *fakeNetGroup, IConn *btm) : IGroup(groupId, btm) {
+IAppGroup::IAppGroup(const std::string &groupId, INetGroup *fakeNetGroup, IConn *btm,
+                     const std::string &printableStr) : IGroup(groupId, btm) {
     mFakeNetGroup = fakeNetGroup;
     assert(mFakeNetGroup);
 
     mHead.SetIdBuf(Str2IdBuf(groupId));
     mRstHelper = new RstHelper();
+    if (printableStr.empty()) {
+        mPrintableStr = groupId;
+    } else {
+        mPrintableStr = printableStr + ", groupId: " + groupId;
+    }
 }
 
 int IAppGroup::Init() {
@@ -155,4 +161,8 @@ int IAppGroup::onPeerConvRst(const ConnInfo &src, uint32_t rstConv) {
         return 0;
     }
     return -1;
+}
+
+const std::string &IAppGroup::ToStr() {
+    return mPrintableStr;
 }

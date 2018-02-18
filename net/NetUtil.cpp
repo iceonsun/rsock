@@ -24,7 +24,9 @@ BtmUdpConn *NetUtil::CreateBtmUdpConn(uv_loop_t *loop, const ConnInfo &info) {
         uv_close(reinterpret_cast<uv_handle_t *>(udp), close_cb);
         return nullptr;
     }
-    BtmUdpConn *btm = new BtmUdpConn(ConnInfo::KeyForUdpBtm(info.src, info.sp), udp, info);
+    ConnInfo selfInfo(info);
+    GetUdpSelfInfo(selfInfo, udp);
+    BtmUdpConn *btm = new BtmUdpConn(ConnInfo::KeyForUdpBtm(selfInfo.src, selfInfo.sp), udp, selfInfo);
     return btm;
 }
 

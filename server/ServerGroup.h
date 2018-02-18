@@ -24,6 +24,8 @@ public:
 
     bool OnTcpFinOrRst(const TcpInfo &info) override;
 
+    const std::string &ToStr() override;
+
 private:
     IConn *newConn(const std::string &groupId, uv_loop_t *loop, const struct sockaddr *target, const ConnInfo &info);
 

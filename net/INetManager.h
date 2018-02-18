@@ -38,7 +38,7 @@ public:
 
     INetManager &operator=(const INetManager &) = delete;
 
-    INetConn *BindUdp(const ConnInfo &info);
+    INetConn *DialUdp(const ConnInfo &info);
 
 protected:
     virtual int add2PoolAutoClose(INetConn *conn);

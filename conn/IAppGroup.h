@@ -19,7 +19,8 @@ class RstHelper;
 
 class IAppGroup : public IGroup, public ITcpObserver {
 public:
-    IAppGroup(const std::string &groupId, INetGroup *fakeNetGroup, IConn *btm);
+    IAppGroup(const std::string &groupId, INetGroup *fakeNetGroup, IConn *btm,
+                  const std::string &printableStr = "");
 
     int Init() override;
 
@@ -45,6 +46,8 @@ public:
 
     virtual int SendNetConnRst(const ConnInfo &info);
 
+    const std::string &ToStr() override;
+
 protected:
     virtual int onRstConnSend(ssize_t nread, const rbuf_t &rbuf, uint8_t cmd);
 
@@ -61,6 +64,7 @@ protected:
     EncHead mHead;
 
 private:
+    std::string mPrintableStr;
     RstHelper *mRstHelper = nullptr;
     INetGroup *mFakeNetGroup = nullptr;
 };

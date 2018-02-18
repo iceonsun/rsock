@@ -40,6 +40,8 @@ std::string Addr2Str(const struct sockaddr *addr);
 
 int GetTcpInfo(ConnInfo &info, uv_tcp_t *tcp);
 
+int GetUdpSelfInfo(ConnInfo &info, uv_udp_t *udp);
+
 // replace inet_ntoa because it's not thread safe
 std::string InAddr2Ip(in_addr addr);
 

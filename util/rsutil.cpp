@@ -241,6 +241,19 @@ int GetTcpInfo(ConnInfo &info, uv_tcp_t *tcp) {
     return 0;
 }
 
+
+int GetUdpSelfInfo(ConnInfo &info, uv_udp_t *udp) {
+    SA4 self = {0};
+    int socklen = sizeof(SA4);
+    int nret = uv_udp_getsockname(udp, (SA *) &self, &socklen);
+    if (nret) {
+        return nret;
+    }
+    info.src = self.sin_addr.s_addr;
+    info.sp = ntohs(self.sin_port);
+    return 0;
+}
+
 std::string InAddr2Ip(in_addr addr) {
     std::string ip;
     auto iaddr = addr.s_addr;

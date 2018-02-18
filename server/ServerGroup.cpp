@@ -53,7 +53,7 @@ int ServerGroup::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
 IConn *ServerGroup::newConn(const std::string &groupId, uv_loop_t *loop, const struct sockaddr *target,
                             const ConnInfo &info) {
     auto fakenet = new SNetGroup(groupId, loop, mNetManager);
-    auto conn = new SubGroup(groupId, loop, target, fakenet, nullptr);
+    auto conn = new SubGroup(groupId, loop, target, fakenet, nullptr, GetDstAddrStr(info));
     LOGD << "new group: " << GetDstAddrStr(info) << ", groupId: " << groupId;
     if (conn->Init()) {
         conn->Close();
@@ -81,4 +81,8 @@ bool ServerGroup::OnTcpFinOrRst(const TcpInfo &info) {
         }
     }
     return false;
+}
+
+const std::string &ServerGroup::ToStr() {
+    return "ServerGroup";
 }
