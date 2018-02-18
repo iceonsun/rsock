@@ -10,6 +10,7 @@ IConn::IConn(const std::string &key) {
 }
 
 int IConn::Init() {
+    mInited = true;
     return 0;
 }
 
@@ -19,12 +20,14 @@ void IConn::Close() {
 }
 
 int IConn::Send(ssize_t nread, const rbuf_t &rbuf) {
+    assert(mInited);
     int n = Output(nread, rbuf);
     afterSend(n);
     return n;
 }
 
 int IConn::Output(ssize_t nread, const rbuf_t &rbuf) {
+    assert(mInited);
     if (mOutputCb) {
         return mOutputCb(nread, rbuf);
     }

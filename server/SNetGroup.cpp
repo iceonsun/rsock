@@ -22,6 +22,12 @@ INetConn *SNetGroup::CreateNetConn(const std::string &key, const ConnInfo *info)
     }
     auto c = mNetManager->TransferConn(key);
     if (c) {
+        if (c->Init()) {
+            LOGE << "conn " << c->ToStr() << " init failed";
+            c->Close();
+            delete c;
+            return nullptr;
+        }
         return c;
     }
 

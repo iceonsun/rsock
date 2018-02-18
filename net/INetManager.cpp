@@ -34,6 +34,8 @@ int INetManager::Add2Pool(INetConn *conn, bool closeIfFail) {
             LOGV << "Connection  " << c->Key() << " add to pool";
             // during tcp 3-way handshake. client will receive pkt with SYN set. server will receive pkt with SYN && ACK set.
             // seq and ack for both side will remain
+
+            // caution: this cannot be exactly right. It may cause indefinite ack. but why??
             c->SetISN(tcpInfo.ack + 1); // for client, this may be 1 larger than should be. but it has no effect on tcp
             c->SetAckISN(tcpInfo.seq + 1);
             uint64_t expireMs = uv_now(mLoop) + POOL_PERSIST_MS;

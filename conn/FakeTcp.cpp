@@ -38,7 +38,8 @@ void FakeTcp::Close() {
 int FakeTcp::Output(ssize_t nread, const rbuf_t &rbuf) {
     int n = INetConn::Output(nread, rbuf);
     if (n >= 0) {
-        mInfo.UpdateSeq((int) nread + mInfo.seq + RConn::HEAD_SIZE);    // todo: when add aes or encrpytion, here need to change
+        // todo: when add aes or encrpytion, here need to change
+        mInfo.UpdateSeq((int) nread + mInfo.seq + RConn::HEAD_SIZE);
     }
     return n;
 }
@@ -61,6 +62,7 @@ int FakeTcp::OnRecv(ssize_t nread, const rbuf_t &buf) {
 }
 
 void FakeTcp::read_cb(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
+    // this may never receive any packets.
     if (nread < 0 && nread != UV_ECANCELED) {
         FakeTcp *conn = static_cast<FakeTcp *>(stream->data);
         LOGE << "conn " << conn->Key() << " err: " << uv_strerror(nread);

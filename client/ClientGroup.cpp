@@ -229,6 +229,6 @@ int ClientGroup::cconSend(ssize_t nread, const rbuf_t &rbuf) {
 }
 // todo: override Alive to enable auto restart
 
-const std::string &ClientGroup::ToStr() {
+const std::string ClientGroup::ToStr() {
     return IConn::ToStr();
 }

@@ -83,6 +83,6 @@ bool ServerGroup::OnTcpFinOrRst(const TcpInfo &info) {
     return false;
 }
 
-const std::string &ServerGroup::ToStr() {
+const std::string ServerGroup::ToStr() {
     return "ServerGroup";
 }

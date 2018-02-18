@@ -163,6 +163,6 @@ int IAppGroup::onPeerConvRst(const ConnInfo &src, uint32_t rstConv) {
     return -1;
 }
 
-const std::string &IAppGroup::ToStr() {
+const std::string IAppGroup::ToStr() {
     return mPrintableStr;
 }

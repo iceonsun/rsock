@@ -37,7 +37,8 @@ public:
 
     virtual const std::string &Key() { return mKey; }
 
-    virtual const std::string &ToStr() { return mKey; }
+    // if return reference, it may crush if subclass return string on allocated stack
+    virtual const std::string ToStr() { return mKey; }
 
     // if no data send/input since last check, return true.
     virtual void Flush(uint64_t now) { mStat.Flush(); };
@@ -71,6 +72,7 @@ private:
     };
 
 private:
+    bool mInited = false;
     DataStat mStat;
     IConnCb mOutputCb = nullptr;
     IConnCb mOnRecvCb = nullptr;

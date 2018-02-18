@@ -46,7 +46,7 @@ public:
 
     virtual int SendNetConnRst(const ConnInfo &info);
 
-    const std::string &ToStr() override;
+    const std::string ToStr() override;
 
 protected:
     virtual int onRstConnSend(ssize_t nread, const rbuf_t &rbuf, uint8_t cmd);
