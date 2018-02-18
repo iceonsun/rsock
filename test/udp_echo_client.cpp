@@ -4,6 +4,7 @@
 
 
 #include <uv.h>
+#include <cstring>
 #include <cstdlib>
 #include "../rcommon.h"
 
