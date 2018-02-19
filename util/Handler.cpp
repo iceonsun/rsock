@@ -2,8 +2,11 @@
 // Created on 2/1/18.
 //
 
-#include <algorithm>
 #include <cassert>
+
+#include <algorithm>
+#include <vector>
+#include <random>
 #include "Handler.h"
 
 Handler::SPHandler Handler::NewHandler(uv_loop_t *loop) {
@@ -21,52 +24,62 @@ Handler::Handler(uv_loop_t *loop, const Handler::Callback &cb) {
     assert(loop);
     mLoop = loop;
     mCallback = cb;
-    initIdle();
-    setDirty(false);
 }
 
 Handler::~Handler() {
     Close();
 }
 
-void Handler::initIdle() {
-    uv_idle_init(mLoop, &mIdle);
-    mIdle.data = this;
-}
-
-void Handler::destroyIdle() {
-    uv_idle_stop(&mIdle);
-}
-
 // is ensured dirty by idle_cb
-void Handler::OnIdle() {
-    if (!mTaskList.empty() || !mMessageList.empty()) {
-        uint64_t now = now_ms();
-        Task task;
-        Message msg;
-        {
-            std::lock_guard<std::mutex> lk(mMutex);
-            if (!mTaskList.empty()) {
-                if (mTaskList[0].mExpireTs <= now) {
-                    task = mTaskList[0].mTask;
-                    mTaskList.pop_front();
-                }
-            }
-            if (!mMessageList.empty()) {
-                msg = mMessageList.front();
-                mMessageList.pop_front();
-            }
+void Handler::OnTimeout() {
+    destroyTimer();
 
-            if (mMessageList.empty() && mTaskList.empty()) {
-                setDirty(false);
+    uint64_t now = now_ms();
+    std::vector<Task> taskList;
+    std::vector<Message> messageList;
+    {
+        std::lock_guard<std::mutex> lk(mMutex);
+
+        if (mMessageList.empty() && mTaskList.empty()) {  // empty
+            return;
+        }
+
+        if (mNextTimeoutMs > now + INTERVAL) { // not yet time
+            updateNextMsAndTimer();
+            return;
+        }
+
+        assert(mNextTimeoutMs != 0);    // should not be zero
+
+        for (auto it = mTaskList.begin(); it != mTaskList.end();) {
+            int64_t df = it->expireMs - now;
+            if (df < INTERVAL) {
+                taskList.emplace_back(*it);
+                it = mTaskList.erase(it);
+            } else {
+                it++;
             }
         }
-        if (task) {
-            task();
+
+        for (auto it = mMessageList.begin(); it != mMessageList.end();) {
+            int64_t df = it->expireMs - now;
+            if (df < INTERVAL) {
+                messageList.emplace_back(*it);
+                it = mMessageList.erase(it);
+            } else {
+                it++;
+            }
         }
-        if (mCallback && msg) {
-            mCallback(msg);
-        }
+
+        updateNextMsAndTimer();
+    }
+
+    for (auto &e: taskList) {
+        e.mTask();
+    }
+
+    for (auto &e: messageList) {
+        mCallback(e);
     }
 }
 
@@ -75,17 +88,26 @@ bool Handler::doPost(const Handler::Task &task, uint64_t ts) {
         return false;
     }
 
-    TaskHelper taskHelper(task, ts);
+    if (ts < now_ms()) {
+        ts = now_ms();
+    }
+
     {
         std::lock_guard<std::mutex> lk(mMutex);
+        if (std::find(mTaskList.begin(), mTaskList.end(), task) != mTaskList.end()) {   // already in
+            return false;
+        }
+
         auto it = mTaskList.begin();
         for (; it != mTaskList.end(); it++) {
-            if (it->mExpireTs > ts) {
+            if (it->expireMs > ts) {
                 break;
             }
         }
-        mTaskList.emplace(it, taskHelper);
-        setDirty(true);
+        auto newTask = task;
+        newTask.expireMs = ts;
+        mTaskList.emplace(it, newTask);
+        updateNextMsAndTimer();
     }
     return true;
 }
@@ -107,9 +129,7 @@ void Handler::RemoveAll() {
     std::lock_guard<std::mutex> lk(mMutex);
     mTaskList.clear();
     mMessageList.clear();
-    destroyIdle();
-    mIdleAlive = false;
-    setDirty(false);
+    destroyTimer();
 }
 
 void Handler::Post(const Handler::Task &task) {
@@ -133,10 +153,6 @@ Handler::Task Handler::PostDelayed(const Handler::ITask &task, uint64_t delay) {
 }
 
 void Handler::PostAtTime(const Handler::Task &task, uint64_t ts) {
-    uint64_t now = now_ms();
-    if (ts <= now) {
-        ts = now;
-    }
     doPost(task, ts);
 }
 
@@ -146,11 +162,9 @@ Handler::Task Handler::PostAtTime(const Handler::ITask &task, uint64_t ts) {
     return aTask;
 }
 
-void Handler::idle_cb(uv_idle_t *idl) {
-    Handler *handler = static_cast<Handler *>(idl->data);
-    if (handler->mDirty) {
-        handler->OnIdle();
-    }
+void Handler::timer_cb(uv_timer_t *timer) {
+    Handler *handler = static_cast<Handler *>(timer->data);
+    handler->OnTimeout();
 }
 
 void Handler::Close() {
@@ -166,15 +180,42 @@ ssize_t Handler::Size() {
     return mTaskList.size() + mMessageList.size();
 }
 
-Handler::Message Handler::SendMessage(Handler::Message &message) {
+bool Handler::SendMessage(const Message &message) {
+    return SendMessageAtTime(message, now_ms());
+}
+
+bool Handler::SendMessageDelayed(const Handler::Message &msg, uint64_t delay) {
+    return SendMessageAtTime(msg, now_ms() + delay);
+}
+
+bool Handler::SendMessageAtTime(const Handler::Message &msg, uint64_t ts) {
     if (mCallback) {
-        std::lock_guard<std::mutex> lk(mMutex);
-        mMessageList.push_back(message);
-        setDirty(true);
+        Message message = msg;
+        if (ts < now_ms()) {
+            ts = now_ms();
+        }
+        message.expireMs = ts;
+        message.handler = this;
+        {
+            std::lock_guard<std::mutex> lk(mMutex);
+            if (std::find(mMessageList.begin(), mMessageList.end(), message) != mMessageList.end()) {   // already in
+                return false;
+            }
+
+            auto it = mMessageList.begin();
+            for (; it != mMessageList.end(); it++) {
+                if (it->expireMs > ts) {
+                    break;
+                }
+            }
+            mMessageList.insert(it, message);
+            updateNextMsAndTimer();
+        }
+        return true;
     } else {
-        throw std::invalid_argument("HandleMessge callback is null");
+        throw std::invalid_argument("HandleMessage callback is null");
     }
-    return message;
+    return false;
 }
 
 Handler::Message Handler::ObtainMessage(int what) {
@@ -230,45 +271,79 @@ bool Handler::RemoveMessages(int what) {
     return ok;
 }
 
-// setDirty is already protected by mutex
-void Handler::setDirty(bool dirty) {
-    if (dirty && !mDirty) {
-        mDirty = true;
-        if (!mIdleAlive) {
-            mIdleAlive = true;
-            startIdle(&mIdle, idle_cb);
-        }
-    } else if (!dirty && mDirty) {
-        mDirty = false;
-        if (mIdleAlive) {
-            mIdleAlive = false;
-            stopIdle(&mIdle);
-        }
-    }
-}
-
-void Handler::startIdle(uv_idle_t *idle, uv_idle_cb cb) {
-    uv_idle_start(idle, cb);
-}
-
-void Handler::stopIdle(uv_idle_t *idle) {
-    uv_idle_stop(idle);
-}
-
 uint64_t Handler::now_ms() {
     struct timeval val;
-    gettimeofday(&val, 0);
+    gettimeofday(&val, nullptr);
     return ((uint64_t) val.tv_sec * 1000) + val.tv_usec / 1000;
 }
 
-std::default_random_engine Handler::Task::RAND_ENGINE;
+void Handler::updateNextMsAndTimer() {
+    if (mTaskList.empty() && mMessageList.empty()) {
+        mNextTimeoutMs = 0;
+        destroyTimer();
+        return;
+    }
+
+    uint64_t ts = 0;
+    if (!mTaskList.empty()) {
+        ts = mTaskList.front().expireMs;
+    }
+
+    if (!mMessageList.empty()) {
+        uint64_t ts2 = mMessageList.front().expireMs;
+        if (ts) {
+            ts = ts < ts2 ? ts : ts2;
+        } else {
+            ts = ts2;
+        }
+    }
+
+    setupOneShotTimer(ts, mNextTimeoutMs);
+    mNextTimeoutMs = ts;
+}
+
+void Handler::setupOneShotTimer(uint64_t ts, uint64_t prev_timeout_ts) {
+    if (mOneShotTimer) {
+        // the new timeout ts is earlier than previous one. destroy it and setup a new one
+        if (ts + INTERVAL < prev_timeout_ts) {
+            destroyTimer();
+        } else {
+            return;
+        }
+    }
+
+    int64_t df = ts - now_ms();
+    if (df < 0) {
+        df = 0;
+    }
+
+    mOneShotTimer = static_cast<uv_timer_t *>(malloc(sizeof(uv_timer_t)));
+    uv_timer_init(mLoop, mOneShotTimer);
+    mOneShotTimer->data = this;
+    uv_timer_start(mOneShotTimer, timer_cb, df, 0);
+}
+
+void Handler::destroyTimer() {
+    if (mOneShotTimer) {
+        uv_timer_stop(mOneShotTimer);
+        uv_close(reinterpret_cast<uv_handle_t *>(mOneShotTimer), handle_close_cb);
+        mOneShotTimer = nullptr;
+    }
+}
+
+void Handler::handle_close_cb(uv_handle_t *handle) {
+    free(handle);
+}
+
 
 Handler::Task::Task(const Handler::ITask &task) : Task() {
     mTask = task;
 }
 
 Handler::Task::Task() {
-    mKey = rand();
+    auto seed = (long)((void*)this);  // use address of object seed will get different seed
+    thread_local std::default_random_engine RAND_ENGINE(seed);
+    mKey = RAND_ENGINE();
 }
 
 Handler::Message::Message(Handler *handler, int what, int arg1, const std::string &msg, void *obj) {

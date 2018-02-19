@@ -5,11 +5,10 @@
 #ifndef RPIPE_HANDLER_H
 #define RPIPE_HANDLER_H
 
-#include <atomic>
 #include <deque>
 #include <mutex>
-#include <random>
 #include <memory>
+#include <string>
 #include <sys/time.h>
 #include "uv.h"
 
@@ -45,11 +44,14 @@ public:
             return mTask;
         }
 
+        friend class Handler;
+
     private:
-        static std::default_random_engine RAND_ENGINE;
 
         ITask mTask = nullptr;
         int mKey = 0;
+
+        uint64_t expireMs = 0;
     };
 
     struct Message {
@@ -72,12 +74,17 @@ public:
 
         inline operator bool() const { return handler != nullptr; }
 
+        friend class Handler;
+
     public:
         int what = 0;
         int arg1 = 0;
         std::string msg;
         void *obj = nullptr;
         Handler *handler = nullptr;
+
+    private:
+        uint64_t expireMs = 0;
     };
 
 public:
@@ -123,6 +130,12 @@ public:
     // virtual function is called on dynamic type. while default arguments are base on static type.
     virtual Message ObtainMessage(int what, int arg1, const std::string &msg, void *obj);
 
+    virtual bool SendMessage(const Message &message);
+
+    virtual bool SendMessageDelayed(const Message &msg, uint64_t delay);
+
+    virtual bool SendMessageAtTime(const Message &msg, uint64_t ts);
+
     virtual bool RemoveMessage(const Message &msg);
 
     virtual bool RemoveMessages(int what);
@@ -134,45 +147,30 @@ public:
     static uint64_t now_ms();
 
 protected:
-    virtual Message SendMessage(Message &message);
+    virtual void OnTimeout();
 
-    virtual void OnIdle();
-
-    static inline void startIdle(uv_idle_t *idle, uv_idle_cb cb);
-
-    static inline void stopIdle(uv_idle_t *idle);
+    static void handle_close_cb(uv_handle_t *handle);
 
 private:
-    static void idle_cb(uv_idle_t *idl);
-
     bool doPost(const Task &task, uint64_t ts);
 
-    inline void initIdle();
+    inline void updateNextMsAndTimer();
 
-    inline void destroyIdle();
+    void setupOneShotTimer(uint64_t ts, uint64_t prev_timeout_ts);
 
-    inline void setDirty(bool dirty);
-protected:
-    struct TaskHelper {
-        Task mTask = nullptr;
-        uint64_t mExpireTs = 0;
+    void destroyTimer();
 
-        explicit TaskHelper(const Task &task, uint64_t ts = 0) : mTask(task), mExpireTs(ts) {}
-
-        inline bool operator==(const TaskHelper &taskHelper) const { return mTask == taskHelper.mTask; }
-
-        inline bool operator==(const Task &task) const { return mTask == task; }
-    };
+    static void timer_cb(uv_timer_t *timer);
 
 private:
-    bool mIdleAlive = false;
-    std::atomic_bool mDirty;
-    std::deque<TaskHelper> mTaskList;
+    const int64_t INTERVAL = 10;
+    std::deque<Task> mTaskList;
     std::deque<Message> mMessageList;
-    uv_idle_t mIdle;
     uv_loop_t *mLoop = nullptr;
     std::mutex mMutex;
     Callback mCallback = nullptr;
+    uint64_t mNextTimeoutMs = 0;
+    uv_timer_t *mOneShotTimer = nullptr;
 };
 
 

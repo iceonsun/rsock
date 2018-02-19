@@ -18,8 +18,8 @@ ShotHandler::SPShotHandler ShotHandler::NewShotHandler(uv_loop_t *loop, const Ha
     return sp;
 }
 
-void ShotHandler::OnIdle() {
-    Handler::OnIdle();
+void ShotHandler::OnTimeout() {
+    Handler::OnTimeout();
 
     if (Size() == 0) {
         mSelfRef = nullptr;

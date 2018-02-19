@@ -35,7 +35,7 @@ public:
     void Close() override;
 
 protected:
-    void OnIdle() override;
+    void OnTimeout() override;
 
     static void Deleter(ShotHandler *handler);
 
