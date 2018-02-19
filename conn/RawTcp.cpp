@@ -67,7 +67,7 @@ int RawTcp::Output(ssize_t nread, const rbuf_t &rbuf) {
         assert(info);
 
         return SendRawTcp(mTcpNet, info->src, info->sp, info->dst, info->dp, info->seq, info->ack,
-                          reinterpret_cast<const IUINT8 *>(rbuf.base), nread, mIpId++, mTcp, mIpForTcp, info->flag);
+                          reinterpret_cast<const uint8_t *>(rbuf.base), nread, mIpId++, mTcp, mIpForTcp, info->flag);
     }
 
     return nread;
@@ -94,7 +94,7 @@ int RawTcp::RawInput(u_char *args, const pcap_pkthdr *hdr, const u_char *packet)
 
         ip = (struct ip *) (packet + LIBNET_ETH_H);
     } else if (mDatalink == DLT_NULL) {   // loopback
-        IUINT32 type = 0;
+        uint32_t type = 0;
         decode_uint32(&type, reinterpret_cast<const char *>(packet));
         // the link layer header is a 4-byte field, in host byte order, containing a value of 2 for IPv4 packets
         // https://www.tcpdump.org/linktypes.html
@@ -222,9 +222,9 @@ void RawTcp::pollCb(uv_poll_t *handle, int status, int events) {
 
 
 // only src and dst are network endian. other values are host endian.
-int RawTcp::SendRawTcp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT16 dp, IUINT32 seq, IUINT32 ack,
-                       const IUINT8 *payload, IUINT16 payload_len, IUINT16 ip_id, libnet_ptag_t &tcp,
-                       libnet_ptag_t &ip, IUINT8 tcp_flag) {
+int RawTcp::SendRawTcp(libnet_t *l, uint32_t src, uint16_t sp, uint32_t dst, uint16_t dp, uint32_t seq, uint32_t ack,
+                       const uint8_t *payload, uint16_t payload_len, uint16_t ip_id, libnet_ptag_t &tcp,
+                       libnet_ptag_t &ip, uint8_t tcp_flag) {
     const int DUMY_WIN_SIZE = 65535;
 
     tcp = libnet_build_tcp(
@@ -285,8 +285,8 @@ int RawTcp::SendRawTcp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT1
     return payload_len;
 }
 
-int RawTcp::SendRawUdp(libnet_t *l, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT16 dp, const IUINT8 *payload,
-                       IUINT16 payload_len, IUINT16 ip_id, libnet_ptag_t &udp, libnet_ptag_t &ip) {
+int RawTcp::SendRawUdp(libnet_t *l, uint32_t src, uint16_t sp, uint32_t dst, uint16_t dp, const uint8_t *payload,
+                       uint16_t payload_len, uint16_t ip_id, libnet_ptag_t &udp, libnet_ptag_t &ip) {
     udp = libnet_build_udp(
             sp,         // sp source port
             dp,         // dp destination port

@@ -11,7 +11,7 @@ RTimer::RTimer(uv_loop_t *loop) {
     mLoop = loop;
 }
 
-void RTimer::Start(IUINT32 timeoutMs, IUINT32 repeatMs, const TimeoutCb &cb, void *arg) {
+void RTimer::Start(uint32_t timeoutMs, uint32_t repeatMs, const TimeoutCb &cb, void *arg) {
     if (!mTimer) {
 
         mArg = arg;

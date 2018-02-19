@@ -5,7 +5,10 @@
 #include <cstring>
 #include <ctime>
 #include <cassert>
+
 #include <algorithm>
+#include <string>
+
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
@@ -18,9 +21,9 @@ using u_char = unsigned char;
 
 static bool hash_equal(const HashBufType &hashed_buf, const std::string &key, const char *data, int data_len);
 
-static IINT8 compute_hash(HashBufType &hash, const std::string &key, const char *data, int data_len);
+static int8_t compute_hash(HashBufType &hash, const std::string &key, const char *data, int data_len);
 
-IINT8 compute_hash(HashBufType &hash, const std::string &key, const char *data, int data_len) {
+int8_t compute_hash(HashBufType &hash, const std::string &key, const char *data, int data_len) {
     if (!data || data <= 0) {
         return -1;
     }

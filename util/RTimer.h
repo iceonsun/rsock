@@ -8,7 +8,7 @@
 
 #include <functional>
 #include <uv.h>
-#include "ktype.h"
+#include <cstdint>
 
 class RTimer {
 public:
@@ -16,7 +16,7 @@ public:
 
     explicit RTimer(uv_loop_t *loop);
 
-    void Start(IUINT32 timeoutMs, IUINT32 repeatMs, const TimeoutCb &cb, void *arg = nullptr);
+    void Start(uint32_t timeoutMs, uint32_t repeatMs, const TimeoutCb &cb, void *arg = nullptr);
     void Stop();
 
 protected:

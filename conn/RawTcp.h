@@ -10,7 +10,7 @@
 #include <sys/socket.h>
 #include <libnet.h>
 #include <pcap.h>
-#include "ktype.h"
+#include <cstdint>
 #include "rscomm.h"
 #include "IConn.h"
 
@@ -26,9 +26,9 @@ public:
 
     void Close() override;
 
-    static int SendRawTcp(libnet_t *libnet, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT16 dp, IUINT32 seq, IUINT32 ack,
-                          const IUINT8 *payload, IUINT16 payload_s, IUINT16 ip_id, libnet_ptag_t &tcp,
-                          libnet_ptag_t &ip, IUINT8 tcp_flag);
+    static int SendRawTcp(libnet_t *libnet, uint32_t src, uint16_t sp, uint32_t dst, uint16_t dp, uint32_t seq, uint32_t ack,
+                          const uint8_t *payload, uint16_t payload_s, uint16_t ip_id, libnet_ptag_t &tcp,
+                          libnet_ptag_t &ip, uint8_t tcp_flag);
 
     static void CapInputCb(u_char *args, const pcap_pkthdr *hdr, const u_char *packet);
 
@@ -39,7 +39,7 @@ public:
     int Init() override;
 
 protected:
-    using CMD_TYPE = IUINT8;
+    using CMD_TYPE = uint8_t;
 
     static void pollCb(uv_poll_t *handle, int status, int events);;
 
@@ -47,15 +47,15 @@ protected:
 
 private:
     // reserved
-    static int SendRawUdp(libnet_t *libnet, IUINT32 src, IUINT16 sp, IUINT32 dst, IUINT16 dp, const IUINT8 *payload,
-                          IUINT16 payload_len, IUINT16 ip_id, libnet_ptag_t &udp, libnet_ptag_t &ip);
+    static int SendRawUdp(libnet_t *libnet, uint32_t src, uint16_t sp, uint32_t dst, uint16_t dp, const uint8_t *payload,
+                          uint16_t payload_len, uint16_t ip_id, libnet_ptag_t &udp, libnet_ptag_t &ip);
 
     static const CMD_TYPE CMD_TCP = 1;
 
     // mulithread. const var
     const int mDatalink = DLT_EN10MB;   // default ethernet
 
-    IUINT16 mIpId = 0;
+    uint16_t mIpId = 0;
 
     TcpAckPool *mTcpAckPool = nullptr;
     libnet_t *mTcpNet = nullptr;

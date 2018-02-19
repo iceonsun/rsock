@@ -4,7 +4,7 @@
 
 #include "enc.h"
 
-void big_endian_to_little(IUINT32 i, char *p) {
+void big_endian_to_little(uint32_t i, char *p) {
     // convert to little endian.
     p[3] = (char) (i >> 24 & 0xff);
     p[2] = (char) (i >> 16 & 0xff);
@@ -12,9 +12,9 @@ void big_endian_to_little(IUINT32 i, char *p) {
     p[0] = (char) (i & 0xff);
 }
 
-char *encode_uint32(IUINT32 i, char *p) {
+char *encode_uint32(uint32_t i, char *p) {
     if (is_little_endian()) {
-        *(IUINT32 *) p = i;
+        *(uint32_t *) p = i;
     } else {
         // convert to little endian.
         big_endian_to_little(i, p);
@@ -22,9 +22,9 @@ char *encode_uint32(IUINT32 i, char *p) {
     return p + 4;
 }
 
-char *encode_uint16(IUINT16 i, char *p) {
+char *encode_uint16(uint16_t i, char *p) {
     if (is_little_endian()) {
-        *(IUINT16 *) p = i;
+        *(uint16_t *) p = i;
     } else {
         p[0] = (char) (i & 0xff);
         p[1] = (char) (i >> 8 & 0xff);
@@ -32,14 +32,14 @@ char *encode_uint16(IUINT16 i, char *p) {
     return p + 2;
 }
 
-char *encode_uint8(IUINT8 i, char *p) {
-    *(IUINT8 *) p = i;
+char *encode_uint8(uint8_t i, char *p) {
+    *(uint8_t *) p = i;
     return p + 1;
 }
 
-const char *decode_uint32(IUINT32 *i, const char *p) {
+const char *decode_uint32(uint32_t *i, const char *p) {
     if (is_little_endian()) {
-        *i = ((IUINT32 *) p)[0];
+        *i = ((uint32_t *) p)[0];
     } else {
         char *ptr = (char *) i;
         ptr[0] = p[3];
@@ -50,9 +50,9 @@ const char *decode_uint32(IUINT32 *i, const char *p) {
     return p + 4;
 }
 
-const char *decode_uint16(IUINT16 *i, const char *p) {
+const char *decode_uint16(uint16_t *i, const char *p) {
     if (is_little_endian()) {
-        *i = ((IUINT16 *) p)[0];
+        *i = ((uint16_t *) p)[0];
     } else {
         char *ptr = (char *) i;
         ptr[0] = p[1];
@@ -62,15 +62,15 @@ const char *decode_uint16(IUINT16 *i, const char *p) {
     return p + 2;
 }
 
-const char *decode_uint8(IUINT8 *i, const char *p) {
-    *i = (IUINT8) p[0];
+const char *decode_uint8(uint8_t *i, const char *p) {
+    *i = (uint8_t) p[0];
     return p + 1;
 }
 
 
-IINT8 is_little_endian() {
+int8_t is_little_endian() {
     union {
-        IINT16 i;
+        int16_t i;
         char c[2];
     } u = {0x100};
     return u.c[1] == 0x01;

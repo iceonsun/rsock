@@ -197,7 +197,7 @@ void ISockApp::Close() {
     }
 }
 
-void ISockApp::StartTimer(IUINT32 timeout_ms, IUINT32 repeat_ms) {
+void ISockApp::StartTimer(uint32_t timeout_ms, uint32_t repeat_ms) {
     auto fn = std::bind(&ISockApp::Flush, this, std::placeholders::_1);
     mTimer->Start(timeout_ms, repeat_ms, fn);
 }

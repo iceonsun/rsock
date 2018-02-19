@@ -5,27 +5,27 @@
 #ifndef SOCKNM_ENC_H
 #define SOCKNM_ENC_H
 
-#include "ktype.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-char *encode_uint32(IUINT32 i, char *p);
+#include <stdint.h>
 
-char *encode_uint16(IUINT16 i, char *p);
+char *encode_uint32(uint32_t i, char *p);
 
-char *encode_uint8(IUINT8 i, char *p);
+char *encode_uint16(uint16_t i, char *p);
 
-const char *decode_uint32(IUINT32 *i, const char *p);
+char *encode_uint8(uint8_t i, char *p);
 
-const char *decode_uint16(IUINT16 *i, const char *p);
+const char *decode_uint32(uint32_t *i, const char *p);
 
-const char *decode_uint8(IUINT8 *i, const char *p);
+const char *decode_uint16(uint16_t *i, const char *p);
 
-IINT8 is_little_endian();
+const char *decode_uint8(uint8_t *i, const char *p);
 
-void big_endian_to_little(IUINT32 i, char *p);
+int8_t is_little_endian();
+
+void big_endian_to_little(uint32_t i, char *p);
 
 #ifdef __cplusplus
 }

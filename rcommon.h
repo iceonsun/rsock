@@ -12,6 +12,8 @@
 extern "C" {
 #endif
 
+#include <stdint.h>
+
 typedef struct rbuf_t {
     char *base;
     int len;

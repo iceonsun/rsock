@@ -5,9 +5,7 @@
 #ifndef RSOCK_RHASH_H
 #define RSOCK_RHASH_H
 
-#include <string>
-
-#include "ktype.h"
+#include <cstdint>
 #include "rstype.h"
 
 bool ValidIp4(const std::string &ip);
