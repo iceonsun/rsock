@@ -11,6 +11,7 @@
 #include "../net/ServerNetManager.h"
 #include "../conn/TcpInfo.h"
 #include "../cap/RCap.h"
+#include "../conn/INetConn.h"
 
 SSockApp::SSockApp(uv_loop_t *loop) : ISockApp(true, loop) {}
 
@@ -19,13 +20,16 @@ RCap *SSockApp::CreateCap(RConfig &conf) {
 }
 
 RConn *SSockApp::CreateBtmConn(RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool, int datalink) {
-    // todo: listen tcp later, tcp is listened in ServerNetManager
+    // note: tcp is listened in ServerNetManager
     RConn *rconn = new RConn(conf.param.hashKey, conf.param.dev, loop, ackPool, datalink, true);
-    auto ports = conf.param.capPorts.GetRawList();
-    std::vector<uint16_t> zeros(ports.size(), 0);
-    auto vec = createUdpConns(conf.param.selfCapInt, ports, 0, zeros);
-    for (auto c: vec) {
-        rconn->AddUdpConn(c);
+    // listen udp directly if enabled
+    if (conf.param.type & OM_PIPE_UDP) {
+        auto ports = conf.param.capPorts.GetRawList();
+        std::vector<uint16_t> zeros(ports.size(), 0);
+        auto vec = createUdpConns(conf.param.selfCapInt, ports, 0, zeros);
+        for (auto c: vec) {
+            rconn->AddUdpConn(c);
+        }
     }
 
     return rconn;
@@ -40,5 +44,9 @@ IConn *SSockApp::CreateBridgeConn(RConfig &conf, IConn *btm, uv_loop_t *loop, IN
 }
 
 INetManager *SSockApp::CreateNetManager(RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool) {
-    return new ServerNetManager(loop, conf.param.capPorts, conf.param.selfCapIp, ackPool);
+    auto portList = conf.param.capPorts;
+    if (! (conf.param.type & OM_PIPE_TCP)) {
+        portList = {};
+    }
+    return new ServerNetManager(loop, portList, conf.param.selfCapIp, ackPool);
 }

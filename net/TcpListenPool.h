@@ -11,11 +11,11 @@
 #include "uv.h"
 #include "../util/RPortList.h"
 
-class NetListenPool {
+class TcpListenPool {
 public:
     using NewConnCb = std::function<void(uv_tcp_t *client)>;
 
-    explicit NetListenPool(const RPortList &ports, const std::string &ip, uv_loop_t *loop);
+    explicit TcpListenPool(const RPortList &ports, const std::string &ip, uv_loop_t *loop);
 
     virtual int Init();
 

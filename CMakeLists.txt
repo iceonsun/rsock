@@ -13,7 +13,7 @@ set(SOURCE_FILES rcommon.c RConfig.cpp ISockApp.cpp ITcpObserver.h ITcpInformer.
         conn/INetConn.cpp conn/BtmUdpConn.cpp EncHead.cpp conn/FakeTcp.cpp conn/TcpInfo.cpp conn/INetGroup.cpp
         conn/IGroup.cpp conn/ConnInfo.cpp conn/FakeUdp.cpp conn/IConn.cpp conn/RConn.cpp conn/RawTcp.cpp
         conn/IAppGroup.cpp conn/RstHelper.cpp
-        net/NetUtil.cpp net/ClientNetManager.cpp net/TcpAckPool.cpp net/NetListenPool.cpp net/INetManager.cpp
+        net/NetUtil.cpp net/ClientNetManager.cpp net/TcpAckPool.cpp net/TcpListenPool.cpp net/INetManager.cpp
         net/ServerNetManager.cpp)
 
 set(SVR_SOURCE_FILES ${SOURCE_FILES} server/SConn.cpp server/SSockApp.cpp server/ssock.cpp server/SNetGroup.cpp

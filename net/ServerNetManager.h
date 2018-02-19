@@ -7,7 +7,7 @@
 
 
 #include "INetManager.h"
-#include "NetListenPool.h"
+#include "TcpListenPool.h"
 
 class TcpAckPool;
 
@@ -22,7 +22,7 @@ public:
     virtual void OnNewConnection(uv_tcp_t *tcp);
 
 private:
-    NetListenPool mListenPool;
+    TcpListenPool mListenPool;
 };
 
 

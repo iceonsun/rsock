@@ -22,13 +22,17 @@ RCap *CSockApp::CreateCap(RConfig &conf) {
 
 RConn *CSockApp::CreateBtmConn(RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool, int datalink) {
     auto *rconn = new RConn(conf.param.hashKey, conf.param.dev, loop, ackPool, datalink, false);
-    // dial udp conn. todo: uncomment later
-//    auto svr_ports = conf.param.capPorts.GetRawList();
-//    std::vector<uint16_t > ports(svr_ports.size(), 0);
-//    auto vec = createUdpConns(conf.param.selfCapInt, ports, conf.param.targetCapInt, svr_ports);
-//    for (auto c: vec) {
-//        rconn->AddUdpConn(c);
-//    }
+
+    // add udp btm conn to RConn if udp enabled
+    if (conf.param.type & OM_PIPE_UDP) {
+        auto svr_ports = conf.param.capPorts.GetRawList();
+        std::vector<uint16_t> ports(svr_ports.size(), 0);
+        auto vec = createUdpConns(conf.param.selfCapInt, ports, conf.param.targetCapInt, svr_ports);
+        for (auto c: vec) {
+            rconn->AddUdpConn(c);
+        }
+    }
+
     return rconn;
 }
 
@@ -39,50 +43,62 @@ IConn *CSockApp::CreateBridgeConn(RConfig &conf, IConn *btm, uv_loop_t *loop, IN
     auto group = new CNetGroup(IdBuf2Str(conf.param.id), loop); // test tcp first
     auto fn = std::bind(&CSockApp::OnConnErr, this, std::placeholders::_1);
     group->SetNetConnErrCb(fn);
-    // add udp conns
-    const auto &conns = btmGroup->GetAllConns();
-    for (auto &e: conns) {
-        auto *conn = dynamic_cast<INetConn *>(e.second);
-        auto info = conn->GetInfo();
-        auto key = ConnInfo::BuildKey(*info);
-        INetConn *c = nullptr;
-        if (conn->IsUdp()) {
-            c = new FakeUdp(key, *info);
-            if (c->Init()) {
-                c->Close();
-                delete c;
-                continue;
-            }
-            group->AddNetConn(c);
-        }
-    }
 
-    TcpInfo info;
-    info.src = conf.param.selfCapInt;
-    info.dst = conf.param.targetCapInt;
-    auto dstPorts = conf.param.capPorts.GetRawList();
-
-    auto manager = GetNetManager();
-    auto *clientNetManager = dynamic_cast<ClientNetManager *>(manager);
-    assert(clientNetManager);
-
-    for (auto dp : dstPorts) {
-        info.sp = 0;
-        info.dp = dp;
-        auto c = clientNetManager->DialTcpSync(info);
-        if (c) {
-            if (0 == c->Init()) {
+    // add udp conns immediately if enabled
+    if (conf.param.type & OM_PIPE_UDP) {
+        const auto &conns = btmGroup->GetAllConns();
+        for (auto &e: conns) {
+            auto *conn = dynamic_cast<INetConn *>(e.second);
+            auto info = conn->GetInfo();
+            auto key = ConnInfo::BuildKey(*info);
+            INetConn *c = nullptr;
+            if (conn->IsUdp()) {
+                c = new FakeUdp(key, *info);
+                if (c->Init()) {
+                    c->Close();
+                    delete c;
+                    continue;
+                }
                 group->AddNetConn(c);
-            } else {
-                LOGE << "connection" << c->Key() << " init failed";
-                c->Close();
-                delete c;
             }
-        } else {
-            LOGE << "Dial tcp " << info.ToStr() << " failed";
         }
     }
 
+    // dial tcp conn
+    if (conf.param.type & OM_PIPE_TCP) {
+        TcpInfo info;
+        info.src = conf.param.selfCapInt;
+        info.dst = conf.param.targetCapInt;
+        auto dstPorts = conf.param.capPorts.GetRawList();
+
+        auto manager = GetNetManager();
+        auto *clientNetManager = dynamic_cast<ClientNetManager *>(manager);
+        assert(clientNetManager);
+
+        for (auto dp : dstPorts) {
+            info.sp = 0;
+            info.dp = dp;
+            auto c = clientNetManager->DialTcpSync(info);
+            if (c) {
+                if (0 == c->Init()) {
+                    group->AddNetConn(c);
+                } else {
+                    LOGE << "connection" << c->Key() << " init failed";
+                    c->Close();
+                    delete c;
+                }
+            } else {
+                LOGE << "Dial tcp " << info.ToStr() << " failed";
+            }
+        }
+    }
+
+    if (group->GetAllConns().empty()) {
+        LOGE << "dial failed";
+        group->Close();
+        delete group;
+        return nullptr;
+    }
     return new ClientGroup(IdBuf2Str(conf.param.id), conf.param.selfUnPath, conf.param.localUdpIp,
                            conf.param.localUdpPort, loop, group, btm);
 }

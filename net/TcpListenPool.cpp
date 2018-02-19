@@ -4,16 +4,16 @@
 
 #include <cstdlib>
 #include "plog/Log.h"
-#include "NetListenPool.h"
+#include "TcpListenPool.h"
 #include "../rcommon.h"
 #include "../util/rsutil.h"
 
-NetListenPool::NetListenPool(const RPortList &ports, const std::string &ip, uv_loop_t *loop) : mPorts(ports), mIp(ip) {
+TcpListenPool::TcpListenPool(const RPortList &ports, const std::string &ip, uv_loop_t *loop) : mPorts(ports), mIp(ip) {
     mLoop = loop;
 }
 
 // todo: don't pass port list as constructor argument, but as method argument
-int NetListenPool::Init() {
+int TcpListenPool::Init() {
     if (mNewConnCb == nullptr) {
         LOGE << "new connection callback cannot be null!";
         return -1;
@@ -40,16 +40,16 @@ int NetListenPool::Init() {
     return (mPool.size() == lists.size()) ? 0 : -1;
 }
 
-void NetListenPool::Close() {
+void TcpListenPool::Close() {
     mNewConnCb = nullptr;
     clearPool();
 }
 
-void NetListenPool::SetNewConnCb(const NetListenPool::NewConnCb &cb) {
+void TcpListenPool::SetNewConnCb(const TcpListenPool::NewConnCb &cb) {
     mNewConnCb = cb;
 }
 
-uv_tcp_t *NetListenPool::initTcp(const SA4 *addr) {
+uv_tcp_t *TcpListenPool::initTcp(const SA4 *addr) {
     int nret = 0;
 
     uv_tcp_t *tcp = static_cast<uv_tcp_t *>(malloc(sizeof(uv_tcp_t)));
@@ -73,15 +73,15 @@ uv_tcp_t *NetListenPool::initTcp(const SA4 *addr) {
     return !nret ? tcp : nullptr;
 }
 
-void NetListenPool::new_conn_cb(uv_stream_t *server, int status) {
+void TcpListenPool::new_conn_cb(uv_stream_t *server, int status) {
     if (status && status != UV_ECANCELED) {
-        auto *mon = static_cast<NetListenPool *>(server->data);
+        auto *mon = static_cast<TcpListenPool *>(server->data);
         LOGE << "the listened socket error: " << uv_strerror(status);
         mon->newConn(server, status);
         return;
     }
 
-    auto *mon = static_cast<NetListenPool *>(server->data);
+    auto *mon = static_cast<TcpListenPool *>(server->data);
 
     uv_tcp_t *client = static_cast<uv_tcp_t *>(malloc(sizeof(uv_tcp_t)));
     uv_tcp_init(mon->mLoop, client);
@@ -94,7 +94,7 @@ void NetListenPool::new_conn_cb(uv_stream_t *server, int status) {
     }
 }
 
-void NetListenPool::newConn(uv_stream_t *stream, int status) {
+void TcpListenPool::newConn(uv_stream_t *stream, int status) {
     uv_tcp_t *tcp = reinterpret_cast<uv_tcp_t *>(stream);
     if (!status) {
         mNewConnCb(tcp);
@@ -108,7 +108,7 @@ void NetListenPool::newConn(uv_stream_t *stream, int status) {
     }
 }
 
-void NetListenPool::clearPool() {
+void TcpListenPool::clearPool() {
     for (auto e: mPool) {
         uv_close(reinterpret_cast<uv_handle_t *>(e), close_cb);
     }

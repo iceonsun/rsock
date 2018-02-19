@@ -10,11 +10,9 @@
 #include <pcap.h>
 #include <uv.h>
 #include <thread>
-#include <rscomm.h>
 #include "cap_util.h"
 #include "../util/RPortList.h"
 
-// todo: move icap construction to irawconn
 class RCap {
 public:
     struct CapThreadArgs {
@@ -59,7 +57,7 @@ private:
     RPortList mSrc;
     RPortList mDest;
     bool mDone = false;
-    const int TIMEOUT = OM_PCAP_TIMEOUT;
+    const int TIMEOUT;
 
     bool mInited = false;
     u_char *mArgs = nullptr;

@@ -17,7 +17,6 @@
 struct RConfig {
 
     struct RParam {
-        // todo: remove all macro
 #ifdef RSOCK_IS_SERVER_
         std::string dev = "eth0";       // server
 #elif __APPLE__
@@ -34,9 +33,12 @@ struct RConfig {
         std::string localUdpIp = "127.0.0.1";
 #endif
 
-        // todo: remove all default values?
         // other app communicate with client/server through this port.
-        uint16_t localUdpPort = 10000;
+#ifdef RSOCK_IS_SERVER_
+        uint16_t localUdpPort = 30010;
+#else
+        uint16_t localUdpPort = 30000;
+#endif
         // The ip for passed in dev. e.g. 192.168.3.2. This may be different from localUdpIp
         std::string selfCapIp;
 
@@ -47,12 +49,16 @@ struct RConfig {
         std::string targetIp;
         uint16_t targetPort = 0;
 
-        uint16_t interval = 40;
+        uint16_t interval = OM_PCAP_TIMEOUT;
         uint32_t selfCapInt = 0;
         uint32_t targetCapInt = 0;
         std::string hashKey = "hello135";
         IdBufType id {{0}};
+#ifdef RSOCK_IS_SERVER_
         int type = OM_PIPE_ALL;
+#else
+        int type = OM_PIPE_TCP;
+#endif
     };
 
     plog::Severity log_level = plog::debug;

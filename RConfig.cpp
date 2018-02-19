@@ -140,10 +140,6 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
             param.selfCapIp = ipbuf;
         }
 
-        if (is_server) {
-            param.type = OM_PIPE_ALL;
-        }
-
         param.selfCapInt = NetIntOfIp(param.selfCapIp.c_str());
         param.targetCapInt = NetIntOfIp(param.targetIp.c_str());
         GenerateIdBuf(param.id, param.hashKey);
@@ -180,7 +176,7 @@ void RConfig::CheckValidation(const RConfig &c) {
     assert(p.selfCapInt != 0);
     assert(p.targetCapInt != 0);
     assert(!EmptyIdBuf(p.id));
-    assert(p.type != 0);
+    assert((p.type == OM_PIPE_TCP) || (p.type == OM_PIPE_UDP) || (p.type == OM_PIPE_ALL));
 
     if (!DevIpMatch(p.dev, p.selfCapIp)) {
         char buf[BUFSIZ] = {0};
@@ -189,8 +185,8 @@ void RConfig::CheckValidation(const RConfig &c) {
         throw args::Error(buf);
     }
 
-    if (p.interval < 10 || p.interval > 40) {
-        throw args::Error("Duration must be in range [10, 40]");
+    if (p.interval < 10 || p.interval > 50) {
+        throw args::Error("Duration must be in range [10, 50]");
     }
 }
 
@@ -325,14 +321,14 @@ int RConfig::typeOfStr(const std::string &str) {
         return OM_PIPE_TCP;
     } else if (str == "udp") {
         return OM_PIPE_UDP;
-    } else if (str == "tcpudp") {
-        return OM_PIPE_TCP_SEND | OM_PIPE_UDP_RECV;
-    } else if (str == "udptcp") {
-        return OM_PIPE_UDP_SEND | OM_PIPE_TCP_RECV;
+//    } else if (str == "tcpudp") {
+//        return OM_PIPE_TCP_SEND | OM_PIPE_UDP_RECV;
+//    } else if (str == "udptcp") {
+//        return OM_PIPE_UDP_SEND | OM_PIPE_TCP_RECV;
     } else if (str == "all") {
         return OM_PIPE_ALL;
     } else {
-        return 0;
+        return OM_PIPE_TCP;
     }
 }
 
@@ -340,10 +336,10 @@ std::string RConfig::strOfType(int type) {
     switch (type) {
         case (OM_PIPE_TCP):
             return "tcp";
-        case (OM_PIPE_TCP_SEND | OM_PIPE_UDP_RECV):
-            return "tcpudp";
-        case (OM_PIPE_UDP_SEND | OM_PIPE_TCP_RECV):
-            return "udptcp";
+//        case (OM_PIPE_TCP_SEND | OM_PIPE_UDP_RECV):
+//            return "tcpudp";
+//        case (OM_PIPE_UDP_SEND | OM_PIPE_TCP_RECV):
+//            return "udptcp";
         case (OM_PIPE_UDP):
             return "udp";
         case (OM_PIPE_ALL):
