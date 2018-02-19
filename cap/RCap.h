@@ -10,6 +10,7 @@
 #include <pcap.h>
 #include <uv.h>
 #include <thread>
+#include <rscomm.h>
 #include "cap_util.h"
 #include "../util/RPortList.h"
 
@@ -58,7 +59,7 @@ private:
     RPortList mSrc;
     RPortList mDest;
     bool mDone = false;
-    const int TIMEOUT = 20;
+    const int TIMEOUT = OM_PCAP_TIMEOUT;
 
     bool mInited = false;
     u_char *mArgs = nullptr;

@@ -60,14 +60,20 @@ set_target_properties(
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -Wsign-compare")
 
-# change /usr/local/lib to the folder of your libnet.so/.a
-find_library(NET_PATH net /usr/local/lib NO_DEFAULT_PATH)
+# set PLATFORM_LIB_PATH to the folder of your libnet.so/.a
+if (APPLE)
+    set(PLATFORM_LIB_PATH /usr/local/lib /usr/lib)
+else()  # linux
+    set(PLATFORM_LIB_PATH /usr/lib/x86_64-linux-gnu/)
+endif()
+
+find_library(NET_PATH net ${PLATFORM_LIB_PATH} NO_DEFAULT_PATH)
 link_libraries($NET_PATH)
 
-find_library(UV_PATH uv /usr/local/lib NO_DEFAULT_UV_PATH)
+find_library(UV_PATH uv ${PLATFORM_LIB_PATH} NO_DEFAULT_UV_PATH)
 link_libraries($UV_PATH)
 
-find_library(CAP_PATH pcap /usr/lib NO_DEFAUL_CAP_PATH)
+find_library(CAP_PATH pcap ${PLATFORM_LIB_PATH} NO_DEFAUL_CAP_PATH)
 link_libraries($CAP_PATH)
 
 if (APPLE)

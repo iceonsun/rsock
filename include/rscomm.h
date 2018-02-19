@@ -32,6 +32,8 @@ extern "C" {
 #define RLOG_FILE_PATH "/var/log/rsock/rsock.log"
 #endif
 
+#define OM_PCAP_TIMEOUT 10
+
 typedef struct sockaddr SA;
 typedef struct sockaddr_in SA4;
 

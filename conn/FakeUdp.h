@@ -16,8 +16,6 @@ public:
 
     inline bool IsUdp() override;
 
-    bool Alive() override;
-
 private:
     ConnInfo mInfo;
 };

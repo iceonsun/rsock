@@ -48,6 +48,11 @@ IConn *CSockApp::CreateBridgeConn(RConfig &conf, IConn *btm, uv_loop_t *loop, IN
         INetConn *c = nullptr;
         if (conn->IsUdp()) {
             c = new FakeUdp(key, *info);
+            if (c->Init()) {
+                c->Close();
+                delete c;
+                continue;
+            }
             group->AddNetConn(c);
         }
     }

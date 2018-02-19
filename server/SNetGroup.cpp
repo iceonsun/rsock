@@ -16,11 +16,13 @@ SNetGroup::SNetGroup(const std::string &groupId, uv_loop_t *loop, INetManager *n
 }
 
 INetConn *SNetGroup::CreateNetConn(const std::string &key, const ConnInfo *info) {
+    INetConn *c = nullptr;
     if (info->IsUdp()) {
-        FakeUdp *udp = new FakeUdp(key, *info);
-        return udp;
+        c = new FakeUdp(key, *info);
+    } else {
+        c = mNetManager->TransferConn(key);
     }
-    auto c = mNetManager->TransferConn(key);
+
     if (c) {
         if (c->Init()) {
             LOGE << "conn " << c->ToStr() << " init failed";
