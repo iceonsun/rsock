@@ -107,9 +107,7 @@ void INetManager::Flush(uint64_t now) {
     for (auto it = mPool.begin(); it != mPool.end();) {
         auto &e = it->second;
         if (e.conn) {
-            if (e.conn->Alive()) {
-                e.expireMs = now + POOL_PERSIST_MS;
-            } else if (now >= e.expireMs) {
+            if (now >= e.expireMs) {    // expire remove conn.
                 LOGV << "expire. closing conn " << e.conn->Key();
                 e.conn->Close();
                 delete e.conn;
