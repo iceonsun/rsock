@@ -13,13 +13,13 @@ int main(int argc, char **argv) {
         return ssock_main(argc, argv);
     }
 
-    char *fakearg[10] = {nullptr};
+    char *fakearg[] = {
+            argv[0],
+            "--dev=" DEV,
+            "--taddr=" TADDR,
+            "--ports=" LPORTS,
+            "-v",
+    };
 
-    fakearg[0] = argv[0];
-    fakearg[1] = "--dev=" DEV;
-    fakearg[2] = "--taddr=" TADDR;
-    fakearg[3] = "--ports=" LPORTS;
-    fakearg[4] = "-v";
-
-    return ssock_main(5, fakearg);
+    return ssock_main(sizeof(fakearg)/ sizeof(fakearg[0]), fakearg);
 }
