@@ -12,13 +12,15 @@ struct rbuf_t;
 
 class RstHelper {
 public:
-    using OutCallback = std::function<int(ssize_t nread, const rbuf_t &rbuf, uint8_t type)>;
+    using IntKeyType = uint32_t;
 
-    using NetRecvCallback = std::function<int(const ConnInfo &src, const ConnInfo &rstInfo)>;
+    using OutCallback = std::function<int(const ConnInfo &src, ssize_t nread, const rbuf_t &rbuf, uint8_t type)>;
+
+    using NetRecvCallback = std::function<int(const ConnInfo &src, IntKeyType key)>;
 
     using ConvRecvCallback = std::function<int(const ConnInfo &src, uint32_t conv)>;
 
-    int SendNetConnRst(const ConnInfo &info);
+    int SendNetConnRst(const ConnInfo &info, IntKeyType key);
 
     int SendConvRst(uint32_t conv);
 
@@ -29,8 +31,9 @@ public:
     void SetNetRecvCb(const NetRecvCallback &cb);
 
     void SetConvRecvCb(const ConvRecvCallback &cb);
+
 private:
-    int doSend(ssize_t nread, const rbuf_t &rbuf, uint8_t cmd);
+    int doSend(const ConnInfo &info, ssize_t nread, const rbuf_t &rbuf, uint8_t cmd);
 
 private:
     OutCallback mOutCb = nullptr;

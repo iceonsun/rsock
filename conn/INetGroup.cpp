@@ -31,7 +31,6 @@ void INetGroup::Close() {
     IGroup::Close();
     mErrCb = nullptr;
     mHandler = nullptr; // handler will automatically remove all pending messages and tasks
-    mNoConnCb = nullptr;
 }
 
 int INetGroup::Input(ssize_t nread, const rbuf_t &rbuf) {
@@ -54,8 +53,7 @@ int INetGroup::Input(ssize_t nread, const rbuf_t &rbuf) {
             return n;
         }
         LOGD << "Cannot input, no such conn: " << key;  // todo: send conn rst
-        onNoConn(*info);
-        return -1;
+        return ERR_NO_CONN;
     }
     return nread;
 }
@@ -108,19 +106,18 @@ void INetGroup::handleMessage(const Handler::Message &message) {
             auto *conn = static_cast<INetConn *>(message.obj);
             assert(conn);
             LOGE << "closing conn: " << conn->Key() << ", err: " << message.what;
-//            ConnInfo *info = nullptr;
-//            ConnInfo *connInfo = conn->GetInfo();
-//            if (connInfo->IsUdp()) {
-//                info = new ConnInfo(*connInfo);
-//            } else {
-//                info = new TcpInfo();
-//                *info = dynamic_cast<TcpInfo>(*connInfo);
-//            }
-            ConnInfo info(*conn->GetInfo());    // todo: allocate memory according to info
+            ConnInfo *info = nullptr;
+            ConnInfo *connInfo = conn->GetInfo();
+            if (connInfo->IsUdp()) {
+                info = new ConnInfo(*connInfo);
+            } else {
+                TcpInfo *tcpInfo = dynamic_cast<TcpInfo *>(info);
+                info = new TcpInfo(*tcpInfo);
+            }
             conn->Close();  // it's already removed
             delete conn;
-            netConnErr(info);
-//            delete info;
+            netConnErr(*info);
+            delete info;
             break;
         }
         default:
@@ -142,18 +139,20 @@ bool INetGroup::OnConnDead(IConn *conn) {
     return false;
 }
 
-void INetGroup::onNoConn(const ConnInfo &info) {
-    if (mNoConnCb) {
-        mNoConnCb(info);
-    }
-}
-
-void INetGroup::SetNonConnCb(const INetGroup::NoConnCb &cb) {
-    mNoConnCb = cb;
-}
-
 void INetGroup::netConnErr(const ConnInfo &info) {
     if (mErrCb) {
         mErrCb(info);
     }
+}
+
+INetConn *INetGroup::ConnOfIntKey(INetConn::IntKeyType key) {
+    auto &conns = GetAllConns();
+    for (auto &e: conns) {
+        INetConn *conn = dynamic_cast<INetConn *>(e.second);
+        assert(conn);
+        if (conn->IntKey() == key) {
+            return conn;
+        }
+    }
+    return nullptr;
 }

@@ -10,25 +10,26 @@
 #include "IGroup.h"
 #include "../ITcpInformer.h"
 
-class BtmUdpConn;
-
 class RawTcp;
-
-class INetConn;
 
 struct pcap_pkthdr;
 
 class TcpAckPool;
 
+class INetReset;
+
+class IBtmConn;
+
 class RConn : public IGroup, public ITcpInformer {
 public:
+//    using INetReset = std::function<void(ssize_t nread, const rbuf_t &rbuf)>;
 
     RConn(const std::string &hashKey, const std::string &dev, uv_loop_t *loop, TcpAckPool *ackPool, int datalink,
           bool isServer);
 
     static const int HEAD_SIZE;
 
-    virtual void AddUdpConn(INetConn *conn);
+    virtual void AddUdpConn(IBtmConn *conn);
 
     // check if hash matches. drop data if not match
     int OnRecv(ssize_t nread, const rbuf_t &rbuf) override;
@@ -36,16 +37,20 @@ public:
     // direct output to udp or raw tcp
     int Output(ssize_t nread, const rbuf_t &rbuf) override;
 
+    int ResetSend(const ConnInfo &info);
+
     int Init() override;
 
     void Close() override;
 
     static void CapInputCb(u_char *args, const pcap_pkthdr *hdr, const u_char *packet);
 
+// todo: override flush
 private:
     using IGroup::AddConn;
 
 private:
+    INetReset *mReset = nullptr;
     RawTcp *mRawTcp = nullptr;
     const std::string mHashKey;
 };

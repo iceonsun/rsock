@@ -32,7 +32,7 @@ struct TcpInfo : ConnInfo {
         return static_cast<bool>(flag & (TH_FIN | TH_RST));
     }
 
-    TcpInfo();
+    TcpInfo() = default;
 
     TcpInfo(const TcpInfo &info) = default;
 

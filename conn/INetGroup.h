@@ -16,10 +16,11 @@
 // contains only fake udp and fake tcp. the real conns lie in rconn
 class INetGroup : public IGroup {
 public:
+    static const int ERR_NO_CONN = -20;
+
     INetGroup(const std::string &groupId, uv_loop_t *loop);
 
     using NetConnErrCb = std::function<void(const ConnInfo &info)>;
-    using NoConnCb = std::function<void(const ConnInfo &info)>;
 
     int Init() override;
 
@@ -39,14 +40,12 @@ public:
     // flush detect error
     bool OnConnDead(IConn *conn) override;
 
-    void SetNonConnCb(const NoConnCb &cb);
+    INetConn *ConnOfIntKey(INetConn::IntKeyType key);
 
 private:
     using IGroup::AddConn;
 
     inline void netConnErr(const ConnInfo &info);
-
-    inline void onNoConn(const ConnInfo &info);
 
     void handleMessage(const Handler::Message &message);
 
@@ -58,7 +57,6 @@ private:
     uv_loop_t *mLoop = nullptr;
     Handler::SPHandler mHandler = nullptr;
     NetConnErrCb mErrCb = nullptr;
-    NoConnCb mNoConnCb = nullptr;
 };
 
 

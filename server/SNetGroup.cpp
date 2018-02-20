@@ -24,12 +24,14 @@ INetConn *SNetGroup::CreateNetConn(const std::string &key, const ConnInfo *info)
     }
 
     if (c) {
-        if (c->Init()) {
+        EncHead *hd = info->head;
+        if (!hd || c->Init()) {
             LOGE << "conn " << c->ToStr() << " init failed";
             c->Close();
             delete c;
             return nullptr;
         }
+        c->SetIntKey(hd->ConnKey());
         return c;
     }
 

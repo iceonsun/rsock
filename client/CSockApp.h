@@ -10,15 +10,17 @@
 
 struct ConnInfo;
 
+class INetConn;
+
 class CSockApp : public ISockApp {
 public:
     explicit CSockApp(uv_loop_t *loop);
 
     RCap *CreateCap(RConfig &conf) override;
 
-    RConn * CreateBtmConn(RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool, int datalink) override;
+    RConn *CreateBtmConn(RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool, int datalink) override;
 
-    IConn * CreateBridgeConn(RConfig &conf, IConn *btm, uv_loop_t *loop, INetManager *netManager) override;
+    IConn *CreateBridgeConn(RConfig &conf, IConn *btm, uv_loop_t *loop, INetManager *netManager) override;
 
     INetManager *CreateNetManager(RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool) override;
 

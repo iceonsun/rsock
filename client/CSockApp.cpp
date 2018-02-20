@@ -27,7 +27,7 @@ RConn *CSockApp::CreateBtmConn(RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPo
     if (conf.param.type & OM_PIPE_UDP) {
         auto svr_ports = conf.param.capPorts.GetRawList();
         std::vector<uint16_t> ports(svr_ports.size(), 0);
-        auto vec = createUdpConns(conf.param.selfCapInt, ports, conf.param.targetCapInt, svr_ports);
+        auto vec = bindUdpConns(conf.param.selfCapInt, ports, conf.param.targetCapInt, svr_ports);
         for (auto c: vec) {
             rconn->AddUdpConn(c);
         }
@@ -48,7 +48,7 @@ IConn *CSockApp::CreateBridgeConn(RConfig &conf, IConn *btm, uv_loop_t *loop, IN
     if (conf.param.type & OM_PIPE_UDP) {
         const auto &conns = btmGroup->GetAllConns();
         for (auto &e: conns) {
-            auto *conn = dynamic_cast<INetConn *>(e.second);
+            auto *conn = dynamic_cast<IBtmConn *>(e.second);
             auto info = conn->GetInfo();
             auto key = ConnInfo::BuildKey(*info);
             INetConn *c = nullptr;

@@ -19,8 +19,9 @@ class RstHelper;
 
 class IAppGroup : public IGroup, public ITcpObserver {
 public:
-    IAppGroup(const std::string &groupId, INetGroup *fakeNetGroup, IConn *btm,
-                  const std::string &printableStr = "");
+    using IntKeyType = uint32_t ;
+
+    IAppGroup(const std::string &groupId, INetGroup *fakeNetGroup, IConn *btm, const std::string &printableStr = "");
 
     int Init() override;
 
@@ -44,21 +45,18 @@ public:
 
     virtual int SendConvRst(uint32_t conv);
 
-    virtual int SendNetConnRst(const ConnInfo &info);
+    virtual int SendNetConnRst(const ConnInfo &src, IntKeyType key);
 
     const std::string ToStr() override;
 
 protected:
-    virtual int onRstConnSend(ssize_t nread, const rbuf_t &rbuf, uint8_t cmd);
+    virtual int onRstConnSend(const ConnInfo &info, ssize_t nread, const rbuf_t &rbuf, uint8_t cmd);
 
-    virtual int onPeerNetConnRst(const ConnInfo &src, const ConnInfo &rstInfo);
+    virtual int onPeerNetConnRst(const ConnInfo &src, uint32_t key);
 
     virtual int onPeerConvRst(const ConnInfo &src, uint32_t rstConv);
 
     virtual bool OnSelfNetConnRst(const ConnInfo &info);
-
-private:
-    int onSelfNoNetConn(const ConnInfo &info);
 
 protected:
     EncHead mHead;

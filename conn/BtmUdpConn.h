@@ -7,11 +7,11 @@
 
 
 #include "ConnInfo.h"
-#include "INetConn.h"
+#include "IBtmConn.h"
 
 
 // SetOutputCb is not callable
-class BtmUdpConn : public INetConn {
+class BtmUdpConn : public IBtmConn {
 public:
     BtmUdpConn(const std::string &key, uv_udp_t *udp, const ConnInfo &info);
 //    BtmUdpConn(const std::string &key, uv_udp_t *udp);
@@ -27,7 +27,7 @@ public:
     static void recv_cb(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf, const struct sockaddr *addr,
                         unsigned flags);
 
-    inline ConnInfo *GetInfo() override { return &mInfo; }
+    ConnInfo *GetInfo() override { return &mInfo; }
 
     int Output(ssize_t nread, const rbuf_t &rbuf) override;
 

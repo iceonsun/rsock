@@ -8,6 +8,8 @@
 #include "../util/rhash.h"
 #include "../util/rsutil.h"
 #include "TcpInfo.h"
+#include "../EncHead.h"
+#include "../RConnReset.h"
 
 using namespace std::placeholders;
 
@@ -17,6 +19,7 @@ const int RConn::HEAD_SIZE = EncHead::GetMinEncSize() + HASH_BUF_SIZE;
 RConn::RConn(const std::string &hashKey, const std::string &dev, uv_loop_t *loop, TcpAckPool *ackPool, int datalink,
              bool isServer) : IGroup("RConn", nullptr), mHashKey(hashKey) {
     mRawTcp = new RawTcp(dev, loop, ackPool, datalink, isServer);
+    mReset = new RConnReset(this);
 }
 
 int RConn::Init() {
@@ -28,6 +31,12 @@ int RConn::Init() {
 
 void RConn::Close() {
     IGroup::Close();
+    if (mReset) {
+        mReset->Close();
+        delete mReset;
+        mReset = nullptr;
+    }
+
     if (mRawTcp) {
         mRawTcp->Close();
         delete mRawTcp;
@@ -35,7 +44,7 @@ void RConn::Close() {
     }
 }
 
-void RConn::AddUdpConn(INetConn *conn) {
+void RConn::AddUdpConn(IBtmConn *conn) {
     auto rcv = std::bind(&IConn::Input, this, _1, _2);
     AddConn(conn, nullptr, rcv);
 }
@@ -64,38 +73,46 @@ int RConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
 }
 
 int RConn::Output(ssize_t nread, const rbuf_t &rbuf) {
-    ConnInfo *info = static_cast<ConnInfo *>(rbuf.data);
-    assert(info);
-    EncHead *head = info->head;
+    if (nread > 0) {
+        ConnInfo *info = static_cast<ConnInfo *>(rbuf.data);
+        assert(info);
+        EncHead *head = info->head;
 
-    const int ENC_SIZE = head->GetSize();
-    if (HASH_BUF_SIZE + ENC_SIZE + nread > OM_MAX_PKT_SIZE) {
-        LOGE << "packet exceeds MTU. redefine MTU. MTU: " << OM_MAX_PKT_SIZE << ", HASH_BUF_SIZE: " << HASH_BUF_SIZE
-             << ", ENC_SIZE: " << ENC_SIZE << ", nread: " << nread;
-        return -1;
-    }
-
-    char base[OM_MAX_PKT_SIZE] = {0};
-    char *p = compute_hash((char *) base, mHashKey, rbuf.base, nread);
-    p = head->Enc2Buf(p, OM_MAX_PKT_SIZE - (p - base));
-    assert(p);
-    memcpy(p, rbuf.base, nread);
-    p += nread;
-
-    const rbuf_t buf = new_buf((p - base), base, rbuf.data);
-    if (info->IsUdp()) {
-        auto key = ConnInfo::KeyForUdpBtm(info->src, info->sp);
-        auto conn = ConnOfKey(key);
-        if (conn) {
-            return conn->Send(buf.len, buf);
-        } else {
-            LOGE << "no such conn " << key;    // todo. print details
+        const int ENC_SIZE = head->GetSize();
+        if (HASH_BUF_SIZE + ENC_SIZE + nread > OM_MAX_PKT_SIZE) {
+            LOGE << "packet exceeds MTU. redefine MTU. MTU: " << OM_MAX_PKT_SIZE << ", HASH_BUF_SIZE: " << HASH_BUF_SIZE
+                 << ", ENC_SIZE: " << ENC_SIZE << ", nread: " << nread;
+            return -1;
         }
-    } else {
-        return mRawTcp->Send(buf.len, buf);
+
+        char base[OM_MAX_PKT_SIZE] = {0};
+        char *p = compute_hash((char *) base, mHashKey, rbuf.base, nread);
+        p = head->Enc2Buf(p, OM_MAX_PKT_SIZE - (p - base));
+        assert(p);
+        memcpy(p, rbuf.base, nread);
+        p += nread;
+
+        const rbuf_t buf = new_buf((p - base), base, rbuf.data);
+        if (info->IsUdp()) {
+            auto key = ConnInfo::KeyForUdpBtm(info->src, info->sp);
+            auto conn = ConnOfKey(key);
+            if (conn) {
+                return conn->Send(buf.len, buf);
+            } else {
+                LOGE << "no such conn " << key;    // todo. print details
+            }
+        } else {
+            return mRawTcp->Send(buf.len, buf);
+        }
+    } else if (nread == 0) {
+        ConnInfo *info = static_cast<ConnInfo *>(rbuf.data);
+        if (info) {
+            return mReset->SendReset(*info);
+        }
     }
 
-    return -1;
+
+    return nread;
 }
 
 
@@ -104,4 +121,10 @@ void RConn::CapInputCb(u_char *args, const pcap_pkthdr *hdr, const u_char *packe
     conn->mRawTcp->RawInput(nullptr, hdr, packet);
 }
 
-// todo: override flush
+int RConn::ResetSend(const ConnInfo &info) {
+    auto buf = new_buf(0, "", (void *) &info);
+    if (info.IsUdp()) {
+        return mRawTcp->Send(buf.len, buf);
+    }
+    return 0;
+}

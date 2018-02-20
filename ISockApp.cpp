@@ -15,7 +15,7 @@
 #include "util/FdUtil.h"
 #include "util/ProcUtil.h"
 #include "util/RTimer.h"
-#include "conn/INetConn.h"
+#include "conn/IBtmConn.h"
 #include "net/INetManager.h"
 #include "net/TcpAckPool.h"
 #include "cap/RCap.h"
@@ -217,9 +217,9 @@ int ISockApp::makeDaemon(bool d) {
     return 0;
 }
 
-std::vector<INetConn *> ISockApp::createUdpConns(uint32_t src, const std::vector<uint16_t> &ports, uint32_t dst,
-                                                 const std::vector<uint16_t> &svr_ports) {
-    std::vector<INetConn *> vec;
+std::vector<IBtmConn *> ISockApp::bindUdpConns(uint32_t src, const std::vector<uint16_t> &ports, uint32_t dst,
+                                               const std::vector<uint16_t> &svr_ports) {
+    std::vector<IBtmConn *> vec;
     int n = std::min(ports.size(), svr_ports.size());
     assert(n);
     ConnInfo info;
@@ -229,7 +229,7 @@ std::vector<INetConn *> ISockApp::createUdpConns(uint32_t src, const std::vector
     for (int i = 0; i < n; i++) {
         info.sp = ports[i];
         info.dp = svr_ports[i];
-        auto conn = mNetManager->DialUdp(info);    // todo: add tcp later
+        auto conn = mNetManager->BindUdp(info);    // todo: add tcp later
         if (nullptr == conn) {
             LOGE << "dial udp failed";
             continue;

@@ -14,8 +14,8 @@
 
 using namespace std::placeholders;
 
-IAppGroup::IAppGroup(const std::string &groupId, INetGroup *fakeNetGroup, IConn *btm,
-                     const std::string &printableStr) : IGroup(groupId, btm) {
+IAppGroup::IAppGroup(const std::string &groupId, INetGroup *fakeNetGroup, IConn *btm, const std::string &printableStr)
+        : IGroup(groupId, btm) {
     mFakeNetGroup = fakeNetGroup;
     assert(mFakeNetGroup);
 
@@ -39,15 +39,12 @@ int IAppGroup::Init() {
         return nret;
     }
 
-    auto fn = std::bind(&IAppGroup::onSelfNoNetConn, this, _1);
-    mFakeNetGroup->SetNonConnCb(fn);
-
     auto out = std::bind(&IConn::Output, this, _1, _2);
     mFakeNetGroup->SetOutputCb(out);
     auto rcv = std::bind(&IConn::OnRecv, this, _1, _2);
     mFakeNetGroup->SetOnRecvCb(rcv);
 
-    auto sendFn = std::bind(&IAppGroup::onRstConnSend, this, _1, _2, _3);
+    auto sendFn = std::bind(&IAppGroup::onRstConnSend, this, _1, _2, _3, _4);
     mRstHelper->SetOutputCb(sendFn);
 
     auto netCb = std::bind(&IAppGroup::onPeerNetConnRst, this, _1, _2);
@@ -85,6 +82,8 @@ int IAppGroup::Input(ssize_t nread, const rbuf_t &rbuf) {
         int n = mFakeNetGroup->Input(nread, rbuf);
         if (n > 0) {
             afterInput(n);
+        } else if (INetGroup::ERR_NO_CONN == n) {
+            SendNetConnRst(*info, head->ConnKey());
         }
         return n;
     } else if (EncHead::IsRstFlag(head->Cmd())) {
@@ -128,24 +127,22 @@ int IAppGroup::SendConvRst(uint32_t conv) {
 }
 
 
-int IAppGroup::SendNetConnRst(const ConnInfo &info) {
-    return mRstHelper->SendNetConnRst(info);
+int IAppGroup::SendNetConnRst(const ConnInfo &src, IntKeyType key) {
+    return mRstHelper->SendNetConnRst(src, key);
 }
 
-// self don't have conn with info. send rst
-int IAppGroup::onSelfNoNetConn(const ConnInfo &info) {
-    return SendNetConnRst(info);
-}
-
-int IAppGroup::onRstConnSend(ssize_t nread, const rbuf_t &rbuf, uint8_t cmd) {
+int IAppGroup::onRstConnSend(const ConnInfo &info, ssize_t nread, const rbuf_t &rbuf, uint8_t cmd) {
+    if (cmd == EncHead::TYPE_NETCONN_RST) {
+        auto rbuf2 = new_buf(0, "", (void *) &info);
+        Output(rbuf2.len, rbuf2);   // directly send
+    }
     mHead.SetCmd(cmd);
     const rbuf_t buf = new_buf(nread, rbuf, &mHead);
     return Send(buf.len, buf);
 }
 
-int IAppGroup::onPeerNetConnRst(const ConnInfo &src, const ConnInfo &rstInfo) {
-    auto key = ConnInfo::BuildKey(rstInfo);
-    auto conn = mFakeNetGroup->ConnOfKey(key);
+int IAppGroup::onPeerNetConnRst(const ConnInfo &src, uint32_t key) {
+    auto conn = mFakeNetGroup->ConnOfIntKey(key);
     if (conn) {
         mFakeNetGroup->CloseConn(conn);
         return 0;

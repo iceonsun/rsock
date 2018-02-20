@@ -26,7 +26,7 @@ RConn *SSockApp::CreateBtmConn(RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPo
     if (conf.param.type & OM_PIPE_UDP) {
         auto ports = conf.param.capPorts.GetRawList();
         std::vector<uint16_t> zeros(ports.size(), 0);
-        auto vec = createUdpConns(conf.param.selfCapInt, ports, 0, zeros);
+        auto vec = bindUdpConns(conf.param.selfCapInt, ports, 0, zeros);
         for (auto c: vec) {
             rconn->AddUdpConn(c);
         }

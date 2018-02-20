@@ -5,14 +5,14 @@ set(CMAKE_CXX_STANDARD 11)
 
 include_directories(./include)
 
-set(SOURCE_FILES rcommon.c RConfig.cpp ISockApp.cpp ITcpObserver.h ITcpInformer.cpp
+set(SOURCE_FILES rcommon.c RConfig.cpp ISockApp.cpp ITcpObserver.h ITcpInformer.cpp RConnReset.cpp
         util/enc.c util/rsutil.cpp util/FdUtil.cpp util/rhash.cpp util/RTimer.cpp util/TextUtils.h util/RPortList.cpp
         util/PortPair.cpp util/ProcUtil.cpp util/Handler.cpp util/ShotHandler.cpp
         cap/cap_util.cpp cap/RCap.cpp
         thirdparty/md5.c thirdparty/json11.cpp
         conn/INetConn.cpp conn/BtmUdpConn.cpp EncHead.cpp conn/FakeTcp.cpp conn/TcpInfo.cpp conn/INetGroup.cpp
         conn/IGroup.cpp conn/ConnInfo.cpp conn/FakeUdp.cpp conn/IConn.cpp conn/RConn.cpp conn/RawTcp.cpp
-        conn/IAppGroup.cpp conn/RstHelper.cpp
+        conn/IAppGroup.cpp conn/RstHelper.cpp conn/IBtmConn.cpp
         net/NetUtil.cpp net/ClientNetManager.cpp net/TcpAckPool.cpp net/TcpListenPool.cpp net/INetManager.cpp
         net/ServerNetManager.cpp)
 
@@ -63,9 +63,9 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -Wsign-compare")
 # set PLATFORM_LIB_PATH to the folder of your libnet.so/.a
 if (APPLE)
     set(PLATFORM_LIB_PATH /usr/local/lib /usr/lib)
-else()  # linux
+else ()  # linux
     set(PLATFORM_LIB_PATH /usr/lib/x86_64-linux-gnu/)
-endif()
+endif ()
 
 find_library(NET_PATH net ${PLATFORM_LIB_PATH} NO_DEFAULT_PATH)
 link_libraries($NET_PATH)

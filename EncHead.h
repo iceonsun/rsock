@@ -12,10 +12,11 @@ struct EncHead {
 public:
     enum TYPE {
         TYPE_DATA = 0,
-        TYPE_TCP_RST = 1,
-        TYPE_UDP_RST = 2,
-        TYPE_CONV_RST = 3,
+        TYPE_CONV_RST = 1,
+        TYPE_NETCONN_RST = 2,
     };
+
+    using IntConnKeyType = uint32_t;
 
 private:
     // fields that are gonna encoded. {
@@ -23,6 +24,7 @@ private:
     uint8_t mCmd = TYPE_DATA;
     IdBufType mIdBuf{{0}};
     uint32_t mConv = 0;
+    uint32_t mConnKey = 0;
     uint8_t resereved = 0;
     // }
 
@@ -31,7 +33,7 @@ public:
     static uint8_t GetMinEncSize();
 
     uint8_t GetSize();
-    
+
     static const char *DecodeBuf(EncHead &, const char *p, int buf_len);
 
     char *Enc2Buf(char *p, int buf_len);
@@ -50,7 +52,11 @@ public:
 
     void SetConv(uint32_t conv) { mConv = conv; }
 
-    static bool IsRstFlag(uint8_t cmd) { return cmd == TYPE_TCP_RST || cmd == TYPE_UDP_RST || cmd == TYPE_CONV_RST; }
+    void SetConnKey(IntConnKeyType key) { mConnKey = key; }
+
+    IntConnKeyType ConnKey() { return mConnKey; }
+
+    static bool IsRstFlag(uint8_t cmd) { return cmd == TYPE_CONV_RST || cmd == TYPE_NETCONN_RST; }
 };
 
 #endif //RSOCK_ENCHEAD_H

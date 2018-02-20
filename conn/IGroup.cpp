@@ -45,9 +45,9 @@ void IGroup::Close() {
         mBtm = nullptr;
     }
     if (!mConns.empty()) {
-        for (auto e: mConns) {
-            e.second->Close();
-            delete e.second;
+        decltype(mConns) copys(mConns);
+        for (auto &e: copys) {
+            CloseConn(e.second);
         }
         mConns.clear();
     }

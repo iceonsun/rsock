@@ -13,13 +13,13 @@
 //}
 
 
-BtmUdpConn::BtmUdpConn(const std::string &key, uv_udp_t *udp, const ConnInfo &info) :INetConn(key) {
+BtmUdpConn::BtmUdpConn(const std::string &key, uv_udp_t *udp, const ConnInfo &info) : IBtmConn(key) {
     mUdp = udp;
     mInfo = info;
 }
 
 int BtmUdpConn::Init() {
-    INetConn::Init();
+    IBtmConn::Init();
 
     mUdp->data = this;
 
@@ -82,14 +82,14 @@ int BtmUdpConn::Output(ssize_t nread, const rbuf_t &rbuf) {
     targetAddr.sin_port = htons(info->dp);
     targetAddr.sin_addr.s_addr = info->dst;
 
-    LOGV << "send " << nread << " bytes to " << Addr2Str((const SA*)&targetAddr);
+    LOGV << "send " << nread << " bytes to " << Addr2Str((const SA *) &targetAddr);
     uv_udp_send(reinterpret_cast<uv_udp_send_t *>(snd), mUdp, &snd->buf, 1,
                 (const struct sockaddr *) (&targetAddr), send_cb);
     return nread;
 }
 
 void BtmUdpConn::Close() {
-    INetConn::Close();
+    IBtmConn::Close();
     if (mUdp) {
         uv_close(reinterpret_cast<uv_handle_t *>(mUdp), close_cb);
         mUdp = nullptr;

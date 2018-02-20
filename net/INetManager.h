@@ -13,6 +13,8 @@
 
 class INetConn;
 
+class IBtmConn;
+
 class TcpAckPool;
 
 struct ConnInfo;
@@ -38,7 +40,7 @@ public:
 
     INetManager &operator=(const INetManager &) = delete;
 
-    INetConn *DialUdp(const ConnInfo &info);
+    IBtmConn *BindUdp(const ConnInfo &info);
 
 protected:
     virtual int add2PoolAutoClose(INetConn *conn);
@@ -70,7 +72,7 @@ private:
     const std::chrono::milliseconds BLOCK_WAIT_MS = std::chrono::milliseconds(500);
 
     const uint64_t FLUSH_INTERVAL = 1000;   // 1s
-    const uint64_t POOL_PERSIST_MS = 10 * 1000;
+    const uint64_t POOL_PERSIST_MS = 30 * 1000;
     std::map<std::string, ConnHelper> mPool;
     uv_timer_t *mFlushTimer = nullptr;
 

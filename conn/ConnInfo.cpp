@@ -75,7 +75,7 @@ std::string ConnInfo::BuildAddrKey(const struct sockaddr *addr) {
 
 std::string ConnInfo::ToStr() const {
     std::ostringstream out;
-    out << (udp ? "udp" : "tcp") << ":";
+    out << (IsUdp() ? "udp" : "tcp") << ":";
     out << "src:" << InAddr2Ip({src}) << ", sp:" << sp;
     out << ", dst:" << InAddr2Ip({dst}) << ", dp: " << dp;
     return out.str();

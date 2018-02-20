@@ -19,7 +19,7 @@ namespace plog {
     class IAppender;
 }
 
-class INetConn;
+class IBtmConn;
 
 class INetManager;
 
@@ -70,8 +70,8 @@ public:
     bool OnTcpFinOrRst(const TcpInfo &info) override;
 
 protected:
-    std::vector<INetConn *> createUdpConns(uint32_t src, const std::vector<uint16_t> &ports, uint32_t dst,
-                                           const std::vector<uint16_t> &svr_ports);
+    std::vector<IBtmConn *> bindUdpConns(uint32_t src, const std::vector<uint16_t> &ports, uint32_t dst,
+                                         const std::vector<uint16_t> &svr_ports);
 
     virtual void onExitSignal();
 
