@@ -97,7 +97,7 @@ int ISockApp::doInit() {
     mCap->Start(RConn::CapInputCb, (u_char *) (mBtmConn));
 
     mBridge = CreateBridgeConn(mConf, mBtmConn, mLoop, mNetManager);
-    if (mBridge->Init()) {
+    if (!mBridge || mBridge->Init()) {
         return -1;
     }
     watchExitSignal();

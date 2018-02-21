@@ -20,6 +20,8 @@ struct ConnInfo {
     uint16_t dp = 0;
     EncHead *head = nullptr;    // not responsable to free this pointer
 
+    virtual ~ConnInfo() = default;
+
     virtual bool IsUdp() const { return true; }
 
     virtual char *Encode(char *buf, int len) const;

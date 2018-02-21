@@ -94,7 +94,7 @@ void INetGroup::childConnErrCb(INetConn *conn, int err) {
     if (conn) {
         LOGE << "remove conn " << conn->Key() << " err: " << err;
         RemoveConn(conn);     // remove it here or in handler
-        auto m = mHandler->ObtainMessage(CONN_ERR, err, "", conn);
+        auto m = mHandler->ObtainMessage(MSG_CONN_ERR, err, "", conn);
         mHandler->RemoveMessage(m);
         m.SendToTarget();
     }
@@ -102,7 +102,7 @@ void INetGroup::childConnErrCb(INetConn *conn, int err) {
 
 void INetGroup::handleMessage(const Handler::Message &message) {
     switch (message.what) {
-        case CONN_ERR: {
+        case MSG_CONN_ERR: {
             auto *conn = static_cast<INetConn *>(message.obj);
             assert(conn);
             LOGE << "closing conn: " << conn->Key() << ", err: " << message.what;
@@ -111,7 +111,7 @@ void INetGroup::handleMessage(const Handler::Message &message) {
             if (connInfo->IsUdp()) {
                 info = new ConnInfo(*connInfo);
             } else {
-                TcpInfo *tcpInfo = dynamic_cast<TcpInfo *>(info);
+                TcpInfo *tcpInfo = dynamic_cast<TcpInfo *>(connInfo);
                 info = new TcpInfo(*tcpInfo);
             }
             conn->Close();  // it's already removed

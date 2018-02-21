@@ -53,7 +53,7 @@ private:
     void childConnErrCb(INetConn *conn, int err);
 
 private:
-    static const int CONN_ERR = 0;
+    static const int MSG_CONN_ERR = 0;
     uv_loop_t *mLoop = nullptr;
     Handler::SPHandler mHandler = nullptr;
     NetConnErrCb mErrCb = nullptr;
