@@ -5,9 +5,9 @@ set(CMAKE_CXX_STANDARD 11)
 
 include_directories(./include)
 
-set(SOURCE_FILES rcommon.c RConfig.cpp ISockApp.cpp ITcpObserver.h ITcpInformer.cpp RConnReset.cpp
+set(SOURCE_FILES rcommon.c RConfig.cpp ISockApp.cpp ITcpObserver.h ITcpInformer.cpp RConnReset.cpp INetReset.h
         util/enc.c util/rsutil.cpp util/FdUtil.cpp util/rhash.cpp util/RTimer.cpp util/TextUtils.h util/RPortList.cpp
-        util/PortPair.cpp util/ProcUtil.cpp util/Handler.cpp util/ShotHandler.cpp
+        util/PortPair.cpp util/ProcUtil.cpp util/Handler.cpp util/ShotHandler.cpp util/UvUtil.cpp
         cap/cap_util.cpp cap/RCap.cpp
         thirdparty/md5.c thirdparty/json11.cpp
         conn/INetConn.cpp conn/BtmUdpConn.cpp EncHead.cpp conn/FakeTcp.cpp conn/TcpInfo.cpp conn/INetGroup.cpp

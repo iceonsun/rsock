@@ -12,7 +12,10 @@ struct ConnInfo;
 
 class INetReset {
 public:
+    virtual ~INetReset() = default;
+
     virtual int SendReset(const ConnInfo &info) = 0;
+
     virtual void Close() = 0;
 };
 

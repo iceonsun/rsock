@@ -20,6 +20,7 @@
 #include "net/TcpAckPool.h"
 #include "cap/RCap.h"
 #include "conn/RConn.h"
+#include "util/UvUtil.h"
 
 ISockApp::ISockApp(bool is_server, uv_loop_t *loop) : mServer(is_server) {
     mLoop = loop;
@@ -259,10 +260,7 @@ void ISockApp::onExitSignal() {
 
 void ISockApp::watchExitSignal() {
     if (!mExitSig) {
-        mExitSig = static_cast<uv_signal_t *>(malloc(sizeof(uv_signal_t)));
-        uv_signal_init(mLoop, mExitSig);
-        mExitSig->data = this;
-        uv_signal_start(mExitSig, close_signal_handler, SIG_EXIT);
+        mExitSig = UvUtil::WatchSignal(mLoop, SIG_EXIT, close_signal_handler, this);
     }
 }
 
