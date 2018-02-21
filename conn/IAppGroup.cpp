@@ -138,7 +138,9 @@ int IAppGroup::onRstConnSend(const ConnInfo &info, ssize_t nread, const rbuf_t &
     }
     mHead.SetCmd(cmd);
     const rbuf_t buf = new_buf(nread, rbuf, &mHead);
-    return Send(buf.len, buf);
+    int n = Send(buf.len, buf);
+    mHead.SetCmd(EncHead::TYPE_DATA);   // restore back
+    return n;
 }
 
 int IAppGroup::onPeerNetConnRst(const ConnInfo &src, uint32_t key) {
@@ -146,6 +148,8 @@ int IAppGroup::onPeerNetConnRst(const ConnInfo &src, uint32_t key) {
     if (conn) {
         mFakeNetGroup->CloseConn(conn);
         return 0;
+    } else {
+        LOGD << "receive rst, but not conn for intKey: " << key;
     }
     return -1;
 }
