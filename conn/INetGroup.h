@@ -42,6 +42,8 @@ public:
 
     INetConn *ConnOfIntKey(INetConn::IntKeyType key);
 
+    uv_loop_t *GetLoop() const { return mLoop; }
+
 private:
     using IGroup::AddConn;
 

@@ -6,7 +6,7 @@
 #define RSOCK_UDPCONN_H
 
 
-#include "ConnInfo.h"
+#include "../ConnInfo.h"
 #include "IBtmConn.h"
 
 

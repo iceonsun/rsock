@@ -59,6 +59,7 @@ struct RConfig {
 #else
         int type = OM_PIPE_TCP;
 #endif
+        uint32_t appFlushInterval = 30000;  // 30s
     };
 
     plog::Severity log_level = plog::debug;

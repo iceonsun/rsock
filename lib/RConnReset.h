@@ -5,17 +5,17 @@
 #ifndef RSOCK_RCONNRESET_H
 #define RSOCK_RCONNRESET_H
 
-#include "INetReset.h"
+struct ConnInfo;
 
 class RConn;
 
-class RConnReset : public INetReset {
+class RConnReset {
 public:
     explicit RConnReset(RConn *rConn);
 
-    int SendReset(const ConnInfo &info) override;
+    virtual int SendReset(const ConnInfo &info);
 
-    void Close() override ;
+    virtual void Close();
 
 private:
     RConn *mConn = nullptr;

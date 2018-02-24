@@ -7,7 +7,7 @@
 
 
 #include "INetConn.h"
-#include "TcpInfo.h"
+#include "../TcpInfo.h"
 
 class FakeTcp : public INetConn {
 public:

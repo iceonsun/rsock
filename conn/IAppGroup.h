@@ -6,8 +6,10 @@
 #define RSOCK_IAPPCONN_H
 
 #include "IGroup.h"
-#include "../ITcpObserver.h"
+#include "../lib/ITcpObserver.h"
 #include "../EncHead.h"
+#include "../lib/NetConnKeepAlive.h"
+#include "../lib/IReset.h"
 
 class INetGroup;
 
@@ -15,13 +17,11 @@ class INetConn;
 
 struct ConnInfo;
 
-class RstHelper;
-
 class IAppGroup : public IGroup, public ITcpObserver {
 public:
-    using IntKeyType = uint32_t ;
+    using IntKeyType = uint32_t;
 
-    IAppGroup(const std::string &groupId, INetGroup *fakeNetGroup, IConn *btm, const std::string &printableStr = "");
+    IAppGroup(const std::string &groupId, INetGroup *fakeNetGroup, IConn *btm, bool activeKeepAlive, const std::string &printableStr = "");
 
     int Init() override;
 
@@ -45,25 +45,88 @@ public:
 
     virtual int SendConvRst(uint32_t conv);
 
-    virtual int SendNetConnRst(const ConnInfo &src, IntKeyType key);
-
     const std::string ToStr() override;
 
 protected:
-    virtual int onRstConnSend(const ConnInfo &info, ssize_t nread, const rbuf_t &rbuf, uint8_t cmd);
+    virtual int sendNetConnRst(const ConnInfo &src, IntKeyType key);
 
     virtual int onPeerNetConnRst(const ConnInfo &src, uint32_t key);
 
     virtual int onPeerConvRst(const ConnInfo &src, uint32_t rstConv);
 
-    virtual bool OnSelfNetConnRst(const ConnInfo &info);
+    virtual bool onSelfNetConnRst(const ConnInfo &info);
+
+    virtual int doSendCmd(uint8_t cmd, ssize_t nread, const rbuf_t &rbuf);
+
+    virtual int onNetconnDead(uint32_t key);
+
+protected:
+    class NetConnKeepAliveHelper : public NetConnKeepAlive::INetConnAliveHelper {
+    public:
+        explicit NetConnKeepAliveHelper(IAppGroup *group, uv_loop_t *loop, bool active = true);
+
+        int OnSendResponse(uint8_t cmd, ssize_t nread, const rbuf_t &rbuf) override;
+
+        int OnRecvResponse(IntKeyType connKey) override;
+
+        int OnSendRequest(uint8_t cmd, ssize_t nread, const rbuf_t &rbuf) override;
+
+        INetConn *ConnOfIntKey(IntKeyType connKey) override;
+
+        int SendNetConnRst(const ConnInfo &src, IntKeyType connKey) override;
+
+        void Close() override;
+
+        INetConnKeepAlive *GetIKeepAlive() const override;
+
+    private:
+        void onFlush();
+
+    private:
+        void setupTimer(uv_loop_t *loop);
+
+        static void timer_cb(uv_timer_t *timer);
+
+    private:
+        const int MAX_RETRY = 3;
+        const uint32_t FLUSH_INTERVAL = 5000;  // every 5sec
+        const uint32_t FIRST_FLUSH_DELAY = 30000;   // on app start
+        IAppGroup *mAppGroup = nullptr;
+        uv_timer_t *mFlushTimer = nullptr;
+        uv_loop_t *mLoop = nullptr;
+        std::map<IntKeyType, int> mReqMap;
+        INetConnKeepAlive *mKeepAlive = nullptr;
+    };
+
+    class ResetHelper : public IReset::IRestHelper {
+    public:
+        explicit ResetHelper(IAppGroup *appGroup);
+
+        void Close() override;
+
+        int OnSendNetConnReset(uint8_t cmd, const ConnInfo &src, ssize_t nread, const rbuf_t &rbuf) override;
+
+        int OnSendConvRst(uint8_t cmd, ssize_t nread, const rbuf_t &rbuf) override;
+
+        int OnRecvNetconnRst(const ConnInfo &src, IntKeyType key) override;
+
+        int OnRecvConvRst(const ConnInfo &src, uint32_t conv) override;
+
+        IReset *GetReset() override;
+
+    private:
+        IAppGroup *mAppGroup = nullptr;
+        IReset *mReset = nullptr;
+    };
 
 protected:
     EncHead mHead;
 
 private:
+    bool mActive = true;
     std::string mPrintableStr;
-    RstHelper *mRstHelper = nullptr;
+    ResetHelper *mResetHelper = nullptr;
+    NetConnKeepAliveHelper::INetConnAliveHelper *mKeepAliveHelper = nullptr;
     INetGroup *mFakeNetGroup = nullptr;
 };
 

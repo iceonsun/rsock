@@ -8,7 +8,7 @@
 #include <cstdint>
 #include "IConn.h"
 #include "IGroup.h"
-#include "../ITcpInformer.h"
+#include "../lib/ITcpInformer.h"
 
 class RawTcp;
 
@@ -16,7 +16,7 @@ struct pcap_pkthdr;
 
 class TcpAckPool;
 
-class INetReset;
+class RConnReset;
 
 class IBtmConn;
 
@@ -50,7 +50,7 @@ private:
     using IGroup::AddConn;
 
 private:
-    INetReset *mReset = nullptr;
+    RConnReset *mReset = nullptr;
     RawTcp *mRawTcp = nullptr;
     const std::string mHashKey;
 };

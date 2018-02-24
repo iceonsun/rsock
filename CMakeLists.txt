@@ -5,14 +5,15 @@ set(CMAKE_CXX_STANDARD 11)
 
 include_directories(./include)
 
-set(SOURCE_FILES rcommon.c RConfig.cpp ISockApp.cpp ITcpObserver.h ITcpInformer.cpp RConnReset.cpp INetReset.h
+set(SOURCE_FILES rcommon.c RConfig.cpp ISockApp.cpp lib/ITcpObserver.h lib/ITcpInformer.cpp lib/RConnReset.cpp
+        lib/INetConnKeepAlive.h lib/NetConnKeepAlive.h lib/IReset.h lib/NetConnKeepAlive.cpp lib/ConnReset.cpp
         util/enc.c util/rsutil.cpp util/FdUtil.cpp util/rhash.cpp util/RTimer.cpp util/TextUtils.h util/RPortList.cpp
         util/PortPair.cpp util/ProcUtil.cpp util/Handler.cpp util/ShotHandler.cpp util/UvUtil.cpp
         cap/cap_util.cpp cap/RCap.cpp
         thirdparty/md5.c thirdparty/json11.cpp
-        conn/INetConn.cpp conn/BtmUdpConn.cpp EncHead.cpp conn/FakeTcp.cpp conn/TcpInfo.cpp conn/INetGroup.cpp
-        conn/IGroup.cpp conn/ConnInfo.cpp conn/FakeUdp.cpp conn/IConn.cpp conn/RConn.cpp conn/RawTcp.cpp
-        conn/IAppGroup.cpp conn/RstHelper.cpp conn/IBtmConn.cpp
+        conn/INetConn.cpp conn/BtmUdpConn.cpp EncHead.cpp conn/FakeTcp.cpp TcpInfo.cpp conn/INetGroup.cpp
+        conn/IGroup.cpp ConnInfo.cpp conn/FakeUdp.cpp conn/IConn.cpp conn/RConn.cpp conn/RawTcp.cpp
+        conn/IAppGroup.cpp conn/IBtmConn.cpp
         net/NetUtil.cpp net/ClientNetManager.cpp net/TcpAckPool.cpp net/TcpListenPool.cpp net/INetManager.cpp
         net/ServerNetManager.cpp)
 

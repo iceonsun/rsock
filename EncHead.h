@@ -14,6 +14,8 @@ public:
         TYPE_DATA = 0,
         TYPE_CONV_RST = 1,
         TYPE_NETCONN_RST = 2,
+        TYPE_KEEP_ALIVE_REQ = 3,
+        TYPE_KEEP_ALIVE_RESP = 4,
     };
 
     using IntConnKeyType = uint32_t;
@@ -57,6 +59,8 @@ public:
     IntConnKeyType ConnKey() { return mConnKey; }
 
     static bool IsRstFlag(uint8_t cmd) { return cmd == TYPE_CONV_RST || cmd == TYPE_NETCONN_RST; }
+
+    static bool IsKeepAliveFlag(uint8_t cmd) { return cmd == TYPE_KEEP_ALIVE_RESP || cmd == TYPE_KEEP_ALIVE_REQ; }
 };
 
 #endif //RSOCK_ENCHEAD_H

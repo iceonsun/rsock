@@ -4,7 +4,7 @@
 
 #include <algorithm>
 #include "TcpInfo.h"
-#include "../util/enc.h"
+#include "util/enc.h"
 
 uint32_t TcpInfo::UpdateAck(uint32_t ack) {
     this->ack = ack;

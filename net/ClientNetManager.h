@@ -9,7 +9,7 @@
 #include <mutex>
 
 #include "rscomm.h"
-#include "../conn/TcpInfo.h"
+#include "../TcpInfo.h"
 #include "INetManager.h"
 
 class BtmUdpConn;

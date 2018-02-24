@@ -7,7 +7,7 @@
 
 #include <uv.h>
 #include "RConfig.h"
-#include "ITcpObserver.h"
+#include "lib/ITcpObserver.h"
 
 class RTimer;
 

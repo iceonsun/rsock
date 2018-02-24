@@ -3,7 +3,7 @@
 //
 
 #include <plog/Log.h>
-#include "conn/TcpInfo.h"
+#include "../TcpInfo.h"
 #include "ITcpInformer.h"
 
 bool ITcpInformer::Attach(ITcpObserver *observer) {

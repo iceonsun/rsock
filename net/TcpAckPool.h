@@ -14,7 +14,7 @@
 
 #include "rscomm.h"
 
-#include "../conn/TcpInfo.h"
+#include "../TcpInfo.h"
 
 // store ack information of incomming connection
 class TcpAckPool {

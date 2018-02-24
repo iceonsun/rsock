@@ -5,42 +5,42 @@
 #include <cassert>
 #include <rscomm.h>
 #include <plog/Log.h>
-#include "RstHelper.h"
+#include "ConnReset.h"
 #include "../util/rsutil.h"
 #include "../util/enc.h"
 #include "../EncHead.h"
-#include "TcpInfo.h"
+#include "../TcpInfo.h"
 
-int RstHelper::SendNetConnRst(const ConnInfo &info, IntKeyType key) {
+
+ConnReset::ConnReset(IReset::IRestHelper *restHelper) {
+    mHelper = restHelper;
+}
+
+void ConnReset::Close() {
+    mHelper = nullptr;
+}
+
+int ConnReset::SendNetConnRst(const ConnInfo &src, IntKeyType key) {
+    LOGD << "src: " << src.ToStr() << ", key: " << key;
+
     char base[OM_MAX_PKT_SIZE] = {0};
     char *p = base;
     p = encode_uint32(key, p);
     // it will be wrong to decode dst and dp, because dst and dp are from nat not from client.
     const rbuf_t buf = new_buf((p - base), base, nullptr);
-    return doSend(info, buf.len, buf, EncHead::TYPE_NETCONN_RST);
+    return mHelper->OnSendNetConnReset(EncHead::TYPE_NETCONN_RST, src, buf.len, buf);
 }
 
-int RstHelper::SendConvRst(uint32_t conv) {
+int ConnReset::SendConvRst(uint32_t conv) {
+    LOGD << "conv: " << conv;
+
     char base[sizeof(conv)] = {0};
     encode_uint32(conv, base);
     const rbuf_t buf = new_buf(sizeof(conv), base, nullptr);
-    ConnInfo info;
-    return doSend(info, buf.len, buf, EncHead::TYPE_CONV_RST);
+    return mHelper->OnSendConvRst(EncHead::TYPE_CONV_RST, buf.len, buf);
 }
 
-void RstHelper::SetOutputCb(const RstHelper::OutCallback &cb) {
-    mOutCb = cb;
-}
-
-int RstHelper::doSend(const ConnInfo &info, ssize_t nread, const rbuf_t &rbuf, uint8_t cmd) {
-    LOGD << "cmd: " << (int) cmd;
-    if (mOutCb) {
-        return mOutCb(info, nread, rbuf, cmd);
-    }
-    return -1;
-}
-
-int RstHelper::Input(ssize_t nread, const rbuf_t &rbuf, uint8_t cmd) {
+int ConnReset::Input(uint8_t cmd, ssize_t nread, const rbuf_t &rbuf) {
     LOGD << "cmd: " << (int) cmd;
     const char *base = rbuf.base;
     ConnInfo *info = static_cast<ConnInfo *>(rbuf.data);
@@ -48,32 +48,22 @@ int RstHelper::Input(ssize_t nread, const rbuf_t &rbuf, uint8_t cmd) {
         uint32_t conv = 0;
         const char *p = decode_uint32(&conv, base);
         LOGD << "conv: " << conv;
-        if (p && mConvRecvCb) {
-            return mConvRecvCb(*info, conv);
+        if (p) {
+            return mHelper->OnRecvConvRst(*info, conv);
         }
         return -1;
     } else if (EncHead::TYPE_NETCONN_RST == cmd) {
-        if (nread > sizeof(IntKeyType) ) {
+        if (nread > sizeof(IntKeyType)) {
             IntKeyType key;
             auto p = base;
             p = decode_uint32(&key, p);
             LOGD << "intKey: " << key;
             if (p) {
-                if (mNetRecvCb) {
-                    return mNetRecvCb(*info, key);
-                }
+                return mHelper->OnRecvNetconnRst(*info, key);
             }
         }
         return -1;
     }
     assert(0);
     return -1;
-}
-
-void RstHelper::SetNetRecvCb(const RstHelper::NetRecvCallback &cb) {
-    mNetRecvCb = cb;
-}
-
-void RstHelper::SetConvRecvCb(const RstHelper::ConvRecvCallback &cb) {
-    mConvRecvCb = cb;
 }

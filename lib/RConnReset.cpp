@@ -4,9 +4,9 @@
 
 #include <cassert>
 #include "RConnReset.h"
-#include "conn/RConn.h"
-#include "conn/TcpInfo.h"
-#include "util/rsutil.h"
+#include "../conn/RConn.h"
+#include "../TcpInfo.h"
+#include "../util/rsutil.h"
 
 RConnReset::RConnReset(RConn *rConn) {
     assert(rConn);

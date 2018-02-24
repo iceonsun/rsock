@@ -6,8 +6,8 @@
 #include <iterator>
 #include <plog/Log.h>
 #include "INetGroup.h"
-#include "ConnInfo.h"
-#include "TcpInfo.h"
+#include "../ConnInfo.h"
+#include "../TcpInfo.h"
 
 using namespace std::placeholders;
 

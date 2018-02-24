@@ -9,13 +9,13 @@
 #include "CConn.h"
 #include "ClientGroup.h"
 #include "../util/rsutil.h"
-#include "../conn/ConnInfo.h"
+#include "../ConnInfo.h"
 
 using namespace std::placeholders;
 
 ClientGroup::ClientGroup(const std::string &groupId, const std::string &listenUnPath, const std::string &listenUdpIp,
                          uint16_t listenUdpPort, uv_loop_t *loop, INetGroup *fakeGroup, IConn *btm)
-        : IAppGroup(groupId, fakeGroup, btm, "ClientGroup") {
+        : IAppGroup(groupId, fakeGroup, btm, true, "ClientGroup") {
     assert(fakeGroup != nullptr);
     if (!listenUdpIp.empty()) {
         mUdpAddr = new_addr4(listenUdpIp.c_str(), listenUdpPort);

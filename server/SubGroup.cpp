@@ -5,7 +5,7 @@
 #include <cstdlib>
 #include "plog/Log.h"
 #include "SubGroup.h"
-#include "../conn/ConnInfo.h"
+#include "../ConnInfo.h"
 #include "SConn.h"
 #include "../conn/INetGroup.h"
 #include "../util/rsutil.h"
@@ -13,7 +13,8 @@
 using namespace std::placeholders;
 
 SubGroup::SubGroup(const std::string &groupId, uv_loop_t *loop, const struct sockaddr *target, INetGroup *fakeNetGroup,
-                   IConn *btm, const std::string &printableStr) : IAppGroup(groupId, fakeNetGroup, btm, printableStr) {
+                   IConn *btm, const std::string &printableStr)
+        : IAppGroup(groupId, fakeNetGroup, btm, false, printableStr) {
     mLoop = loop;
     mTarget = new_addr(target);
 }
