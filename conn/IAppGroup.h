@@ -93,7 +93,6 @@ protected:
         const uint32_t FIRST_FLUSH_DELAY = 30000;   // on app start
         IAppGroup *mAppGroup = nullptr;
         uv_timer_t *mFlushTimer = nullptr;
-        uv_loop_t *mLoop = nullptr;
         std::map<IntKeyType, int> mReqMap;
         INetConnKeepAlive *mKeepAlive = nullptr;
     };

@@ -247,6 +247,7 @@ void IAppGroup::NetConnKeepAliveHelper::onFlush() {
         }
     }
 
+    // todo: make an interface. and move these into inetgroup
     auto aCopy = mReqMap;
     for (auto &e: aCopy) {
         if (e.second >= MAX_RETRY) {        // keep alive timeout

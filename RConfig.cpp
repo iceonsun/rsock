@@ -36,7 +36,7 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
     HelpFlag help(opt, "help", "Display this help menu", {'h', "help"});
     ValueFlag<std::string> json(opt, "/path/to/config_file", "json config file path", {'f'});
     ValueFlag<std::string> selfCapIp(opt, "", "Optional. Local capture IP. e.g: 192.168.1.4", {"lcapIp"});
-    ValueFlag<std::string> localUn(opt, "", "Local listening unix domain socket path.", {"unPath"});
+    ValueFlag<std::string> localUn(opt, "", "Local listening unix domain socket path.(disabled currenty)", {"unPath"});
     ValueFlag<std::string> localUdp(opt, "", "Local listening udp port.", {"ludp"});;
     ValueFlag<std::string> capPorts(opt, "", "Capture port list. "
             "(e.g.3000,3001,4000-4050. No blank spaces or other characters allowed)", {"ports"});
@@ -83,8 +83,8 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
                 LOGV << "use default ports: " << RPortList::ToString(param.capPorts);
             }
 
-            if (localUn) {
-                param.selfUnPath = localUn.Get();
+            if (localUn) {  // todo: enable and test unix domain socket
+//                param.selfUnPath = localUn.Get();
             }
 
             if (localUdp) {
