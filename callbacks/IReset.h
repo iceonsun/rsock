@@ -5,7 +5,7 @@
 #ifndef RSOCK_IRESET_H
 #define RSOCK_IRESET_H
 
-#include "../rcommon.h"
+#include "rcommon.h"
 
 struct ConnInfo;
 

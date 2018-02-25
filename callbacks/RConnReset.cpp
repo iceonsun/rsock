@@ -5,7 +5,7 @@
 #include <cassert>
 #include "RConnReset.h"
 #include "../conn/RConn.h"
-#include "../TcpInfo.h"
+#include "../bean/TcpInfo.h"
 #include "../util/rsutil.h"
 
 RConnReset::RConnReset(RConn *rConn) {

@@ -14,7 +14,7 @@
 
 #include "rscomm.h"
 
-#include "../TcpInfo.h"
+#include "../bean/TcpInfo.h"
 
 // store ack information of incomming connection
 class TcpAckPool {

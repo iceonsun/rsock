@@ -5,7 +5,7 @@
 #include <cassert>
 #include <plog/Log.h>
 #include "ServerGroup.h"
-#include "../ConnInfo.h"
+#include "../bean/ConnInfo.h"
 #include "../util/rhash.h"
 #include "../util/rsutil.h"
 #include "SNetGroup.h"

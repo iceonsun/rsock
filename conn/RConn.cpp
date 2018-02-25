@@ -7,9 +7,9 @@
 #include "RConn.h"
 #include "../util/rhash.h"
 #include "../util/rsutil.h"
-#include "../TcpInfo.h"
-#include "../EncHead.h"
-#include "../lib/RConnReset.h"
+#include "../bean/TcpInfo.h"
+#include "../bean/EncHead.h"
+#include "../callbacks/RConnReset.h"
 
 using namespace std::placeholders;
 

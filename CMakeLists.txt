@@ -5,15 +5,15 @@ set(CMAKE_CXX_STANDARD 11)
 
 include_directories(./include)
 
-set(SOURCE_FILES rcommon.c RConfig.cpp ISockApp.cpp lib/ITcpObserver.h lib/ITcpInformer.cpp lib/RConnReset.cpp
-        lib/INetConnKeepAlive.h lib/NetConnKeepAlive.h lib/IReset.h lib/NetConnKeepAlive.cpp lib/ConnReset.cpp
+set(SOURCE_FILES src/rcommon.c bean/RConfig.cpp src/ISockApp.cpp bean/ConnInfo.cpp bean/TcpInfo.cpp bean/EncHead.cpp
+        callbacks/ITcpObserver.h callbacks/ITcpInformer.cpp callbacks/RConnReset.cpp callbacks/INetConnKeepAlive.h callbacks/NetConnKeepAlive.h
+        callbacks/IReset.h callbacks/NetConnKeepAlive.cpp callbacks/ConnReset.cpp
         util/enc.c util/rsutil.cpp util/FdUtil.cpp util/rhash.cpp util/RTimer.cpp util/TextUtils.h util/RPortList.cpp
         util/PortPair.cpp util/ProcUtil.cpp util/Handler.cpp util/ShotHandler.cpp util/UvUtil.cpp
         cap/cap_util.cpp cap/RCap.cpp
         thirdparty/md5.c thirdparty/json11.cpp
-        conn/INetConn.cpp conn/BtmUdpConn.cpp EncHead.cpp conn/FakeTcp.cpp TcpInfo.cpp conn/INetGroup.cpp
-        conn/IGroup.cpp ConnInfo.cpp conn/FakeUdp.cpp conn/IConn.cpp conn/RConn.cpp conn/RawTcp.cpp
-        conn/IAppGroup.cpp conn/IBtmConn.cpp
+        conn/INetConn.cpp conn/BtmUdpConn.cpp conn/FakeTcp.cpp conn/INetGroup.cpp conn/IGroup.cpp conn/FakeUdp.cpp
+        conn/IConn.cpp conn/RConn.cpp conn/RawTcp.cpp conn/IAppGroup.cpp conn/IBtmConn.cpp
         net/NetUtil.cpp net/ClientNetManager.cpp net/TcpAckPool.cpp net/TcpListenPool.cpp net/INetManager.cpp
         net/ServerNetManager.cpp)
 
@@ -27,14 +27,14 @@ set_target_properties(
         ssock
         PROPERTIES
         COMPILE_DEFINITIONS RSOCK_IS_SERVER_
-        COMPILE_DEFINITIONS RSOCK_NNDEBUG   # don't output pcap in/out
+        COMPILE_DEFINITIONS RSOCK_NNDEBUG
 )
 
 add_executable(csock ${CLI_SOURCE_FILES} client/main.cpp)
 set_target_properties(
         csock
         PROPERTIES
-        COMPILE_DEFINITIONS RSOCK_NNDEBUG   # don't output pcap in/out
+        COMPILE_DEFINITIONS RSOCK_NNDEBUG
 )
 
 add_executable(test_server ${SVR_SOURCE_FILES} test/test_server.cpp)
@@ -45,19 +45,11 @@ set_target_properties(
 
 add_executable(test_client ${CLI_SOURCE_FILES} test/test_client.cpp)
 
-add_executable(echo_server rcommon.c test/udp_echo_server.cpp)
-add_executable(echo_client rcommon.c test/udp_echo_client.cpp)
+add_executable(echo_server src/rcommon.c test/udp_echo_server.cpp)
+add_executable(echo_client src/rcommon.c test/udp_echo_client.cpp)
 
 add_definitions(-Wall -pg -g)
 #add_definitions(-DRLOG_FILE_PATH="/var/log/rsock/rsock.log")
-
-# library
-add_library(rawsock ${SOURCE_FILES})
-set_target_properties(
-        rawsock
-        PROPERTIES
-        COMPILE_DEFINITIONS RSOCK_NNDEBUG
-)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -Wsign-compare")
 
@@ -83,7 +75,6 @@ else ()
     set(libs uv net pcap pthread)
 endif ()
 
-target_link_libraries(rawsock ${libs})
 target_link_libraries(ssock ${libs})
 target_link_libraries(csock ${libs})
 

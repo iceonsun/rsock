@@ -12,9 +12,9 @@
 
 #include "RConfig.h"
 #include "args.hxx"
-#include "util/rhash.h"
-#include "util/FdUtil.h"
-#include "cap/cap_util.h"
+#include "../util/rhash.h"
+#include "../util/FdUtil.h"
+#include "../cap/cap_util.h"
 
 using namespace args;
 using namespace json11;

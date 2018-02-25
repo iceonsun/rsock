@@ -9,7 +9,7 @@
 #include <string>
 #include <functional>
 
-#include "../rcommon.h"
+#include "rcommon.h"
 
 class IConn {
 public:

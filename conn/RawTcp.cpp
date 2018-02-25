@@ -9,7 +9,7 @@
 #include "../util/rsutil.h"
 #include "../cap/cap_headers.h"
 #include "../util/enc.h"
-#include "../TcpInfo.h"
+#include "../bean/TcpInfo.h"
 #include "../net/TcpAckPool.h"
 
 // RawConn has key of nullptr to expose errors as fast as it can if any.

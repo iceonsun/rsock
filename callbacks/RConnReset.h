@@ -13,6 +13,8 @@ class RConnReset {
 public:
     explicit RConnReset(RConn *rConn);
 
+    virtual ~RConnReset() = default;
+
     virtual int SendReset(const ConnInfo &info);
 
     virtual void Close();

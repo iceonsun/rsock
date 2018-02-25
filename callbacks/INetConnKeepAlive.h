@@ -5,7 +5,7 @@
 #ifndef RSOCK_IKEEPALIVE_H
 #define RSOCK_IKEEPALIVE_H
 
-#include "../rcommon.h"
+#include "rcommon.h"
 
 class INetConn;
 

@@ -5,7 +5,7 @@
 #include <cassert>
 #include <cstring>
 #include "RTimer.h"
-#include "../rcommon.h"
+#include "rcommon.h"
 
 RTimer::RTimer(uv_loop_t *loop) {
     mLoop = loop;

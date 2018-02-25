@@ -6,7 +6,7 @@
 #define RSOCK_CSOCKAPP_H
 
 
-#include "../ISockApp.h"
+#include "../src/ISockApp.h"
 
 struct ConnInfo;
 

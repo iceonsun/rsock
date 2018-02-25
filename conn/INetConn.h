@@ -7,7 +7,7 @@
 #define RSOCK_INETCONN_H
 
 #include "IConn.h"
-#include "../EncHead.h"
+#include "../bean/EncHead.h"
 
 struct ConnInfo;
 

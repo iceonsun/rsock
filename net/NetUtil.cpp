@@ -4,7 +4,7 @@
 
 #include <cstdlib>
 #include <plog/Log.h>
-#include "../TcpInfo.h"
+#include "../bean/TcpInfo.h"
 #include "../conn/BtmUdpConn.h"
 #include "../conn/FakeTcp.h"
 #include "NetUtil.h"

@@ -4,7 +4,7 @@
 
 #include <plog/Log.h>
 #include "ServerNetManager.h"
-#include "../TcpInfo.h"
+#include "../bean/TcpInfo.h"
 #include "../util/rsutil.h"
 #include "NetUtil.h"
 #include "../conn/FakeTcp.h"

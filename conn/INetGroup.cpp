@@ -6,8 +6,8 @@
 #include <iterator>
 #include <plog/Log.h>
 #include "INetGroup.h"
-#include "../ConnInfo.h"
-#include "../TcpInfo.h"
+#include "../bean/ConnInfo.h"
+#include "../bean/TcpInfo.h"
 
 using namespace std::placeholders;
 

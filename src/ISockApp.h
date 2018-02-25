@@ -6,8 +6,8 @@
 #define RSOCK_ISOCKAPP_H
 
 #include <uv.h>
-#include "RConfig.h"
-#include "lib/ITcpObserver.h"
+#include "../bean/RConfig.h"
+#include "../callbacks/ITcpObserver.h"
 
 class RTimer;
 

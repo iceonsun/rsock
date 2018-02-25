@@ -5,7 +5,7 @@
 #include <uv.h>
 #include <cstdlib>
 #include <cstring>
-#include "../rcommon.h"
+#include "rcommon.h"
 
 #define DEF_IP "127.0.0.1"
 #define DEF_PORT 30010

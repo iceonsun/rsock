@@ -5,7 +5,7 @@
 #ifndef RSOCK_FAKEUDP_H
 #define RSOCK_FAKEUDP_H
 
-#include "../ConnInfo.h"
+#include "../bean/ConnInfo.h"
 #include "INetConn.h"
 
 class FakeUdp : public INetConn {

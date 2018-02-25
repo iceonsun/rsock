@@ -19,7 +19,7 @@
 
 #include "enc.h"
 #include "rsutil.h"
-#include "../ConnInfo.h"
+#include "../bean/ConnInfo.h"
 
 struct sockaddr *new_addr(const struct sockaddr *addr) {
     const int family = addr->sa_family;

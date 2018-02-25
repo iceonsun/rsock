@@ -8,7 +8,7 @@
 #include <cstdint>
 #include "IConn.h"
 #include "IGroup.h"
-#include "../lib/ITcpInformer.h"
+#include "../callbacks/ITcpInformer.h"
 
 class RawTcp;
 

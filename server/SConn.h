@@ -9,7 +9,7 @@
 #include <sys/socket.h>
 #include <vector>
 #include "../conn/IConn.h"
-#include "../EncHead.h"
+#include "../bean/EncHead.h"
 #include <rscomm.h>
 
 // todo: add unix sock support

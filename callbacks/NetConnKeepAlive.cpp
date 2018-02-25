@@ -7,7 +7,7 @@
 #include "NetConnKeepAlive.h"
 #include "../util/enc.h"
 #include "../util/rsutil.h"
-#include "../EncHead.h"
+#include "../bean/EncHead.h"
 
 NetConnKeepAlive::NetConnKeepAlive(INetConnAliveHelper *helper) {
     mHelper = helper;

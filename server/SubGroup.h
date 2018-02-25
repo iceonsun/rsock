@@ -7,7 +7,7 @@
 
 
 #include "../conn/IAppGroup.h"
-#include "../EncHead.h"
+#include "../bean/EncHead.h"
 
 class SubGroup : public IAppGroup {
 public:

@@ -5,7 +5,7 @@
 #include <cstdlib>
 #include "plog/Log.h"
 #include "TcpListenPool.h"
-#include "../rcommon.h"
+#include "rcommon.h"
 #include "../util/rsutil.h"
 
 TcpListenPool::TcpListenPool(const RPortList &ports, const std::string &ip, uv_loop_t *loop) : mPorts(ports), mIp(ip) {

@@ -9,7 +9,7 @@
 #include "../util/rhash.h"
 #include "../conn/RConn.h"
 #include "../net/ServerNetManager.h"
-#include "../TcpInfo.h"
+#include "../bean/TcpInfo.h"
 #include "../cap/RCap.h"
 #include "../conn/INetConn.h"
 

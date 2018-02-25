@@ -7,8 +7,8 @@
 #include <sys/un.h>
 #include <cassert>
 #include "ConnInfo.h"
-#include "util/enc.h"
-#include "util/rsutil.h"
+#include "../util/enc.h"
+#include "../util/rsutil.h"
 #include <algorithm>
 #include <rscomm.h>
 

@@ -9,18 +9,18 @@
 
 #include "uv.h"
 #include "ISockApp.h"
-#include "conn/IConn.h"
+#include "../conn/IConn.h"
 #include "plog/Log.h"
 #include "plog/Appenders/ConsoleAppender.h"
-#include "util/FdUtil.h"
-#include "util/ProcUtil.h"
-#include "util/RTimer.h"
-#include "conn/IBtmConn.h"
-#include "net/INetManager.h"
-#include "net/TcpAckPool.h"
-#include "cap/RCap.h"
-#include "conn/RConn.h"
-#include "util/UvUtil.h"
+#include "../util/FdUtil.h"
+#include "../util/ProcUtil.h"
+#include "../util/RTimer.h"
+#include "../conn/IBtmConn.h"
+#include "../net/INetManager.h"
+#include "../net/TcpAckPool.h"
+#include "../cap/RCap.h"
+#include "../conn/RConn.h"
+#include "../util/UvUtil.h"
 
 ISockApp::ISockApp(bool is_server, uv_loop_t *loop) : mServer(is_server) {
     mLoop = loop;

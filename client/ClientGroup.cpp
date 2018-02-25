@@ -9,7 +9,7 @@
 #include "CConn.h"
 #include "ClientGroup.h"
 #include "../util/rsutil.h"
-#include "../ConnInfo.h"
+#include "../bean/ConnInfo.h"
 
 using namespace std::placeholders;
 

@@ -3,7 +3,7 @@
 //
 
 #include "EncHead.h"
-#include "util/enc.h"
+#include "../util/enc.h"
 
 char *EncHead::Enc2Buf(char *p, int buf_len) {
     if (p && buf_len >= GetSize()) {

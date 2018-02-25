@@ -9,8 +9,8 @@
 
 #include "rstype.h"
 #include "rscomm.h"
-#include "thirdparty/json11.hpp"
-#include "util/RPortList.h"
+#include "../thirdparty/json11.hpp"
+#include "../util/RPortList.h"
 
 #include "plog/Severity.h"
 

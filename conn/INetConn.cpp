@@ -4,7 +4,7 @@
 
 #include <cassert>
 #include "INetConn.h"
-#include "../ConnInfo.h"
+#include "../bean/ConnInfo.h"
 #include "../util/rsutil.h"
 
 INetConn::INetConn(const std::string &key) : IConn(key) {

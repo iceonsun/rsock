@@ -6,7 +6,7 @@
 #define RSOCK_SSOCKAPP_H
 
 
-#include "../ISockApp.h"
+#include "../src/ISockApp.h"
 
 class SSockApp : public ISockApp {
 public:

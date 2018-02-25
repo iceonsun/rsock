@@ -7,8 +7,8 @@
 #include "IGroup.h"
 #include "IAppGroup.h"
 #include "INetGroup.h"
-#include "../TcpInfo.h"
-#include "../lib/ConnReset.h"
+#include "../bean/TcpInfo.h"
+#include "../callbacks/ConnReset.h"
 #include "../util/rhash.h"
 #include "../util/rsutil.h"
 

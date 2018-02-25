@@ -6,10 +6,10 @@
 #define RSOCK_IAPPCONN_H
 
 #include "IGroup.h"
-#include "../lib/ITcpObserver.h"
-#include "../EncHead.h"
-#include "../lib/NetConnKeepAlive.h"
-#include "../lib/IReset.h"
+#include "../callbacks/ITcpObserver.h"
+#include "../bean/EncHead.h"
+#include "../callbacks/NetConnKeepAlive.h"
+#include "../callbacks/IReset.h"
 
 class INetGroup;
 

@@ -7,7 +7,7 @@
 
 
 #include "../conn/IGroup.h"
-#include "../lib/ITcpObserver.h"
+#include "../callbacks/ITcpObserver.h"
 
 struct ConnInfo;
 

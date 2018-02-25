@@ -6,7 +6,7 @@
 #define RSOCK_RSUTIL_H
 
 #include "uv.h"
-#include "../rcommon.h"
+#include "rcommon.h"
 
 struct sockaddr;
 struct ConnInfo;

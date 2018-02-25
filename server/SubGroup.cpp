@@ -5,7 +5,7 @@
 #include <cstdlib>
 #include "plog/Log.h"
 #include "SubGroup.h"
-#include "../ConnInfo.h"
+#include "../bean/ConnInfo.h"
 #include "SConn.h"
 #include "../conn/INetGroup.h"
 #include "../util/rsutil.h"
