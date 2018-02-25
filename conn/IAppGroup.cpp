@@ -247,7 +247,7 @@ void IAppGroup::NetConnKeepAliveHelper::onFlush() {
         }
     }
 
-    decltype(mReqMap) aCopy;
+    auto aCopy = mReqMap;
     for (auto &e: aCopy) {
         if (e.second >= MAX_RETRY) {        // keep alive timeout
             mAppGroup->onNetconnDead(e.first);
