@@ -232,7 +232,7 @@ void IAppGroup::NetConnKeepAliveHelper::timer_cb(uv_timer_t *timer) {
 }
 
 void IAppGroup::NetConnKeepAliveHelper::onFlush() {
-    auto &conns = mAppGroup->NetGroup()->GetAllConns();
+    auto conns = mAppGroup->NetGroup()->GetAllConns();
     for (auto &e: conns) {
         auto *conn = dynamic_cast<INetConn *>(e.second);
         auto it = mReqMap.find(conn->IntKey());
