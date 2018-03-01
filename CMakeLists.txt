@@ -5,7 +5,9 @@ set(CMAKE_CXX_STANDARD 11)
 
 include_directories(./include)
 
-set(SOURCE_FILES src/rcommon.c bean/RConfig.cpp src/ISockApp.cpp bean/ConnInfo.cpp bean/TcpInfo.cpp bean/EncHead.cpp
+set(SOURCE_FILES
+        src/rcommon.c src/ISockApp.cpp
+        bean/RConfig.cpp bean/ConnInfo.cpp bean/TcpInfo.cpp bean/EncHead.cpp
         callbacks/ITcpObserver.h callbacks/ITcpInformer.cpp callbacks/RConnReset.cpp callbacks/INetConnKeepAlive.h callbacks/NetConnKeepAlive.h
         callbacks/IReset.h callbacks/NetConnKeepAlive.cpp callbacks/ConnReset.cpp
         util/enc.c util/rsutil.cpp util/FdUtil.cpp util/rhash.cpp util/RTimer.cpp util/TextUtils.h util/RPortList.cpp
@@ -22,63 +24,55 @@ set(SVR_SOURCE_FILES ${SOURCE_FILES} server/SConn.cpp server/SSockApp.cpp server
 set(CLI_SOURCE_FILES ${SOURCE_FILES} client/CConn.cpp client/csock.cpp client/CSockApp.cpp client/ClientGroup.cpp
         client/CNetGroup.cpp)
 
-add_executable(ssock ${SVR_SOURCE_FILES} server/main.cpp)
+##### release {
+add_executable(server_rsock_${CMAKE_SYSTEM_NAME} ${SVR_SOURCE_FILES} server/main.cpp)
 set_target_properties(
-        ssock
+        server_rsock_${CMAKE_SYSTEM_NAME}
         PROPERTIES
         COMPILE_DEFINITIONS RSOCK_IS_SERVER_
         COMPILE_DEFINITIONS RSOCK_NNDEBUG
 )
+target_compile_options(server_rsock_${CMAKE_SYSTEM_NAME} PRIVATE -O2)
 
-add_executable(csock ${CLI_SOURCE_FILES} client/main.cpp)
+add_executable(client_rsock_${CMAKE_SYSTEM_NAME} ${CLI_SOURCE_FILES} client/main.cpp)
 set_target_properties(
-        csock
+        client_rsock_${CMAKE_SYSTEM_NAME}
         PROPERTIES
         COMPILE_DEFINITIONS RSOCK_NNDEBUG
 )
+target_compile_options(client_rsock_${CMAKE_SYSTEM_NAME} PRIVATE -O2)
+##### }
 
-add_executable(test_server ${SVR_SOURCE_FILES} test/test_server.cpp)
-set_target_properties(
-        test_server
-        PROPERTIES
-        COMPILE_DEFINITIONS RSOCK_IS_SERVER_)
-
-add_executable(test_client ${CLI_SOURCE_FILES} test/test_client.cpp)
-
-add_executable(echo_server src/rcommon.c test/udp_echo_server.cpp)
-add_executable(echo_client src/rcommon.c test/udp_echo_client.cpp)
-
-add_definitions(-Wall -pg -g)
-#add_definitions(-DRLOG_FILE_PATH="/var/log/rsock/rsock.log")
+add_definitions(-Wall -fvisibility=default)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -Wsign-compare")
+set(libs uv net pcap pthread)
+target_link_libraries(server_rsock_${CMAKE_SYSTEM_NAME} ${libs})
+target_link_libraries(client_rsock_${CMAKE_SYSTEM_NAME} ${libs})
 
-# set PLATFORM_LIB_PATH to the folder of your libnet.so/.a
-if (APPLE)
-    set(PLATFORM_LIB_PATH /usr/local/lib /usr/lib)
-else ()  # linux
-    set(PLATFORM_LIB_PATH /usr/lib/x86_64-linux-gnu/)
-endif ()
+###### debug {
+if (NOT RSOCK_RELEASE)
+    MESSAGE(STATUS "Debug build")
+    add_executable(test_server ${SVR_SOURCE_FILES} test/test_server.cpp)
+    set_target_properties(
+            test_server
+            PROPERTIES
+            COMPILE_DEFINITIONS RSOCK_IS_SERVER_
+    )
+    target_compile_options(test_server PRIVATE -pg -g)
 
-find_library(NET_PATH net ${PLATFORM_LIB_PATH} NO_DEFAULT_PATH)
-link_libraries($NET_PATH)
+    add_executable(test_client ${CLI_SOURCE_FILES} test/test_client.cpp)
+    target_compile_options(test_client PRIVATE -pg -g)
 
-find_library(UV_PATH uv ${PLATFORM_LIB_PATH} NO_DEFAULT_UV_PATH)
-link_libraries($UV_PATH)
+    add_executable(echo_server src/rcommon.c test/udp_echo_server.cpp)
+    add_executable(echo_client src/rcommon.c test/udp_echo_client.cpp)
 
-find_library(CAP_PATH pcap ${PLATFORM_LIB_PATH} NO_DEFAUL_CAP_PATH)
-link_libraries($CAP_PATH)
+    target_link_libraries(test_client ${libs})
+    target_link_libraries(test_server ${libs})
 
-if (APPLE)
-    set(libs uv net pcap)
+    target_link_libraries(echo_client uv pthread)
+    target_link_libraries(echo_server uv pthread)
 else ()
-    set(libs uv net pcap pthread)
+    MESSAGE(STATUS "Release build")
 endif ()
-
-target_link_libraries(ssock ${libs})
-target_link_libraries(csock ${libs})
-
-target_link_libraries(test_server ${libs})
-target_link_libraries(test_client ${libs})
-target_link_libraries(echo_client uv)
-target_link_libraries(echo_server uv)
+##### }

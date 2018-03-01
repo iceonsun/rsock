@@ -11,3 +11,4 @@ cmake-build-debug/
 *.dSYM
 *.o
 a.out*
+/xbuild/build
