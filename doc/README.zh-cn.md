@@ -78,3 +78,27 @@ daemon 同上。
 
 对于rsock，只需在参数中添加 `--daemon=1`
 
+### 捐赠
+
+非常欢迎。
+
+微信打赏
+
+![](img/wxdonation.jpg)
+
+比特币
+
+11451A1Y4e8vtK3Jb7DoW8BTqj1afuWSn8
+
+或者扫描二维码
+
+![](img/btdonation.jpeg)
+
+以太币
+
+0x648419aE3D49271BB7cC31F2a61bC4c517Ea6578
+
+或者扫描二维码
+
+![](img/ethdonation.jpeg)
+

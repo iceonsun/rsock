@@ -82,4 +82,30 @@ It is strongly recommended that kcptun server and rsock server run in background
 
 For rsock server, only need to specify parameter `--daemon=1`
 
+### Donation
+
+Donation is very welcome.
+
+Wechat pay
+
+![](doc/img/wxdonation.jpg)
+
+Ethereum
+
+11451A1Y4e8vtK3Jb7DoW8BTqj1afuWSn8
+
+or qrcode
+
+![](doc/img/btdonation.jpeg)
+
+bitcoin
+
+0x648419aE3D49271BB7cC31F2a61bC4c517Ea6578
+
+or qrcode
+
+![](doc/img/ethdonation.jpeg)
+
+
+
 
