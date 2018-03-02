@@ -132,7 +132,7 @@ int ISockApp::initLog() {
 
 int ISockApp::Start() {
     assert(mInited);
-    StartTimer(mConf.param.appFlushInterval, mConf.param.appFlushInterval);
+    StartTimer(mConf.param.conn_duration_sec * 1000, mConf.param.conn_duration_sec * 1000);
     return uv_run(mLoop, UV_RUN_DEFAULT);
 }
 
@@ -185,7 +185,7 @@ void ISockApp::Close() {
         mAckPool = nullptr;
     }
 
-    if (mLoop) {
+    if (mLoop && mInited) {
         uv_stop(mLoop);
         if (mConf.isDaemon) {   // it will crash if delete default loop
             if (!uv_loop_close(mLoop)) {

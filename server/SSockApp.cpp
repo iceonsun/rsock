@@ -16,7 +16,7 @@
 SSockApp::SSockApp(uv_loop_t *loop) : ISockApp(true, loop) {}
 
 RCap *SSockApp::CreateCap(RConfig &conf) {
-    return new RCap(conf.param.dev, conf.param.selfCapIp, conf.param.capPorts, {}, "", conf.param.interval, true);
+    return new RCap(conf.param.dev, conf.param.selfCapIp, conf.param.capPorts, {}, "", conf.param.cap_timeout, true);
 }
 
 RConn *SSockApp::CreateBtmConn(RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool, int datalink) {

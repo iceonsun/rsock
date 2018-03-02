@@ -8,6 +8,9 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <cassert>
+#include <cstring>
+#include <cerrno>
 #include "ProcUtil.h"
 
 int ProcUtil::MakeDaemon(bool d) {
@@ -20,7 +23,6 @@ int ProcUtil::MakeDaemon(bool d) {
             if (-1 == n) {
                 return n;
             }
-            fprintf(stderr, "Run in background. pid: %d\n", getpid());
             umask(0);
             const int nret = chdir("/");
             if (nret == -1) {
@@ -34,8 +36,11 @@ int ProcUtil::MakeDaemon(bool d) {
             dup2(fd, STDERR_FILENO);
             pid = getpid();
         } else if (pid > 0) {   // parent;
+            fprintf(stderr, "Run in background. pid: %d\n", pid);
             exit(0);
         } else {
+            fprintf(stderr, "fork error: %s\n", strerror(errno));
+            assert(0);
         }
     } else {
         pid = getpid();
