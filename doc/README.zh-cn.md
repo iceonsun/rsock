@@ -31,6 +31,17 @@ cmake .. -DRSOCK_RELEASE=1 && make`
 注意防火墙，允许端口进入.
 以64位linux为例：
 
+```
+# port=10001
+# while [ $port -le 10010 ]
+do
+sudo ufw allow $port
+port=$[ $port + 1]
+done
+```
+
+表示允许客户端连接从10001到10010的端口。
+
 `sudo ./server_rsock_Linux --dev=eth0 --taddr=127.0.0.1:9999 --ports=10001-10010 --daemon=1`
 
 
