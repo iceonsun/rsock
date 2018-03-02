@@ -34,39 +34,38 @@ struct RConfig {
 #endif
 
         // other app communicate with client/server through this port.
-#ifdef RSOCK_IS_SERVER_
-        uint16_t localUdpPort = 30010;
-#else
-        uint16_t localUdpPort = 30000;
-#endif
+        uint16_t localUdpPort = 0;
+
         // The ip for passed in dev. e.g. 192.168.3.2. This may be different from localUdpIp
         std::string selfCapIp;
 
         // these are ports used for communications between server and clients.
         // after 0, 0, all are port range.
-        RPortList capPorts = {{80, 0}, {443, 0}, {10010, 10020}};
+        RPortList capPorts = {{80,    0},
+                              {443,   0},
+                              {10010, 10020}};
 
         std::string targetIp;
         uint16_t targetPort = 0;
 
-        uint16_t interval = OM_PCAP_TIMEOUT;
+        uint32_t conn_duration_sec = 30;  // 30s
         uint32_t selfCapInt = 0;
         uint32_t targetCapInt = 0;
         std::string hashKey = "hello135";
-        IdBufType id {{0}};
+        IdBufType id{{0}};
 #ifdef RSOCK_IS_SERVER_
         int type = OM_PIPE_ALL;
 #else
         int type = OM_PIPE_TCP;
 #endif
-        uint32_t appFlushInterval = 30000;  // 30s
+        uint16_t cap_timeout = OM_PCAP_TIMEOUT;
     };
 
     plog::Severity log_level = plog::debug;
     std::string log_path = RLOG_FILE_PATH;
 
     bool isServer = false;
-    bool isDaemon = false;
+    bool isDaemon = true;
     RParam param;
 private:
     bool mInited = false;

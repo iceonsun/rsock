@@ -28,7 +28,7 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
     ValueFlag<std::string> dev(required, "dev", "The network interface to work around.", {'d', "dev"});
     ValueFlag<std::string> targetAddr(required, "taddr",
                                       "The target address.(e.g. client, 8.8.8.8 . server, 7.7.7.7:80. "
-                                              "Port is ignored if it's client.)", {"taddr"}, "127.0.0.1:10030");
+                                              "Port is ignored if it's client.)", {'t', "taddr"}, "127.0.0.1:10030");
 
 
     Group opt(parser, "Optional arguments");
@@ -39,20 +39,20 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
     ValueFlag<std::string> localUn(opt, "", "Local listening unix domain socket path.(disabled currenty)", {"unPath"});
     ValueFlag<std::string> localUdp(opt, "", "Local listening udp port.", {"ludp"});;
     ValueFlag<std::string> capPorts(opt, "", "Capture port list. "
-            "(e.g.3000,3001,4000-4050. No blank spaces or other characters allowed)", {"ports"});
-    ValueFlag<int> interval(opt, "",
-                            "Interval(sec) to invalid connection. Client need to set to same value with server. "
-                                    "(default 20s. min: 10s, max: 40s.)", {"duration"});
+            "(e.g.3000,3001,4000-4050. No blank spaces or other characters allowed)", {'p', "ports"});
+    ValueFlag<uint32_t> duration(opt, "",
+                                 "Interval(sec) to invalid connection. Client need to set to same value with server. "
+                                         "(default 20s. min: 10s, max: 60s.)", {"duration"});
     ValueFlag<std::string> key(opt, "HashKey", "Key to check validation of packet. (default hello1235)", {"hash"});
-    ValueFlag<std::string> type(opt, "",
-                                "Type used to communicate with server. 1 for tcp up and down. 2 tcp up and udp down. "
-                                        "3 for udp up and tcp down. 4 for udp up and down. (Only valid for client.)",
-                                {"type"});
-    args::ValueFlag<int> daemon(opt, "daemon", "1 for running as daemon, 0 for not. (default as daemon)",
-                                {"daemon", 'd'});
-    args::Flag verbose(opt, "verbose", "flag to indicate if log in verbose", {'v'});
-    args::ValueFlag<std::string> flog(parser, "/path/to/log_file", "log file", {"log"});
+    ValueFlag<std::string> type(opt, "tcp|udp|all",
+                                "Type used to communicate with server. tcp for tcp only mode, udp for udp only mode. "
+                                        "all for both tcp and udp ", {"type"});
+    args::ValueFlag<int> daemon(opt, "daemon", "1 for running as daemon, 0 for not. (default 1)",
+                                {"daemon"});
+    args::Flag verbose(opt, "verbose", "enable verbose mode", {'v'});
+    args::ValueFlag<std::string> flog(opt, "/path/to/log_file", "log file. default /var/log/rsock/", {"log"});
 
+    args::ValueFlag<uint16_t> cap_timeout(opt, "", "pcap timeout(ms). > 0 and <= 50", {"cap_timeout"});
     try {
         parser.ParseCLI(argc, argv);
         do {
@@ -101,8 +101,8 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
                 throw args::Error("You must specify target address.");
             }
 
-            if (interval) {
-                param.interval = interval.Get();
+            if (duration) {
+                param.conn_duration_sec = duration.Get();
             }
 
             if (key) {
@@ -122,6 +122,10 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
 
             if (flog) {
                 this->log_path = flog.Get();
+            }
+
+            if (cap_timeout) {
+                this->param.cap_timeout = cap_timeout.Get();
             }
 
             if (daemon) {
@@ -177,6 +181,7 @@ void RConfig::CheckValidation(const RConfig &c) {
     assert(p.targetCapInt != 0);
     assert(!EmptyIdBuf(p.id));
     assert((p.type == OM_PIPE_TCP) || (p.type == OM_PIPE_UDP) || (p.type == OM_PIPE_ALL));
+    assert(p.cap_timeout > 0 && p.cap_timeout < 50);
 
     if (!DevIpMatch(p.dev, p.selfCapIp)) {
         char buf[BUFSIZ] = {0};
@@ -185,8 +190,8 @@ void RConfig::CheckValidation(const RConfig &c) {
         throw args::Error(buf);
     }
 
-    if (p.interval < 10 || p.interval > 50) {
-        throw args::Error("Duration must be in range [10, 50]");
+    if (p.conn_duration_sec < 10 || p.conn_duration_sec > 60) {
+        throw args::Error("Duration must be in range [10, 60]");
     }
 }
 
@@ -259,7 +264,7 @@ void RConfig::ParseJsonString(RConfig &c, const std::string &content, std::strin
         }
 
         if (o["duration"].is_number()) {
-            p.interval = o["duration"].int_value();
+            p.conn_duration_sec = o["duration"].int_value();
         }
 
         if (o["hash"].is_string()) {
@@ -273,6 +278,10 @@ void RConfig::ParseJsonString(RConfig &c, const std::string &content, std::strin
                 throw args::Error("unable to parse " + s);
             }
         }
+
+        if (o["cap_timeout"].is_string()) {
+            p.cap_timeout = o["cap_timeout"].int_value();
+        }
     }
 }
 
@@ -284,17 +293,18 @@ json11::Json RConfig::to_json() const {
             {"log",     log_path},
             {
              "param",   Json::object {
-                    {"dev",       param.dev},
-                    {"unPath",    param.selfUnPath},
-                    {"ludp",      isServer ? param.localUdpIp :
-                                  (param.localUdpIp + ":" + std::to_string(param.localUdpPort))},
-                    {"lcapIp",    param.selfCapIp},
-                    {"ports", RPortList::ToString(param.capPorts)},
-                    {"taddr",     isServer ? (param.targetIp + ":" + std::to_string(param.targetPort))
-                                           : param.targetIp},
-                    {"duration",  (int) param.interval},
-                    {"type",      strOfType(param.type)},
-                    {"hash",      param.hashKey},
+                    {"dev",      param.dev},
+                    {"unPath",   param.selfUnPath},
+                    {"ludp",     isServer ? param.localUdpIp :
+                                 (param.localUdpIp + ":" + std::to_string(param.localUdpPort))},
+                    {"lcapIp",   param.selfCapIp},
+                    {"ports",    RPortList::ToString(param.capPorts)},
+                    {"taddr",    isServer ? (param.targetIp + ":" + std::to_string(param.targetPort))
+                                          : param.targetIp},
+                    {"duration", (int) param.conn_duration_sec},
+                    {"type",     strOfType(param.type)},
+                    {"hash",     param.hashKey},
+                    {"cap_timeout", param.cap_timeout},
             }},
     };
     return j;
