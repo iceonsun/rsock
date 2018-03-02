@@ -26,21 +26,10 @@ set(CLI_SOURCE_FILES ${SOURCE_FILES} client/CConn.cpp client/csock.cpp client/CS
 
 ##### release {
 add_executable(server_rsock_${CMAKE_SYSTEM_NAME} ${SVR_SOURCE_FILES} server/main.cpp)
-set_target_properties(
-        server_rsock_${CMAKE_SYSTEM_NAME}
-        PROPERTIES
-        COMPILE_DEFINITIONS RSOCK_IS_SERVER_
-        COMPILE_DEFINITIONS RSOCK_NNDEBUG
-)
-target_compile_options(server_rsock_${CMAKE_SYSTEM_NAME} PRIVATE -O2)
+target_compile_options(server_rsock_${CMAKE_SYSTEM_NAME} PRIVATE -O2 -DRSOCK_IS_SERVER_ -DRSOCK_NNDEBUG)
 
 add_executable(client_rsock_${CMAKE_SYSTEM_NAME} ${CLI_SOURCE_FILES} client/main.cpp)
-set_target_properties(
-        client_rsock_${CMAKE_SYSTEM_NAME}
-        PROPERTIES
-        COMPILE_DEFINITIONS RSOCK_NNDEBUG
-)
-target_compile_options(client_rsock_${CMAKE_SYSTEM_NAME} PRIVATE -O2)
+target_compile_options(client_rsock_${CMAKE_SYSTEM_NAME} PRIVATE -O2 -DRSOCK_NNDEBUG)
 ##### }
 
 add_definitions(-Wall -fvisibility=default)
@@ -54,12 +43,7 @@ target_link_libraries(client_rsock_${CMAKE_SYSTEM_NAME} ${libs})
 if (NOT RSOCK_RELEASE)
     MESSAGE(STATUS "Debug build")
     add_executable(test_server ${SVR_SOURCE_FILES} test/test_server.cpp)
-    set_target_properties(
-            test_server
-            PROPERTIES
-            COMPILE_DEFINITIONS RSOCK_IS_SERVER_
-    )
-    target_compile_options(test_server PRIVATE -pg -g)
+    target_compile_options(test_server PRIVATE -pg -g -DRSOCK_IS_SERVER_)
 
     add_executable(test_client ${CLI_SOURCE_FILES} test/test_client.cpp)
     target_compile_options(test_client PRIVATE -pg -g)

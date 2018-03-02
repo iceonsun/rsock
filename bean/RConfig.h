@@ -27,11 +27,7 @@ struct RConfig {
 
         std::string selfUnPath;         // todo: test unix domain socket
 
-#ifdef RSOCK_IS_SERVER_
-        std::string localUdpIp = "0.0.0.0";
-#else
-        std::string localUdpIp = "127.0.0.1";
-#endif
+        std::string localUdpIp;
 
         // other app communicate with client/server through this port.
         uint16_t localUdpPort = 0;
@@ -53,6 +49,7 @@ struct RConfig {
         uint32_t targetCapInt = 0;
         std::string hashKey = "hello135";
         IdBufType id{{0}};
+
 #ifdef RSOCK_IS_SERVER_
         int type = OM_PIPE_ALL;
 #else

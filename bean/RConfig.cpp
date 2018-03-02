@@ -162,8 +162,10 @@ void RConfig::CheckValidation(const RConfig &c) {
     const RParam &p = c.param;
     assert(!c.param.dev.empty());
 
-    assert(!p.localUdpIp.empty());;
-    assert(ValidIp4(p.localUdpIp));
+    if (!c.isServer) {
+        assert(!p.localUdpIp.empty());;
+        assert(ValidIp4(p.localUdpIp));
+    }
 
     if (!c.isServer) {
         assert(p.localUdpPort != 0);
@@ -293,17 +295,17 @@ json11::Json RConfig::to_json() const {
             {"log",     log_path},
             {
              "param",   Json::object {
-                    {"dev",      param.dev},
-                    {"unPath",   param.selfUnPath},
-                    {"ludp",     isServer ? param.localUdpIp :
-                                 (param.localUdpIp + ":" + std::to_string(param.localUdpPort))},
-                    {"lcapIp",   param.selfCapIp},
-                    {"ports",    RPortList::ToString(param.capPorts)},
-                    {"taddr",    isServer ? (param.targetIp + ":" + std::to_string(param.targetPort))
-                                          : param.targetIp},
-                    {"duration", (int) param.conn_duration_sec},
-                    {"type",     strOfType(param.type)},
-                    {"hash",     param.hashKey},
+                    {"dev",         param.dev},
+                    {"unPath",      param.selfUnPath},
+                    {"ludp",        isServer ? param.localUdpIp :
+                                    (param.localUdpIp + ":" + std::to_string(param.localUdpPort))},
+                    {"lcapIp",      param.selfCapIp},
+                    {"ports",       RPortList::ToString(param.capPorts)},
+                    {"taddr",       isServer ? (param.targetIp + ":" + std::to_string(param.targetPort))
+                                             : param.targetIp},
+                    {"duration",    (int) param.conn_duration_sec},
+                    {"type",        strOfType(param.type)},
+                    {"hash",        param.hashKey},
                     {"cap_timeout", param.cap_timeout},
             }},
     };
