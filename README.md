@@ -5,6 +5,8 @@
 
 rsock is merely for accelerating. It's not vpn. It must be used together with kcptun. The purpose of this program is that prevent qos of ips if any. It supports Mac(and other unices) and Linux. To see introduction and usage of kcptun click [here](https://github.com/xtaci/kcptun).
 
+Data transfer of rsock is **NOT** reliable. Reliable data tranfer should be take cared by app level(kcptun).
+
 The following picture brifely introduces principle
 
 ![](doc/img/principle.png)
@@ -32,7 +34,7 @@ To accelerate compilation, you can specify -jNumOfCpuCores. e.g make -j2
 
 Take Linux as an exmaple:
 
-`sudo ./server_rsock_Linux --dev=eth1 --taddr=127.0.0.1:9999 --ports=10000-10005 --daemon=1`
+`sudo ./server_rsock_Linux --dev=eth1 --taddr=127.0.0.1:9999 --ports=10001-10010 --daemon=1`
 
 Parameter explanation:
 
@@ -40,7 +42,7 @@ eth0, name of network interface card of Internet, not LAN, e.g. eth1
 
 127.0.0.1:9999, target address，aka address of kcptun server working on.
 
-10000-10005 , **RANGE** of ports that rsock works on. It has following formats: 10000-10005(6 ports in total). 80,443(2 ports). 80,443,10000-10005(8 ports).
+10001-10010 , **RANGE** of ports that rsock works on. It has following formats: 10000-10005(6 ports in total). 80,443(2 ports). 80,443,10000-10005(8 ports).
 
 daemon Run program as daemon if equals 1. Otherwise 0。Recommend 1.
 
@@ -48,7 +50,7 @@ daemon Run program as daemon if equals 1. Otherwise 0。Recommend 1.
 
 Take mac as an example:
 
-`sudo ./client_rsock_Darwin --dev=en0 --taddr=x.x.x.x --ports=10000-10005 --ludp=127.0.0.1:30000 --daemon=1`
+`sudo ./client_rsock_Darwin --dev=en0 --taddr=x.x.x.x --ports=10001-10010 --ludp=127.0.0.1:30000 --daemon=1`
 
 Parameter explanation:
 
@@ -85,7 +87,7 @@ Under tcp mode, since we don't send/recv data from socket, it will send an ack w
 
 ### Comparison
 
-Comparing objects：rsock, [udp2raw-tunnel](https://github.com/wangyu-/udp2raw-tunnel), [kcptun](https://github.com/xtaci/kcptun)
+Comparing objects：rsock, [kcptun](https://github.com/xtaci/kcptun)
 
 ##### Server test environment
 
@@ -106,9 +108,17 @@ rsock(tcp and udp). It's around 900KB
 
 ![](doc/img/rsock_do_sg_udp_tcp.png)
 
-udp2raw-tunnel. Very fast, 1360KB.
+rsock(tcp only, 11 ports). 1.25M
 
-![](doc/img/udp2raw_do_sg.png)
+![](doc/img/rsock_do_sg_11tcp.png)
+
+rsock(udp only, 11 ports).  1.5M
+
+![](doc/img/rsock_do_sg_11udp.png)
+
+rsock(doc/tcp and udp, 11 ports each. 1.1M
+
+![](doc/img/rsock_do_sg_11udp_tcp.png)
 
 kcptun. The fastest, around 1.5MB.
 
@@ -117,28 +127,37 @@ kcptun. The fastest, around 1.5MB.
 
 ##### Client test environment 1. China telecom with 100Mb downloading and 10Mb upload speed.
 
-rsock(tcp only). Around 630KB.
+rsock(tcp only, 2 ports). Around 630KB.
 
 ![](doc/img/rsock_telecom.png)
 
-rsock(udp only)。Around 1MB
+rsock(udp only, 2 ports). Around 1MB
 
 ![](doc/img/rsock_udp_telcom.png)
 
-rsock(udp and tcp). Around 700k
+rsock(udp and tcp, 2 ports each). Around 700k
 
 ![](doc/img/rsock_udp_tcp_telcom.png)
+
+rsock(tcp only, 11 ports). 1.4M
+
+![](doc/img/rsock_11tcp_telcom.png)
+
+rsock(udp only, 11 ports. 1.7M
+
+![](doc/img/rsock_11udp_telcom.png)
+
+rsock(udp and tcp, 11 ports each）900K. I've tested twice. The speed is slower.
+
+![](doc/img/rsock_11udp_tcp_telcom.png)
 
 kcptun. extremely fast. Around 2MB.
 
 ![](doc/img/kcptun_telecom.png)
 
-
-I didn't test udp2raw-tunnel on mac.
-
 #### Conclusion
 
-rsock only has 30%-50% speed of kcptun. But it's suffienct to watch youtube 1080 videos. 
+rsock only has 70%-90% speed of kcptun.
 
 ### Note
 
@@ -156,14 +175,24 @@ It is strongly recommended that kcptun server and rsock server run in background
 
 For rsock server, only need to specify parameter `--daemon=1`
 
+If servers run normally, try to restart shadowsocks client.
+
+**rsock DOES NOT encrypt data**. Encrption happens in app level(kcptun).
+
+### Other projects
+
+[udp2raw-tunnel](https://github.com/wangyu-/udp2raw-tunnel)
+
+[kcptun-raw](https://github.com/Chion82/kcptun-raw)
+
+[icmptunnel](https://github.com/DhavalKapil/icmptunnel)
+
+
 ### TODO
 
-1. Locate problem of slow speed. 
-   - I don't think that kcptun running above rsock is the main reason that why speed of rsock is much slower than kcptun. I don't know intermediate routers/firewalls will drop packets due to wrong seq and ack. I did googled it. The anwsers are they won't drop packets. But I'm still questioning it.
-   
-   - Probably schedule problem of libuv. Because it may cause balsting recv/send data and it will flood network. Then router will drop packets.
-   
-2. If low speed is due to 0 length ack, consider use linux rawsocket and BSD bpf.
+1. Add other ways to communicate, e.g. icmp, dns.
+
+2. Try to introduce reliable data transfer. Listen tcp directly and remove kcptun.
 
 
 ### Donation
@@ -189,7 +218,3 @@ bitcoin
 or qrcode
 
 ![](doc/img/ethdonation.jpeg)
-
-
-
-
