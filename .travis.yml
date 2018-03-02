@@ -1,0 +1,19 @@
+### linux & osx dynamic linking, linux & os partially static linking
+# newer cmake, gcc
+language: cpp
+os:
+  - linux
+  - osx
+
+compiler:
+  - gcc
+
+before_install:
+  - if which apt-get ; then sudo sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y && sudo apt-get update -q; fi
+  - if which brew; then HOMEBREW_NO_AUTO_UPDATE=1; rm /usr/local/include/c++; brew install gcc@6; CC=gcc-6 && CXX=g++-6; fi
+install:
+  - if which apt-get; then sudo aptitude -f install g++-6 -y; fi
+before_script:
+  - sudo chmod a+x xbuild/sh/travis_install.sh
+script:
+  - ./xbuild/sh/travis_install.sh

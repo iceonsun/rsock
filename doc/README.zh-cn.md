@@ -31,6 +31,17 @@ cmake .. -DRSOCK_RELEASE=1 && make`
 注意防火墙，允许端口进入.
 以64位linux为例：
 
+```
+# port=10001
+# while [ $port -le 10010 ]
+do
+sudo ufw allow $port
+port=$[ $port + 1]
+done
+```
+
+表示允许客户端连接从10001到10010的端口。
+
 `sudo ./server_rsock_Linux --dev=eth0 --taddr=127.0.0.1:9999 --ports=10001-10010 --daemon=1`
 
 
@@ -187,9 +198,11 @@ kcptun的下载速度. 速度在2M左右。
 
 ### TODO
    
-1. 尝试增加其他通信方式，比如icmp，dns。
+1. windows 支持
 
-2. 尝试引入类似kcp的可靠数据传输。直接监听tcp，取消kcptun中转。
+1. 尝试增加其他通信方式，比如icmp，dns
+
+1. 尝试引入类似kcp的可靠数据传输。直接监听tcp，取消kcptun中转。
 
 ### 捐赠
 

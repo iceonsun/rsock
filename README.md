@@ -32,7 +32,20 @@ To accelerate compilation, you can specify -jNumOfCpuCores. e.g make -j2
 
 #### Server
 
+Remember to add firewall rule if firewall enabled.
+
 Take Linux as an exmaple:
+
+```
+# port=10000
+# while [ $port -le 10010 ]
+do
+sudo ufw allow $port
+port=$[ $port + 1]
+done
+```
+
+It means allow client connects to server from port 10000 to 10010.
 
 `sudo ./server_rsock_Linux --dev=eth1 --taddr=127.0.0.1:9999 --ports=10001-10010 --daemon=1`
 
@@ -190,9 +203,11 @@ If servers run normally, try to restart shadowsocks client.
 
 ### TODO
 
+1. windows support
+
 1. Add other ways to communicate, e.g. icmp, dns.
 
-2. Try to introduce reliable data transfer. Listen tcp directly and remove kcptun.
+1. Try to introduce reliable data transfer. Listen tcp directly and remove kcptun.
 
 
 ### Donation
@@ -218,3 +233,5 @@ bitcoin
 or qrcode
 
 ![](doc/img/ethdonation.jpeg)
+
+
