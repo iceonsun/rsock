@@ -10,8 +10,8 @@
 其他平台可以自己下载源码进行编译。rsock依赖的第三方库有：libuv, libnet, libpcap。
 
 以ubuntu为例：
-`sudo apt-get install g++ libuv libnet libpcap
-git clone https://www.xxxx.git rsock
+`sudo apt-get install g++ libuv1-dev libnet libpcap # 注意是libuv1-dev
+git clone https://github.com/iceonsun/rsock.git rsock
 cd rsock
 mkdir build && cd build
 cmake .. -DRSOCK_RELEASE=1 && make`

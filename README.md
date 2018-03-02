@@ -9,12 +9,12 @@ rsock is merely for accelerating. It's not vpn. It must be used together with kc
 
 There are precompiled binaries for 64bit Linux and 64bit Mac. Download from [here](https://github.com/iceonsun/rsock/releases).
 
-For other platforms, you can download source code and compile it by yourself. Library dependency list: libuv, libnet, libpca.
+For other platforms, you can download source code and compile it by yourself. Library dependency list: libuv, libnet, libpcap.
 
 Take Ubuntu as an example:
 
-`sudo apt-get install g++ libuv libnet libpcap
-git clone https://www.xxxx.git rsock
+`sudo apt-get install g++ libuv1-dev libnet libpcap #note!It's libuv1-dev
+git clone https://github.com/iceonsun/rsock.git rsock
 cd rsock
 mkdir build && cd build
 cmake .. -DRSOCK_RELEASE=1 && make`
