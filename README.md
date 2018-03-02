@@ -123,11 +123,11 @@ rsock(tcp only). Around 630KB.
 
 rsock(udp only)。Around 1MB
 
-![](img/rsock_udp_telcom.png)
+![](doc/img/rsock_udp_telcom.png)
 
 rsock(udp and tcp). Around 700k
 
-![](img/rsock_udp_tcp_telcom.png)
+![](doc/img/rsock_udp_tcp_telcom.png)
 
 kcptun. extremely fast. Around 2MB.
 
