@@ -65,8 +65,10 @@ function build_cross_binaries {
             echo "failed to make target $sub_arch_dir"
             exit 3
         else
-            local TAR_FILE="rsock-${SYSNAME}-${ARCH}-${BUILD_VERSION}.zip"
-            zip "${TAR_FILE}" "server_rsock_${SYSNAME}" "client_rsock_${SYSNAME}" ../VERSION.txt
+            local TAR_FILE="rsock-${SYSNAME}-${ARCH}-${BUILD_VERSION}.tar.gz"
+            cp ../VERSION.txt .
+            tar -czf "${TAR_FILE}" "server_rsock_${SYSNAME}" "client_rsock_${SYSNAME}" VERSION.txt
+            rm VERSION.txt
             echo
             local sum=$(shasum ${TAR_FILE})
             echo ${sum}
