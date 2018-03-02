@@ -17,7 +17,7 @@ function build_cross_binaries {
     local DIR="build"
 
     if [ -d ${DIR} ]; then
-        rm *.bz2
+        rm rsock*.zip
     else
         mkdir mkdir ${DIR}
         if [ $? -ne 0 ]; then
