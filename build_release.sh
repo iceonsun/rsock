@@ -16,22 +16,23 @@ function build_cross_binaries {
     cd ${BUILD_DIR}
     local DIR="build"
 
-    if [ -d ${DIR} ]; then
-        rm rsock*.zip
-    else
-        mkdir mkdir ${DIR}
-        if [ $? -ne 0 ]; then
-            echo "cannot create directory ${BUILD_DIR}/build"
-            exit 1
-        fi
+    [[ -d ${DIR} ]] || echo "doesnot exists"
+
+    [[ -d ${DIR} ]] || mkdir ${DIR}
+    if [ $? -ne 0 ]; then
+        echo "cannot create directory ${BUILD_DIR}/build"
+        exit 1
     fi
 
     cd ${DIR}
+    rm rsock*.tar.gz
+    local VERSION_FILE=VERSION.txt
+    local SUM_FILE=sum.txt
 
-    echo "build on `date -u`" > sum.txt
+    echo "build on `date -u`" > ${SUM_FILE}
 
-    echo "build on `date -u`" > VERSION.txt
-    echo "commit head: $(git rev-parse HEAD)" >> VERSION.txt
+    echo "build on `date -u`" > ${VERSION_FILE}
+    echo "commit head: $(git rev-parse HEAD)" >> ${VERSION_FILE}
 
     get_num_core
     local num_core=$?
@@ -41,6 +42,7 @@ function build_cross_binaries {
 
         local sub_arch_dir=$(echo ${filename} |cut -d'.' -f 1)
         if [ -d ${sub_arch_dir} ]; then
+            [[ -f CMakeCache.txt ]] && rm CMakeCache.txt
             make clean
             else
                 mkdir ${sub_arch_dir}
@@ -66,21 +68,19 @@ function build_cross_binaries {
             exit 3
         else
             local TAR_FILE="rsock-${SYSNAME}-${ARCH}-${BUILD_VERSION}.tar.gz"
-            cp ../VERSION.txt .
-            tar -czf "${TAR_FILE}" "server_rsock_${SYSNAME}" "client_rsock_${SYSNAME}" VERSION.txt
-            rm VERSION.txt
+            cp ../${VERSION_FILE} .
+            tar -czf "${TAR_FILE}" "server_rsock_${SYSNAME}" "client_rsock_${SYSNAME}" ${VERSION_FILE}
+            rm ${VERSION_FILE}
             echo
             local sum=$(shasum ${TAR_FILE})
             echo ${sum}
-            echo ${sum} >> ../sum.txt
+            echo ${sum} >> ../${SUM_FILE}
             echo
             mv ${TAR_FILE} ..
         fi
 
         cd -
     done
-
-    rm VERSION.txt
 
     cd ${TOP_DIR}
 }

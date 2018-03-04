@@ -9,14 +9,15 @@ os:
   -linux
 before_install:
 #  - if [ $TRAVIS_OS_NAME = linux ]; then sudo sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y && apt-get update -q; else brew install bar; fi
-  - sudo sudo add-apt-repository ppa:ubuntu-toolchain-r/test
-  - apt-get update -q
+  - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
+  - sudo apt-get update -q
 install:
-  - sudo apt-get install g++6 libuv1-dev libnet-dev libpcap-dev -y
-
+  - sudo aptitude -f install g++-6 -y
+  #- sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-6 90
 script:
   - mkdir build && cd build
   - cmake -DRSOCK_RELEASE=1 -DCMAKE_C_COMPILER=gcc-6 -DCMAKE_CXX_COMPILER=g++-6 ..
+  - make -j`grep -c '^processor' /proc/cpuinfo`
 
 branches:
   only:

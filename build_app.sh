@@ -43,7 +43,6 @@ function install_cmd_and_libs {
     do
         local name4ck=${LIB_LIST[$i]}
         local name4ins=${INSTALLED_LIB_LIST[$i]}
-        echo "name4ck: ${name4ck}, name4ins: ${name4ins}"
         local ok=1
         if [ ${OS} -eq 2 ]; then    # linux library check
             ldconfig -p |grep ${name4ck}
@@ -93,7 +92,7 @@ function run_build {
     get_num_core
     local num_core=$?
 
-    cmake ${TOP_DIR} ../ && make "-j$num_core"
+    cmake ${TOP_DIR} -DRSOCK_RELEASE=1 && make "-j$num_core"
     if [ $? -eq 0 ]; then
         echo "build successful."
     else

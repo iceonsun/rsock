@@ -203,9 +203,11 @@ If servers run normally, try to restart shadowsocks client.
 
 ### TODO
 
+1. windows support
+
 1. Add other ways to communicate, e.g. icmp, dns.
 
-2. Try to introduce reliable data transfer. Listen tcp directly and remove kcptun.
+1. Try to introduce reliable data transfer. Listen tcp directly and remove kcptun.
 
 
 ### Donation
@@ -231,3 +233,5 @@ bitcoin
 or qrcode
 
 ![](doc/img/ethdonation.jpeg)
+
+
