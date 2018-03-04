@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/iceonsun/rsock.svg?branch=master)](https://travis-ci.org/iceonsun/rsock)
+-
 
 ### 简介
 
