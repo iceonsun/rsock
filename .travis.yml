@@ -1,0 +1,25 @@
+### linux & osx dynamic linking, linux & os partially static linking
+# newer cmake, gcc
+language: cpp
+sudo: required
+dist: trusty
+compile:
+  - gcc
+os:
+  -linux
+before_install:
+#  - if [ $TRAVIS_OS_NAME = linux ]; then sudo sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y && apt-get update -q; else brew install bar; fi
+  - sudo sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+  - apt-get update -q
+install:
+  - sudo apt-get install g++6 libuv1-dev libnet-dev libpcap-dev -y
+
+script:
+  - mkdir build && cd build
+  - cmake -DRSOCK_RELEASE=1 -DCMAKE_C_COMPILER=gcc-6 -DCMAKE_CXX_COMPILER=g++-6 ..
+
+branches:
+  only:
+    - travis_dev
+#-osx
+
