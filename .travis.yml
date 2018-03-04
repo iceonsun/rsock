@@ -17,7 +17,3 @@ before_script:
   - sudo chmod a+x xbuild/sh/travis_install.sh
 script:
   - ./xbuild/sh/travis_install.sh
-
-branches:
-  only:
-    - dev
