@@ -150,9 +150,9 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
         CheckValidation(*this);
         mInited = true;
         return 0;
-    } catch (args::Help &e) {
+    } catch (const args::Help &e) {
         std::cout << parser;
-    } catch (args::Error &e) {
+    } catch (const args::Error &e) {
         std::cerr << e.what() << std::endl << parser;
     }
     return 1;

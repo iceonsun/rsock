@@ -26,6 +26,7 @@ function build_cross_binaries {
 
     cd ${DIR}
     rm rsock*.tar.gz
+    rm rsock*.zip
     local VERSION_FILE=VERSION.txt
     local SUM_FILE=sum.txt
 
@@ -69,12 +70,16 @@ function build_cross_binaries {
         else
             local TAR_FILE="rsock-${SYSNAME}-${ARCH}-${BUILD_VERSION}.tar.gz"
             cp ../${VERSION_FILE} .
-            tar -czf "${TAR_FILE}" "server_rsock_${SYSNAME}" "client_rsock_${SYSNAME}" ${VERSION_FILE}
+            if [ ${SYSNAME} = "Darwin" ]; then
+                TAR_FILE="rsock-${SYSNAME}-${ARCH}-${BUILD_VERSION}.zip"
+                zip "${TAR_FILE}" "server_rsock_${SYSNAME}" "client_rsock_${SYSNAME}" ${VERSION_FILE}
+            else
+                tar -czf "${TAR_FILE}" "server_rsock_${SYSNAME}" "client_rsock_${SYSNAME}" ${VERSION_FILE}
+            fi
             rm ${VERSION_FILE}
             echo
             local sum=$(shasum ${TAR_FILE})
-            echo ${sum}
-            echo ${sum} >> ../${SUM_FILE}
+            echo ${sum} | tee -a ../${SUM_FILE}
             echo
             mv ${TAR_FILE} ..
         fi

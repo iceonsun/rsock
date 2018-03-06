@@ -1,4 +1,7 @@
 set(RSOCK_LINKER_FLAGS "-static-libgcc -static-libstdc++")
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux" )
+    set(RSOCK_LINKER_FLAGS "${RSOCK_LINKER_FLAGS} -static")
+endif()
 
 set(RSOCK_TOP_BUILD_DIR ${PROJECT_SOURCE_DIR}/xbuild)
 

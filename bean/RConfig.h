@@ -39,7 +39,7 @@ struct RConfig {
         // after 0, 0, all are port range.
         RPortList capPorts = {{80,    0},
                               {443,   0},
-                              {10010, 10020}};
+                              {10001, 10010}};
 
         std::string targetIp;
         uint16_t targetPort = 0;
@@ -58,11 +58,22 @@ struct RConfig {
         uint16_t cap_timeout = OM_PCAP_TIMEOUT;
     };
 
+#ifdef RSOCK_NNDEBUG
     plog::Severity log_level = plog::debug;
+#else
+    plog::Severity log_level = plog::verbose;
+#endif
+    
     std::string log_path = RLOG_FILE_PATH;
 
     bool isServer = false;
+
+#ifdef RSOCK_NNDEBUG
     bool isDaemon = true;
+#else
+    bool isDaemon = false;
+#endif
+
     RParam param;
 private:
     bool mInited = false;
