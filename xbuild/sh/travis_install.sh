@@ -35,7 +35,7 @@ function build_on_travis {
                 otool -L ${f} |grep '++'
             fi
             if [ $? -eq 0 ]; then
-                echo "library dependency not resolved"
+                echo "c++ library dependency not resolved"
                 echo "build failed"
                 exit 1
             fi

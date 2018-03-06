@@ -1,3 +1,4 @@
+
 set(RSOCK_LINKER_FLAGS "-static-libgcc -static-libstdc++")
 
 set(RSOCK_TOP_BUILD_DIR ${PROJECT_SOURCE_DIR}/xbuild)

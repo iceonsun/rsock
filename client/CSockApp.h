@@ -14,7 +14,7 @@ class INetConn;
 
 class CSockApp : public ISockApp {
 public:
-    explicit CSockApp(uv_loop_t *loop);
+    explicit CSockApp();
 
     RCap *CreateCap(RConfig &conf) override;
 

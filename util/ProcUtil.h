@@ -8,7 +8,9 @@
 
 class ProcUtil {
 public:
-    static int MakeDaemon(bool d);
+    static int MakeDaemon();
+
+    static bool IsRoot();
 };
 
 

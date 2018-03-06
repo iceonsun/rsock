@@ -13,7 +13,7 @@
 #include "../cap/RCap.h"
 #include "../conn/FakeUdp.h"
 
-CSockApp::CSockApp(uv_loop_t *loop) : ISockApp(false, loop) {}
+CSockApp::CSockApp() : ISockApp(false) {}
 
 RCap *CSockApp::CreateCap(RConfig &conf) {
     return new RCap(conf.param.dev, conf.param.selfCapIp, {}, conf.param.capPorts,

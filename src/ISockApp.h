@@ -31,17 +31,13 @@ class RConn;
 
 class ISockApp : public ITcpObserver {
 public:
-    ISockApp(bool is_server, uv_loop_t *loop);
+    ISockApp(bool is_server);
 
     virtual ~ISockApp();
 
     int Parse(int argc, const char *const *argv);
 
     virtual int Init();
-
-    virtual int Init(RConfig &conf);
-
-    virtual int Init(const std::string &json_content);
 
     virtual int Start();
 
@@ -77,6 +73,8 @@ protected:
 
     virtual void watchExitSignal();
 
+    virtual int newLoop();
+
     static void close_signal_handler(uv_signal_t *handle, int signum);
 
     static const int SIG_EXIT = SIGUSR1;
@@ -86,6 +84,8 @@ private:
     int makeDaemon(bool d);
 
     int initLog();
+
+    int checkRoot(int argc, const char *const *argv);
 
 private:
     // even app is deleted. don't delete IAppender object. because single process has only one ISockApp instance.

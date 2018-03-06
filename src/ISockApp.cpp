@@ -22,32 +22,15 @@
 #include "../conn/RConn.h"
 #include "../util/UvUtil.h"
 
-ISockApp::ISockApp(bool is_server, uv_loop_t *loop) : mServer(is_server) {
-    mLoop = loop;
+ISockApp::ISockApp(bool is_server) : mServer(is_server) {
 }
-
-int ISockApp::Init(RConfig &conf) {
-    if (!conf.Inited()) {
-        fprintf(stderr, "conf must be inited\n");
-        return -1;
-    }
-    mConf = conf;
-    return Init();
-}
-
-
-int ISockApp::Init(const std::string &json_content) {
-    std::string err;
-    mConf.ParseJsonString(mConf, json_content, err);
-    if (err.empty()) {
-        return Init();
-    }
-    return -1;
-}
-
 
 int ISockApp::Parse(int argc, const char *const *argv) {
     assert(argv != nullptr);
+    if (checkRoot(argc, argv)) {
+        return -1;
+    }
+
     int nret = mConf.Parse(mServer, argc, argv);
     return nret;
 }
@@ -66,7 +49,8 @@ int ISockApp::doInit() {
     if (makeDaemon(mConf.isDaemon)) {
         return -1;
     }
-    fprintf(stdout, "pid: %d\n", getpid());
+
+    newLoop();
 
     int nret = initLog();
     if (nret) {
@@ -82,7 +66,6 @@ int ISockApp::doInit() {
         LOGE << "NetManager init failed";
         return -1;
     }
-
     assert(mNetManager);
     mTimer = new RTimer(mLoop);
     mCap = CreateCap(mConf);
@@ -101,6 +84,7 @@ int ISockApp::doInit() {
     if (!mBridge || mBridge->Init()) {
         return -1;
     }
+
     watchExitSignal();
     mInited = true;
     srand(time(NULL));
@@ -185,14 +169,12 @@ void ISockApp::Close() {
         mAckPool = nullptr;
     }
 
-    if (mLoop && mInited) {
+    if (mLoop) {
         uv_stop(mLoop);
-        if (mConf.isDaemon) {   // it will crash if delete default loop
-            if (!uv_loop_close(mLoop)) {
-                free(mLoop);
-            } else {
-                LOGE << "loop not closed properly";
-            }
+        if (!uv_loop_close(mLoop)) {
+            free(mLoop);
+//        } else {
+//            LOGE << "loop not closed properly";
         }
         mLoop = nullptr;
     }
@@ -204,17 +186,21 @@ void ISockApp::StartTimer(uint32_t timeout_ms, uint32_t repeat_ms) {
 }
 
 int ISockApp::makeDaemon(bool d) {
-    int n = ProcUtil::MakeDaemon(d);
-    if (n < 0) {
-        LOGE << "make process daemon failed: " << strerror(errno);
-        return n;
+    if (d) {
+        int n = ProcUtil::MakeDaemon();
+        if (n > 0) {    // parent
+            fprintf(stderr, "Run in background. pid: %d\n", n);
+            return -1;
+        } else if (n < 0) {
+            fprintf(stderr, "fork error: %s\n", strerror(errno));
+            return n;
+        } else {    // else 0. child process
+            LOGD << "forked id: " << getpid();
+        }
+    } else {
+        LOGD << "pid: " << getpid();
     }
-    if (mConf.isDaemon) {   // todo: if run in daemon, poll will fail if use default loop (on mac, it's uv__io_check_fd fails). why?
-        LOGI << "Run in background. pid: " << getpid(); // print to file.
-        mLoop = static_cast<uv_loop_t *>(malloc(sizeof(uv_loop_t)));
-        memset(mLoop, 0, sizeof(uv_loop_t));
-        uv_loop_init(mLoop);
-    }
+
     return 0;
 }
 
@@ -284,4 +270,25 @@ bool ISockApp::OnTcpFinOrRst(const TcpInfo &info) {
         }
     }
     return false;
+}
+
+int ISockApp::newLoop() {
+    // always use a new loop
+    mLoop = static_cast<uv_loop_t *>(malloc(sizeof(uv_loop_t)));
+    memset(mLoop, 0, sizeof(uv_loop_t));
+    uv_loop_init(mLoop);
+    return 0;
+}
+
+int ISockApp::checkRoot(int argc, const char *const *argv) {
+    if (!ProcUtil::IsRoot()) {
+        fprintf(stderr, "root privilege required. run with sudo %s\n\n", argv[0]);
+        const char *fakeargv[] = {
+                argv[0],
+                "-h",
+        };
+        mConf.Parse(mServer, sizeof(fakeargv) / sizeof(fakeargv[0]), fakeargv);
+        return -1;
+    }
+    return 0;
 }
