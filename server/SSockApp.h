@@ -10,7 +10,7 @@
 
 class SSockApp : public ISockApp {
 public:
-    explicit SSockApp(uv_loop_t *loop);
+    explicit SSockApp();
 
     RCap *CreateCap(RConfig &conf) override;
 

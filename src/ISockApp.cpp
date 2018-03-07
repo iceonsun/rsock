@@ -22,8 +22,7 @@
 #include "../conn/RConn.h"
 #include "../util/UvUtil.h"
 
-ISockApp::ISockApp(bool is_server, uv_loop_t *loop) : mServer(is_server) {
-    mLoop = loop;
+ISockApp::ISockApp(bool is_server) : mServer(is_server) {
 }
 
 int ISockApp::Parse(int argc, const char *const *argv) {
@@ -47,7 +46,11 @@ int ISockApp::Init() {
 int ISockApp::doInit() {
     assert(mConf.Inited());
 
-    prepareLoop();
+    if (makeDaemon(mConf.isDaemon)) {
+        return -1;
+    }
+
+    newLoop();
 
     int nret = initLog();
     if (nret) {
@@ -63,11 +66,6 @@ int ISockApp::doInit() {
         LOGE << "NetManager init failed";
         return -1;
     }
-
-    if (makeDaemon(mConf.isDaemon)) {
-        return -1;
-    }
-
     assert(mNetManager);
     mTimer = new RTimer(mLoop);
     mCap = CreateCap(mConf);
@@ -171,7 +169,7 @@ void ISockApp::Close() {
         mAckPool = nullptr;
     }
 
-    if (mLoop && mInited) {
+    if (mLoop) {
         uv_stop(mLoop);
         if (!uv_loop_close(mLoop)) {
             free(mLoop);
@@ -274,8 +272,8 @@ bool ISockApp::OnTcpFinOrRst(const TcpInfo &info) {
     return false;
 }
 
-int ISockApp::prepareLoop() {
-    // always fork a new one
+int ISockApp::newLoop() {
+    // always use a new loop
     mLoop = static_cast<uv_loop_t *>(malloc(sizeof(uv_loop_t)));
     memset(mLoop, 0, sizeof(uv_loop_t));
     uv_loop_init(mLoop);

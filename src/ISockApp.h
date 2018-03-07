@@ -31,7 +31,7 @@ class RConn;
 
 class ISockApp : public ITcpObserver {
 public:
-    ISockApp(bool is_server, uv_loop_t *loop);
+    ISockApp(bool is_server);
 
     virtual ~ISockApp();
 
@@ -73,7 +73,7 @@ protected:
 
     virtual void watchExitSignal();
 
-    virtual int prepareLoop();
+    virtual int newLoop();
 
     static void close_signal_handler(uv_signal_t *handle, int signum);
 

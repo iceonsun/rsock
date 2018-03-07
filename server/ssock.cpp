@@ -6,8 +6,8 @@
 #include "SSockApp.h"
 
 int ssock_main(int argc, char **argv) {
-    uv_loop_t *LOOP = uv_default_loop();
-    ISockApp *app = new SSockApp(LOOP);
+    uv_default_loop();
+    ISockApp *app = new SSockApp();
 
     int nret = app->Parse(argc, reinterpret_cast<const char *const *>(argv));
     if (!nret) {
