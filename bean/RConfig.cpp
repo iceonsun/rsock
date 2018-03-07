@@ -25,20 +25,28 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
 
 
     Group required(parser, "Required arguments");
-    ValueFlag<std::string> dev(required, "dev", "The network interface to work around.", {'d', "dev"});
-    ValueFlag<std::string> targetAddr(required, "taddr",
+    ValueFlag<std::string> dev(required, "deviceName", "The network interface to work around.", {'d', "dev"});
+    ValueFlag<std::string> targetAddr(required, "target udp address",
                                       "The target address.(e.g. client, 8.8.8.8 . server, 7.7.7.7:80. "
                                               "Port is ignored if it's client.)", {'t', "taddr"}, "127.0.0.1:10030");
 
-
     Group opt(parser, "Optional arguments");
 
-    HelpFlag help(opt, "help", "Display this help menu", {'h', "help"});
+    HelpFlag help(opt, "help", "Display this help menu. You can see example usage below for help.", {'h', "help"});
     ValueFlag<std::string> json(opt, "/path/to/config_file", "json config file path", {'f'});
     ValueFlag<std::string> selfCapIp(opt, "", "Optional. Local capture IP. e.g: 192.168.1.4", {"lcapIp"});
     ValueFlag<std::string> localUn(opt, "", "Local listening unix domain socket path.(disabled currenty)", {"unPath"});
-    ValueFlag<std::string> localUdp(opt, "", "Local listening udp port.", {"ludp"});;
-    ValueFlag<std::string> capPorts(opt, "", "Capture port list. "
+
+    Group *groupForClient = &required;
+    if (isServer) {
+        groupForClient = &opt;
+    }
+
+    ValueFlag<std::string> localUdp(*groupForClient, "local udp address",
+                                    "Local listening udp port. Only valid for client.",
+                                    {'l', "ludp"});
+
+    ValueFlag<std::string> capPorts(opt, "", "Capture port list. default(tcp: 10001-10005) "
             "(e.g.3000,3001,4000-4050. No blank spaces or other characters allowed)", {'p', "ports"});
     ValueFlag<uint32_t> duration(opt, "",
                                  "Interval(sec) to invalid connection. Client need to set to same value with server. "
@@ -53,13 +61,16 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
     args::ValueFlag<std::string> flog(opt, "/path/to/log_file", "log file. default /var/log/rsock/", {"log"});
 
     args::ValueFlag<uint16_t> cap_timeout(opt, "", "pcap timeout(ms). > 0 and <= 50", {"cap_timeout"});
+
+    args::ValueFlag<std::string> example(opt, "", BuildExampleString(), {"example"});
+
     try {
         parser.ParseCLI(argc, argv);
         do {
             if (json) {
                 LOGV << "json file path: " << json.Get();
                 std::string err;
-                ParseJsonFile(*this, json.Get(), err);
+                parseJsonFile(*this, json.Get(), err);
                 if (!err.empty()) {
                     throw args::Error("failed to parse json: " + err);
                 }
@@ -91,6 +102,8 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
                 if (!parseAddr(localUdp.Get(), param.localUdpIp, param.localUdpPort, !is_server)) {
                     throw args::Error("Unable to parse local listening udp address: " + localUdp.Get());
                 }
+            } else if (!isServer) {
+                throw args::Error("For client you must specify local listening udp address. e.g -l 127.0.0.1:30000");
             }
 
             if (targetAddr) {
@@ -197,7 +210,7 @@ void RConfig::CheckValidation(const RConfig &c) {
     }
 }
 
-void RConfig::ParseJsonFile(RConfig &conf, const std::string &fName, std::string &err) {
+void RConfig::parseJsonFile(RConfig &conf, const std::string &fName, std::string &err) {
     if (!FdUtil::FileExists(fName.c_str())) {
         err = "json file " + fName + " not exists";
         return;
@@ -207,10 +220,10 @@ void RConfig::ParseJsonFile(RConfig &conf, const std::string &fName, std::string
     std::ifstream fin(fName);
     in << fin.rdbuf();
 
-    ParseJsonString(conf, in.str(), err);
+    parseJsonString(conf, in.str(), err);
 }
 
-void RConfig::ParseJsonString(RConfig &c, const std::string &content, std::string &err) {
+void RConfig::parseJsonString(RConfig &c, const std::string &content, std::string &err) {
     RParam &p = c.param;
 
     Json json = Json::parse(content, err);
@@ -367,4 +380,26 @@ bool RConfig::Inited() {
 
 void RConfig::SetInited(bool init) {
     mInited = init;
+}
+
+std::string RConfig::BuildExampleString() {
+    std::ostringstream out;
+    out << "SERVER:\n";
+    out << "sudo ./server_rsock_Linux -d eth0" << " -t 127.0.0.1:8388 \n"
+            "###(note:replace 127.0.0.1:8388 with client kcptun target adddress)\n";
+
+    out << "CLIENT:\n";
+#ifdef __MACH__
+    out << "sudo ./client_rsock_Darwin -d en0";
+#else
+    out << "sudo ./client_rsock_Linux -d wlan0";
+#endif
+
+    out << " -t x.x.x.x -l 127.0.0.1:8388\n";
+    out << "### (note:replace x.x.x.x with real server ip. "
+            "replace 127.0.0.1:8388 with your client kcptun target address.";
+    out << " replace en0/wlan0 with your Internet(WAN) network interface card"
+            "(typically wlan0/eth0 for linux wireless/ethernet, en0 for macOS wireless, en1 for macOS ethernet)"
+        << std::endl;
+    return out.str();
 }

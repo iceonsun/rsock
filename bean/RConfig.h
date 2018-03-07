@@ -17,14 +17,7 @@
 struct RConfig {
 
     struct RParam {
-#ifdef RSOCK_IS_SERVER_
-        std::string dev = "eth0";       // server
-#elif __APPLE__
-        std::string dev = "en0";        // macos wifi
-#else
-        std::string dev = "wlan0";      // other notebooks wifi
-#endif
-
+        std::string dev;
         std::string selfUnPath;         // todo: test unix domain socket
 
         std::string localUdpIp;
@@ -37,9 +30,7 @@ struct RConfig {
 
         // these are ports used for communications between server and clients.
         // after 0, 0, all are port range.
-        RPortList capPorts = {{80,    0},
-                              {443,   0},
-                              {10001, 10010}};
+        RPortList capPorts = {{10001, 10005}};
 
         std::string targetIp;
         uint16_t targetPort = 0;
@@ -50,11 +41,7 @@ struct RConfig {
         std::string hashKey = "hello135";
         IdBufType id{{0}};
 
-#ifdef RSOCK_IS_SERVER_
-        int type = OM_PIPE_ALL;
-#else
-        int type = OM_PIPE_TCP;
-#endif
+        int type = OM_PIPE_TCP;     // default tcp ports
         uint16_t cap_timeout = OM_PCAP_TIMEOUT;
     };
 
@@ -63,7 +50,7 @@ struct RConfig {
 #else
     plog::Severity log_level = plog::verbose;
 #endif
-    
+
     std::string log_path = RLOG_FILE_PATH;
 
     bool isServer = false;
@@ -92,11 +79,12 @@ public:
 
     static void CheckValidation(const RConfig &c);
 
-    static void ParseJsonFile(RConfig &conf, const std::string &fName, std::string &err);
-
-    static void ParseJsonString(RConfig &c, const std::string &content, std::string &err);
-
+    static std::string BuildExampleString();
 private:
+    static void parseJsonFile(RConfig &conf, const std::string &fName, std::string &err);
+
+    static void parseJsonString(RConfig &c, const std::string &content, std::string &err);
+
     static inline bool parseAddr(const std::string &addr, std::string &ip, uint16_t &port, bool usePort);
 
     static inline int typeOfStr(const std::string &str);
