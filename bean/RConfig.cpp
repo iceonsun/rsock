@@ -5,7 +5,6 @@
 #include <cassert>
 
 #include <iostream>
-#include <regex>
 #include <fstream>
 
 #include "plog/Log.h"
@@ -21,7 +20,7 @@ using namespace json11;
 
 int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
     this->isServer = is_server;
-    ArgumentParser parser("This software is for study purpose only.");
+    ArgumentParser parser("This software is for study purpose only.", BuildExampleString());
 
 
     Group required(parser, "Required arguments");
@@ -61,8 +60,6 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
     args::ValueFlag<std::string> flog(opt, "/path/to/log_file", "log file. default /var/log/rsock/", {"log"});
 
     args::ValueFlag<uint16_t> cap_timeout(opt, "", "pcap timeout(ms). > 0 and <= 50", {"cap_timeout"});
-
-    args::ValueFlag<std::string> example(opt, "", BuildExampleString(), {"example"});
 
     try {
         parser.ParseCLI(argc, argv);
@@ -329,10 +326,21 @@ bool RConfig::parseAddr(const std::string &addr, std::string &ip, uint16_t &port
     auto pos = addr.find(':');
     ip = addr.substr(0, pos);
 
+    if (pos > 0) {
+        if (!ValidIp4(ip)) {    // ip validation
+            return false;
+        }
+    }
+
     if (usePort) {
         if (pos < addr.size() - 1) {
+            for (int i = pos + 1; i < addr.size(); i++) {
+                if (addr[i] < '0' || addr[i] > '9') {
+                    return false;
+                }
+            }
             port = std::stoi(addr.substr(pos + 1));
-            return true;
+            return port != 0;
         } else {
             return false;
         }
@@ -384,11 +392,12 @@ void RConfig::SetInited(bool init) {
 
 std::string RConfig::BuildExampleString() {
     std::ostringstream out;
-    out << "SERVER:\n";
+    out << "Example usages:\n";
+    out << "server:\n";
     out << "sudo ./server_rsock_Linux -d eth0" << " -t 127.0.0.1:8388 \n"
             "###(note:replace 127.0.0.1:8388 with client kcptun target adddress)\n";
 
-    out << "CLIENT:\n";
+    out << "client:\n";
 #ifdef __MACH__
     out << "sudo ./client_rsock_Darwin -d en0";
 #else

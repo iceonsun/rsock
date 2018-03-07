@@ -64,6 +64,10 @@ int ISockApp::doInit() {
         return -1;
     }
 
+    if (makeDaemon(mConf.isDaemon)) {
+        return -1;
+    }
+
     assert(mNetManager);
     mTimer = new RTimer(mLoop);
     mCap = CreateCap(mConf);
@@ -87,9 +91,6 @@ int ISockApp::doInit() {
     mInited = true;
     srand(time(NULL));
 
-    if (makeDaemon(mConf.isDaemon)) {
-        return -1;
-    }
     return 0;
 }
 
@@ -174,8 +175,8 @@ void ISockApp::Close() {
         uv_stop(mLoop);
         if (!uv_loop_close(mLoop)) {
             free(mLoop);
-        } else {
-            LOGE << "loop not closed properly";
+//        } else {
+//            LOGE << "loop not closed properly";
         }
         mLoop = nullptr;
     }
@@ -191,7 +192,6 @@ int ISockApp::makeDaemon(bool d) {
         int n = ProcUtil::MakeDaemon();
         if (n > 0) {    // parent
             fprintf(stderr, "Run in background. pid: %d\n", n);
-            Close();
             return -1;
         } else if (n < 0) {
             fprintf(stderr, "fork error: %s\n", strerror(errno));

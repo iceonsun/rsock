@@ -12,9 +12,7 @@
 #include "ProcUtil.h"
 
 int ProcUtil::MakeDaemon() {
-    int pid = 0;
-//        signal(SIGCHLD,SIG_IGN);
-    pid = fork();
+    const int pid = fork();
     if (pid == 0) {
         const int n = setsid();
         if (-1 == n) {

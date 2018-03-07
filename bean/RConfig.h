@@ -30,7 +30,7 @@ struct RConfig {
 
         // these are ports used for communications between server and clients.
         // after 0, 0, all are port range.
-        RPortList capPorts = {{10001, 10005}};
+        RPortList capPorts = {{10001, 10010}};
 
         std::string targetIp;
         uint16_t targetPort = 0;
