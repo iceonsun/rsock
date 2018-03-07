@@ -3,9 +3,9 @@
 
 ### 简介
 
-rsock仅仅是加速，不是vpn，目前须搭配kcptun使用。程序的目的是，防止isp对udp流量的qos。目前仅支持mac（包括其他Unix）和Linux。kcptun的简介和使用见[这里](https://github.com/xtaci/kcptun).
+rsock仅仅不是加速（加速目前由kcptun进行），也不是vpn，而是把udp流量转换成多条**伪tcp/正常udp**流量。 rsock和udp类似，传输的数据是不可靠的，也没有流控，超时重发等算法，所以目前须搭配kcptun使用或者其他有ARQ机制的udp程序使用。rsock的目的是，防止isp对udp流量的qos。目前仅支持mac（包括其他Unix）和Linux。kcptun的简介和使用见[这里](https://github.com/xtaci/kcptun)。 shadowsocks的简介见[这里](https://github.com/shadowsocks/shadowsocks-go) 。
 
-rsock的传输是**不可靠的**，可靠的传输由app层负责。
+再强调一次，rsock的传输是**不可靠的**，可靠的传输由app层负责。
 
 下面用一张图片简要说一下原理
 
@@ -26,7 +26,9 @@ cmake .. -DRSOCK_RELEASE=1 && make`
 
 为了加快编译速度，make可以指定-j，后跟cpu核数。如：make -j2
 
-### 使用说明
+注意：libuv是libuv1-dev，不是libuv-dev。那是两个不同的版本
+
+### 快速指南
 
 #### 服务器
 
@@ -44,58 +46,70 @@ done
 
 表示允许客户端连接从10001到10010的端口。
 
-`sudo ./server_rsock_Linux --dev=eth0 --taddr=127.0.0.1:9999 --ports=10001-10010 --daemon=1`
+`sudo ./server_rsock_Linux -d eth0 -t 127.0.0.1:9999`
 
 
 参数解释:
 
-eth0，外网网卡名称。
-
-127.0.0.1:9999 ，目标地址，即kcptun服务端工作的ip和端口。
-
-10001-10010 ，是rsock服务器端工作的端口**范围**。 形式可以这样, 
-10000-10005，表示会占用从端口10000到10005(总共6个）。也可以分别指出试用哪个几个端口，80,443,8080（总共3个）, 表示分别使用这几个端口。也可以同时使用两种表示方法: 80,443,10000-10005（总共8个）.
-
-daemon 等于1表示以守护进程运行程序。为0表示前台。推荐指定为1.
+-d eth0，外网网卡名称。
+-t 127.0.0.1:9999 ，目标地址，即kcptun服务端工作的ip和端口。
 
 #### 客户端
 
 以mac为例：
 
-`sudo ./client_rsock_Darwin --dev=en0 --taddr=x.x.x.x --ports=10001-10010 --ludp=127.0.0.1:30000 --daemon=1`
+`sudo ./client_rsock_Darwin -d en0 --taddr=x.x.x.x -l 127.0.0.1:30000`
 
 参数解释：
 
-en0，外网网卡名称。对于mac，如果连的是wifi，一般是en0。如果是有线，一般是eth1。
+-d en0，外网网卡名称。对于mac，如果连的是wifi，一般是en0。如果是有线，一般是eth1。
 
-taddr，rsock服务器端地址。注意，这里和服务器端不一样：只需指定ip地址。
+-t x.x.x.x，替换成rsock服务器端地址。注意，这里和服务器端不一样：无需指定端口。
 
-ports 表示服务端rsock工作的端口**范围**。同上。
+-l 127.0.0.1:30000 是本地监听的udp端口。即kcptun客户端的目标地址(kcptun中-t 参数对应的地址）。
 
-ludp 是本地监听的udp端口。即kcptun客户端的目标地址(kcptun中-t 参数对应的地址）。
-
-daemon 同上。
+**注意**：对于macOS，目前必须传入**正确**的参数，否则会崩溃。传入正确的参数既可。linux上没有这个问题。这是mac上一个无法捕捉c++异常的[bug](https://stackoverflow.com/questions/49132598/statically-linking-c-on-mac-cannot-catch-exception)。
 
 ### 退出运行
-
+I
 `ps axu|grep rsock`
 
 ![](img/pid.png)
 
 `sudo kill -SIGUSR1 pid # 其中pid是rsock运行的进程id, 图中是72294`
 
+### 参数详解
+```
+	-d, --dev=[device]		外网网卡地址。如, eth0, en0, eth1。必须指定
+	-t, --taddr=[addr]		目标地址。如：8.8.8.8:88, 7.7.7.7。必须指定。
+	-l, --ludp=[addr]		本地监听的udp地址。仅客户端有效。客户端必须指定。
+	-h, --help				显示帮助菜单. macOS暂时不可用
+	-f							json配置文件
+	--lcapIp=[ip]				外网ip。如果指定了这个参数，可以不指定 -d.
+	--unPath					本地监听的unix域套接字地址。暂时不可用
+	-p, --ports=[...]		服务器端使用的tcp/udp端口。如：10001,10010(2个） ; 10001-10010(11个）; 80,443,10001-10010(12个)。中间无空格。
+	--duration=[timeSec]	一段duration时间内，app连接如果无数据通信，会被关闭。单位秒。
+	--hash=[hashKey]			不是用来加密的。只是用来判断是否属于本程序的特征。再重复一次， 数据的加密由kcptun进行）
+	--type=[tcp|udp|all]	通信的方式。可以选择tcp，udp或者all。默认是tcp。
+	--daemon=[1|0]			是否以后台进程运行。1是，0否。默认是1。
+	-v							verbose模式
+	--log=[path/to/log]		日志文件的**目录**地址。如果没有则会新建。默认是/var/log/rsock
+	--cap_timeout				libpcap抓包的超时时间。默认10ms。除非你知道是什么意思，否则不要改动。
+
+```
+
 ### 原理
 
-1. 服务器首先会监听一系列的端口
-2. client连接上这些端口
-3. 客户端通过libnet发送数据到服务器任一端口（初始的tcp.seq 和 tcp.ack 是根据tcp三步握手抓取来的）
+1. 服务器首先会监听一系列的端口(默认tcp，范围10001到10010，共10个端口）
+2. client会正常连接上这些端口(全部连接）
+3. 对于一次通信，客户端通过libnet发送数据到服务器任一端口（初始的tcp.seq 和 tcp.ack 是根据tcp三步握手抓取来的），该端口必须是已经和客户端建立好了连接。
 4. 服务端通过libpcap接收数据。服务端往客户端发送数据也是一个原理。这样就完成了通信。
 5. 对应用层来说，一个连接是local_ip:app_udp_port <-> server_ip:app_udp_port。如果在30s之内检测到这条连接没有数据通信，就会关闭这条连接.
 6. 当client接收到rst或者fin的时候，会关闭这条真正的网络连接，重新connect服务器。再进行通讯。
 
 #### 缺点
 
-由于数据的收费并没有通过创建的socket来进行，而是通过libnet,libpcap，会造成每一次收到对方传来的数据，都会向peer端发送一个长度为0的包。其中ack是socket所期望的下一个对方传过来的seq。这样就会造成带宽的浪费。
+由于数据的收发并不是通过创建的socket来进行，而是通过libnet,libpcap，会造成每一次收到对方传来的数据，都会向peer端发送一个长度为0的包。其中ack是socket所期望的下一个对方传过来的seq。这样就会造成带宽的浪费。
 
 ### 对比
 
@@ -167,9 +181,10 @@ kcptun的下载速度. 速度在2M左右。
 
 ![](img/kcptun_telecom.png)
 
-
 #### 结论
-可以看到，rsock目前的速度只有kcptun 70%-90%。在看youtube 1080p快进的时候，感觉还是会比kcptun慢1s的样子.
+可以看到，rsock目前的速度只有kcptun 70%-90%。在看youtube 1080p快进的时候，感觉还是会比kcptun慢1s的样子. 
+
+注意：并**不是**使用端口越多越好。主要还是受带宽影响。 经过测试，使用5个端口和10的端口的效果，差别不大。
 
 ### 注意事项
 
@@ -182,8 +197,6 @@ kcptun的下载速度. 速度在2M左右。
 强烈建议服务端kcptun和服务端rsock在后台运行。对于kcptun来说，运行：
 
 `nohup sudo -u nobody ./server_linux_amd64 -r ":port1" -l ":port2" -mode fast2 -key aKey >/dev/null 2>&1 &`
-
-对于rsock，只需在参数中添加 `--daemon=1`
 
 如果都在正常运行，可以重启shadowsocks的客户端。
 
