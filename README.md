@@ -5,11 +5,11 @@
 
 中文请点击[这里](doc/README.zh-cn.md).
 
-rsock is merely for accelerating. It's not vpn. It must be used together with kcptun. The purpose of this program is that prevent qos of ips if any. It supports Mac(and other unices) and Linux. To see introduction and usage of kcptun click [here](https://github.com/xtaci/kcptun).
+rsock is either accelerator, nor vpn. It merely turn a udp connection into multiple fake tcp connections, or multiple normal udp connections or both. It's very similar with udp because it's not reliable. It doesn't have flow control, timeout retransmission algorithms, etc. It's supposed to used together with kcptun or other udp client with ARQ. The purpose of rsock is that prevent qos to udp from ISP if any. It supports Mac(and other unices) and Linux. To see introduction and usage of kcptun click [here](https://github.com/xtaci/kcptun) . And shadowsocks, click [here](https://github.com/shadowsocks/shadowsocks-go) .
 
-Data transfer of rsock is **NOT** reliable. Reliable data tranfer should be take cared by app level(kcptun).
+**REPEAT**: Data transfer of rsock is **NOT** reliable. Reliable data tranfer should be take cared of by app level(kcptun).
 
-The following picture brifely introduces principle
+The following picture brifely shows principles
 
 ![](doc/img/principle.png)
 
@@ -29,6 +29,7 @@ cmake .. -DRSOCK_RELEASE=1 && make`
 
 To accelerate compilation, you can specify -jNumOfCpuCores. e.g make -j2
 
+note: libuv must be libuv1-dev, not libuv-dev. The libuv1-dev is the newer version.
 
 ### Usage
 
@@ -49,7 +50,7 @@ done
 
 It means allow client connects to server from port 10000 to 10010.
 
-`sudo ./server_rsock_Linux --dev=eth1 --taddr=127.0.0.1:9999 --ports=10001-10010 --daemon=1`
+`sudo ./server_rsock_Linux -d eth0 -t 127.0.0.1:9999`
 
 Parameter explanation:
 
@@ -57,27 +58,21 @@ eth0, name of network interface card of Internet, not LAN, e.g. eth1
 
 127.0.0.1:9999, target address，aka address of kcptun server working on.
 
-10001-10010 , **RANGE** of ports that rsock works on. It has following formats: 10000-10005(6 ports in total). 80,443(2 ports). 80,443,10000-10005(8 ports).
-
-daemon Run program as daemon if equals 1. Otherwise 0。Recommend 1.
-
 #### Client
 
 Take mac as an example:
 
-`sudo ./client_rsock_Darwin --dev=en0 --taddr=x.x.x.x --ports=10001-10010 --ludp=127.0.0.1:30000 --daemon=1`
+`sudo ./client_rsock_Darwin -d en0 --taddr=x.x.x.x -l 127.0.0.1:30000`
 
 Parameter explanation:
 
-en0. name of network interface card of Internet, not LAN, e.g. eth0. For mac, it is typically en0 for wifi, eth1 for ethernet.
+-d en0. name of network interface card of Internet, not LAN, e.g. eth0. For mac, it is typically en0 for wifi, eth1 for ethernet.
 
-taddr. Address of rsock server。Attention. This is different from server. It only contains ip with ports.
+-t x.x.x.x , Address of rsock server。Attention. This is different from server. It only contains ip.
 
-ports **RANGE** of ports that rsock server working on.
+-l , local listened udp address, aka target address of kcptun client(the address specified by -t).
 
-ludp. local listened udp address, aka target address of kcptun client(the address specified by -t).
-
-daemon. see above.
+**NOTE**: For Mac, **RIGHT** parameters must be specified or program will crash. This is due to an unsolved [bug](https://stackoverflow.com/questions/49132598/statically-linking-c-on-mac-cannot-catch-exception).
 
 ### Exit
 
@@ -87,12 +82,32 @@ daemon. see above.
 
 `sudo kill -SIGUSR1 pid # pid is id of rsock. It's 72294 in image above.`
 
+### Parameters in detail
+```
+	-d, --dev=[device]		name of network interface card of Internet.e.g,eth0,en0,eth1. Required.
+	-t, --taddr=[addr]		target address. e.g. 8.8.8.8:88,7.7.7.7. Required.
+	-l, --ludp=[addr]		local listened udp address. Only valid for client. Required by client.
+	-h, --help				Display help menu. Not available now.
+	-f							json config file
+	--lcapIp=[ip]				Internet IP. Can omit -d if this parameter sepcified.
+	--unPath					Local unix domain socket. Not available now.
+	-p, --ports=[...]		tcp/udp port list for rsock server. e.g.10001,10010(2 ports); 10001-10010(11 ports); 80,443,10001-10010(12个). NO white spaces allowed.
+	--duration=[timeSec]	Time for app connection to persist if no data is transfered in the app connection. unit: seconds.
+	--hash=[hashKey]			Not for encryption. Only for judgement if data belong to rsock. REPEAT: rsock don't encrypt data. Encryption is done by kcptun.
+	--type=[tcp|udp|all]	type of communication. One of tcp, udp or all. Default is tcp.
+	--daemon=[1|0]			Run as daemon. 1 yes. 0 no. default 1.
+	-v							verbose mode
+	--log=[path/to/log]		**Directory** of log. Will create if not exist. Default: /var/log/rsock
+	--cap_timeout				timeout of libpcap. Don't change this value if know what it really means.
+
+```
+
 ### Principle
 
-1. Server listens on some ports. tcp or udp
+1. Server listens on some ports. (tcp 10001-10010, 10 ports by default)
 2. Client connects to all of server ports.
-3. Client send data by libnet to one of server ports. 
-4. Server receive data by libpcap. It's same for server to send data to client. Now they make communication.
+3. For each of communications, client send data by libnet to one of server ports, which should have been connected.
+4. Server receive data by libpcap. It's same for server to send data to client. Now they make communication. 
 5. For application, local_ip:app_udp_port and server_ip:app_udp_port make a connection。If no data flows thourgh this connection, it will be closed.
 6. When client receive rst or fin, it will close that real network connection and reconnect to server.
 
@@ -169,6 +184,8 @@ rsock(udp and tcp, 11 ports each）900K. I've tested twice. The speed is slower.
 kcptun. extremely fast. Around 2MB.
 
 ![](doc/img/kcptun_telecom.png)
+
+note: It's **not** more ports rsock use, the faster it is. It's mainly determined by your bandwith. There is no major difference between 10 ports and 5 in test.
 
 #### Conclusion
 
