@@ -409,6 +409,8 @@ std::string RConfig::BuildExampleString() {
             "replace 127.0.0.1:8388 with your client kcptun target address.";
     out << " replace en0/wlan0 with your Internet(WAN) network interface card"
             "(typically wlan0/eth0 for linux wireless/ethernet, en0 for macOS wireless, en1 for macOS ethernet)"
-        << std::endl;
+        << "\n";
+    out << "For more, please visit: https://github.com/iceonsun/rsock" << std::endl;
+
     return out.str();
 }

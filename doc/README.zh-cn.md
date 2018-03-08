@@ -68,8 +68,6 @@ done
 
 -l 127.0.0.1:30000 是本地监听的udp端口。即kcptun客户端的目标地址(kcptun中-t 参数对应的地址）。
 
-**注意**：对于macOS，目前必须传入**正确**的参数，否则会崩溃。传入正确的参数既可。linux上没有这个问题。这是mac上一个无法捕捉c++异常的[bug](https://stackoverflow.com/questions/49132598/statically-linking-c-on-mac-cannot-catch-exception)。
-
 ### 退出运行
 I
 `ps axu|grep rsock`
