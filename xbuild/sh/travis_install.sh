@@ -25,7 +25,7 @@ function build_on_travis {
         echo "build success"
         echo "check library dependency ..."
         for f in *_rsock_${OS}; do
-            if which readelf; then  # on travis, linux is statically built
+            if which readelf; then  # on travis, linux is statically linked
                 readelf -d ${f}
                 readelf -d ${f} |grep '++'
                 if [ $? -eq 0 ]; then

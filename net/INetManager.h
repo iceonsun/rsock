@@ -19,9 +19,6 @@ class TcpAckPool;
 
 struct ConnInfo;
 
-// todo: INetManager 到底需要哪些功能，注意无论是server还是client，都需要绑定udp.
-// server 监听tcp， client连接server，抽象冲出
-// Dial方法的命名，是否需要更改
 class INetManager {
 public:
     explicit INetManager(uv_loop_t *loop, TcpAckPool *ackPool);
@@ -72,7 +69,7 @@ private:
     const std::chrono::milliseconds BLOCK_WAIT_MS = std::chrono::milliseconds(500);
 
     const uint64_t FLUSH_INTERVAL = 1000;   // 1s
-    const uint64_t POOL_PERSIST_MS = 30 * 1000;
+    const uint64_t POOL_PERSIST_MS = 30000; // 30s
     std::map<std::string, ConnHelper> mPool;
     uv_timer_t *mFlushTimer = nullptr;
 
