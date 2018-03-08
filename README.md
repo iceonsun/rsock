@@ -89,8 +89,8 @@ Parameter explanation:
 	-f							json config file
 	--lcapIp=[ip]				Internet IP. Can omit -d if this parameter sepcified.
 	--unPath					Local unix domain socket. Not available now.
-	-p, --ports=[...]		tcp/udp port list for rsock server. e.g.10001,10010(2 ports); 10001-10010(11 ports); 80,443,10001-10010(12个). NO white spaces allowed.
-	--duration=[timeSec]	Time for app connection to persist if no data is transfered in the app connection. unit: seconds.
+	-p, --ports=[...]		tcp/udp port list for rsock server. e.g.10001,10010(2 ports); 10001-10010(11 ports); 80,443,10001-10010(12 ports). NO white spaces allowed.
+	--duration=[timeSec]	Time for app connection to persist if no data is transfered in the app connection. unit: seconds. defalt 30s
 	--hash=[hashKey]			Not for encryption. Only for judgement if data belong to rsock. REPEAT: rsock don't encrypt data. Encryption is done by kcptun.
 	--type=[tcp|udp|all]	type of communication. One of tcp, udp or all. Default is tcp.
 	--daemon=[1|0]			Run as daemon. 1 yes. 0 no. default 1.
@@ -106,7 +106,7 @@ Parameter explanation:
 2. Client connects to all of server ports.
 3. For each of communications, client send data by libnet to one of server ports, which should have been connected.
 4. Server receive data by libpcap. It's same for server to send data to client. Now they make communication. 
-5. For application, local_ip:app_udp_port and server_ip:app_udp_port make a connection。If no data flows thourgh this connection, it will be closed.
+5. For application, local_ip:app_udp_port and server_ip:app_udp_port make a connection。If no data flows thourgh this connection for a period of time(default 30s), it will be closed.
 6. When client receive rst or fin, it will close that real network connection and reconnect to server.
 
 #### Disadvantage
@@ -222,7 +222,7 @@ If servers run normally, try to restart shadowsocks client.
 
 1. windows support
 
-1. Add other ways to communicate, e.g. icmp, dns.
+1. Add idle mode. Stop repeatedly connect to server if no data for a period.
 
 1. Try to introduce reliable data transfer. Listen tcp directly and remove kcptun.
 

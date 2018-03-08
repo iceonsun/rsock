@@ -90,7 +90,7 @@ protected:
     private:
         const int MAX_RETRY = 3;
         const uint32_t FLUSH_INTERVAL = 5000;  // every 5sec
-        const uint32_t FIRST_FLUSH_DELAY = 30000;   // on app start
+        const uint32_t FIRST_FLUSH_DELAY = 5000;   // on app start
         IAppGroup *mAppGroup = nullptr;
         uv_timer_t *mFlushTimer = nullptr;
         std::map<IntKeyType, int> mReqMap;

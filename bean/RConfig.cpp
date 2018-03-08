@@ -49,7 +49,7 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
             "(e.g.3000,3001,4000-4050. No blank spaces or other characters allowed)", {'p', "ports"});
     ValueFlag<uint32_t> duration(opt, "",
                                  "Interval(sec) to invalid connection. Client need to set to same value with server. "
-                                         "(default 20s. min: 10s, max: 60s.)", {"duration"});
+                                         "(default 30s. min: 10s, max: 60s.)", {"duration"});
     ValueFlag<std::string> key(opt, "HashKey", "Key to check validation of packet. (default hello1235)", {"hash"});
     ValueFlag<std::string> type(opt, "tcp|udp|all",
                                 "Type used to communicate with server. tcp for tcp only mode, udp for udp only mode. "

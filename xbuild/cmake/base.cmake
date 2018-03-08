@@ -1,8 +1,5 @@
 if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
-    set(RSOCK_LINKER_FLAGS "${RSOCK_LINKER_FLAGS} -static-libgcc -static-libstdc++")
-    if (${RSOCK_STATIC_BIN})    # for docker deploy
-        set(RSOCK_LINKER_FLAGS "${RSOCK_LINKER_FLAGS} -static")
-    endif ()
+    set(RSOCK_LINKER_FLAGS "${RSOCK_LINKER_FLAGS} -static-libgcc -static-libstdc++ -static")
 endif ()
 
 if (RSOCK_LINKER_FLAGS)

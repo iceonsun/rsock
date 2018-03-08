@@ -5,7 +5,7 @@
 #include <plog/Log.h>
 #include "TcpAckPool.h"
 
-TcpAckPool::TcpAckPool(uv_loop_t *loop) {
+TcpAckPool::TcpAckPool(uv_loop_t *loop, uint64_t expireMs): EXPIRE_INTERVAL(expireMs) {
     mLoop = loop;
 }
 
@@ -49,7 +49,6 @@ bool TcpAckPool::Wait2Info(TcpInfo &info, const std::chrono::milliseconds milliS
     return ok;
 }
 
-// todo
 void TcpAckPool::Flush(uint64_t now) {
     for (auto it = mInfoPool.begin(); it != mInfoPool.end();) {
         if (it->second <= now) {

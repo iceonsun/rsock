@@ -59,7 +59,7 @@ int ISockApp::doInit() {
     }
     LOGD << "conf: " << mConf.to_json().dump();
 
-    mAckPool = new TcpAckPool(mLoop);
+    mAckPool = new TcpAckPool(mLoop, mConf.param.conn_duration_sec * 1000);
 
     mNetManager = CreateNetManager(mConf, mLoop, mAckPool);
     if (mNetManager->Init()) {

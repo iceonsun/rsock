@@ -10,7 +10,7 @@
 #include "NetUtil.h"
 #include "../conn/BtmUdpConn.h"
 
-INetManager::INetManager(uv_loop_t *loop, TcpAckPool *ackPool) {
+INetManager::INetManager(uv_loop_t *loop, TcpAckPool *ackPool) : POOL_PERSIST_MS(ackPool->PersistMs()) {
     mLoop = loop;
     mTcpAckPool = ackPool;
 }
