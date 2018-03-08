@@ -1,9 +1,16 @@
+if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
+    set(RSOCK_LINKER_FLAGS "${RSOCK_LINKER_FLAGS} -static-libgcc -static-libstdc++")
+    if (${RSOCK_STATIC_BIN})    # for docker deploy
+        set(RSOCK_LINKER_FLAGS "${RSOCK_LINKER_FLAGS} -static")
+    endif ()
+endif ()
 
-set(RSOCK_LINKER_FLAGS "-static-libgcc -static-libstdc++")
+if (RSOCK_LINKER_FLAGS)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${RSOCK_LINKER_FLAGS}")
+endif ()
 
 set(RSOCK_TOP_BUILD_DIR ${PROJECT_SOURCE_DIR}/xbuild)
 
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${RSOCK_LINKER_FLAGS}")
 set(RSOCK_RELEASE TRUE)
 
 include_directories(${RSOCK_TOP_BUILD_DIR}/include/libuv)
@@ -28,6 +35,7 @@ message(STATUS "CMAKE_NM = ${CMAKE_NM}")
 message(STATUS "CMAKE_OBJCOPY = ${CMAKE_OBJCOPY}")
 message(STATUS "CMAKE_OBJDUMP = ${CMAKE_OBJDUMP}")
 message(STATUS "CMAKE_STRIP = ${CMAKE_STRIP}")
+message(STATUS "CMAKE_EXE_LINKER_FLAGS = ${CMAKE_EXE_LINKER_FLAGS}")
 
 # Set or retrieve the cached flags.
 # This is necessary in case the user sets/changes flags in subsequent

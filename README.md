@@ -72,8 +72,6 @@ Parameter explanation:
 
 -l , local listened udp address, aka target address of kcptun client(the address specified by -t).
 
-**NOTE**: For Mac, **RIGHT** parameters must be specified or program will crash. This is due to an unsolved [bug](https://stackoverflow.com/questions/49132598/statically-linking-c-on-mac-cannot-catch-exception).
-
 ### Exit
 
 `ps axu|grep rsock`

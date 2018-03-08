@@ -25,20 +25,16 @@ function build_on_travis {
         echo "build success"
         echo "check library dependency ..."
         for f in *_rsock_${OS}; do
-
-            if which readelf; then
+            if which readelf; then  # on travis, linux is statically built
                 readelf -d ${f}
                 readelf -d ${f} |grep '++'
+                if [ $? -eq 0 ]; then
+                    echo "Linux c++ library dependency not resolved"
+                    echo "build failed"
+                    exit 1
+                fi
+            fi
 
-            elif which otool; then
-                otool -L ${f}
-                otool -L ${f} |grep '++'
-            fi
-            if [ $? -eq 0 ]; then
-                echo "c++ library dependency not resolved"
-                echo "build failed"
-                exit 1
-            fi
         done
     else
         echo "build failed"
