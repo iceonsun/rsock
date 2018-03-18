@@ -49,6 +49,7 @@ done
 ```
 
 It means allow client connects to server from port 10000 to 10010.
+（**rsock use port range 10001-10010 by default. If you want to change the default value, please check Parameter Explanation section.**）
 
 `sudo ./server_rsock_Linux -d eth0 -t 127.0.0.1:9999`
 
@@ -86,17 +87,17 @@ Parameter explanation:
 	-t, --taddr=[addr]		target address. e.g. 8.8.8.8:88,7.7.7.7. Required.
 	-l, --ludp=[addr]		local listened udp address. Only valid for client. Required by client.
 	-h, --help				Display help menu. Not available now.
-	-f							json config file
-	--lcapIp=[ip]				Internet IP. Can omit -d if this parameter sepcified.
-	--unPath					Local unix domain socket. Not available now.
-	-p, --ports=[...]		tcp/udp port list for rsock server. e.g.10001,10010(2 ports); 10001-10010(11 ports); 80,443,10001-10010(12 ports). NO white spaces allowed.
+	-f						json config file
+	--lcapIp=[ip]			Internet IP. Can omit -d if this parameter sepcified.
+	--unPath				Local unix domain socket. Not available now.
+	-p, --ports=[...]		tcp/udp port list for rsock server. e.g.10001,10010(2 ports); 10001-10010(11 ports); 80,443,10001-10010(12 ports). **NO** white spaces allowed. Default value: 10001-10010
 	--duration=[timeSec]	Time for app connection to persist if no data is transfered in the app connection. unit: seconds. defalt 30s
-	--hash=[hashKey]			Not for encryption. Only for judgement if data belong to rsock. REPEAT: rsock don't encrypt data. Encryption is done by kcptun.
+	--hash=[hashKey]		Not for encryption. Only for judgement if data belong to rsock. REPEAT: rsock don't encrypt data. Encryption is done by kcptun.
 	--type=[tcp|udp|all]	type of communication. One of tcp, udp or all. Default is tcp.
 	--daemon=[1|0]			Run as daemon. 1 yes. 0 no. default 1.
-	-v							verbose mode
-	--log=[path/to/log]		**Directory** of log. Will create if not exist. Default: /var/log/rsock
-	--cap_timeout				timeout of libpcap. Don't change this value if know what it really means.
+	-v						verbose mode
+	--log=[path/to/log]		Directory of log. Will create if not exist. Default: /var/log/rsock
+	--cap_timeout			timeout of libpcap. Don't change this value if know what it really means.
 
 ```
 
