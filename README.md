@@ -49,7 +49,7 @@ done
 ```
 
 It means allow client connects to server from port 10000 to 10010.
-（**rsock use port range 10001-10010 by default. If you want to change the default value, please check Parameter Explanation section.**）
+(**rsock use port range 10001-10010 by default. If you want to change the default value, please check Parameter Explanation section.**)
 
 `sudo ./server_rsock_Linux -d eth0 -t 127.0.0.1:9999`
 
@@ -95,7 +95,7 @@ Parameter explanation:
 	--hash=[hashKey]		Not for encryption. Only for judgement if data belong to rsock. REPEAT: rsock don't encrypt data. Encryption is done by kcptun.
 	--type=[tcp|udp|all]	type of communication. One of tcp, udp or all. Default is tcp.
 	--daemon=[1|0]			Run as daemon. 1 yes. 0 no. default 1.
-	-v						verbose mode
+	-v						verbose mode. (Better not change default value. There is an unsolved bug that will cause slow speed right now)
 	--log=[path/to/log]		Directory of log. Will create if not exist. Default: /var/log/rsock
 	--cap_timeout			timeout of libpcap. Don't change this value if know what it really means.
 

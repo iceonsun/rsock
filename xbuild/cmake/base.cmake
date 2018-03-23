@@ -8,7 +8,9 @@ endif ()
 
 set(RSOCK_TOP_BUILD_DIR ${PROJECT_SOURCE_DIR}/xbuild)
 
-set(RSOCK_RELEASE TRUE)
+if (NOT RSOCK_TEST)     # for test
+    set(RSOCK_RELEASE TRUE)
+endif()
 
 include_directories(${RSOCK_TOP_BUILD_DIR}/include/libuv)
 include_directories(${RSOCK_TOP_BUILD_DIR}/include/libpcap)

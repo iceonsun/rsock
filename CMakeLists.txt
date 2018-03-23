@@ -26,10 +26,10 @@ set(CLI_SOURCE_FILES ${SOURCE_FILES} client/CConn.cpp client/csock.cpp client/CS
 
 ##### release {
 add_executable(server_rsock_${CMAKE_SYSTEM_NAME} ${SVR_SOURCE_FILES} server/main.cpp)
-target_compile_options(server_rsock_${CMAKE_SYSTEM_NAME} PRIVATE -O2 -DRSOCK_IS_SERVER_ -DRSOCK_NNDEBUG)
+target_compile_options(server_rsock_${CMAKE_SYSTEM_NAME} PRIVATE -DRSOCK_IS_SERVER_ -DRSOCK_NNDEBUG)
 
 add_executable(client_rsock_${CMAKE_SYSTEM_NAME} ${CLI_SOURCE_FILES} client/main.cpp)
-target_compile_options(client_rsock_${CMAKE_SYSTEM_NAME} PRIVATE -O2 -DRSOCK_NNDEBUG)
+target_compile_options(client_rsock_${CMAKE_SYSTEM_NAME} PRIVATE  -DRSOCK_NNDEBUG)
 ##### }
 
 add_definitions(-Wall -fvisibility=default)

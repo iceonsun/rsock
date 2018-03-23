@@ -45,10 +45,13 @@ struct RConfig {
         uint16_t cap_timeout = OM_PCAP_TIMEOUT;
     };
 
-#ifdef RSOCK_NNDEBUG
-    plog::Severity log_level = plog::debug;
-#else
+    // if turned to debug, speed of rsock will be very slow on macOS.
+    // if turned to verbose, speed of linux will be very slow!!!!
+    // why????
+#if defined(__APPLE__)
     plog::Severity log_level = plog::verbose;
+#else
+    plog::Severity log_level = plog::debug;
 #endif
 
     std::string log_path = RLOG_FILE_PATH;
