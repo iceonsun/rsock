@@ -90,7 +90,7 @@ I
 	--hash=[hashKey]		不是用来加密的。只是用来判断是否属于本程序的特征。再重复一次， 数据的加密由kcptun进行）
 	--type=[tcp|udp|all]	通信的方式。可以选择tcp，udp或者all。默认是tcp。
 	--daemon=[1|0]			是否以后台进程运行。1是，0否。默认是1。
-	-v						verbose模式
+	-v						verbose模式。（最好不要改变默认值，目前有个未解的bug，会造成速度慢）
 	--log=[path/to/log]		日志文件的目录地址。如果没有则会新建。默认是/var/log/rsock
 	--cap_timeout			libpcap抓包的超时时间。默认10ms。除非你知道是什么意思，否则不要改动。
 
