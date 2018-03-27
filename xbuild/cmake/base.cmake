@@ -7,6 +7,7 @@ if (RSOCK_LINKER_FLAGS)
 endif ()
 
 set(RSOCK_TOP_BUILD_DIR ${PROJECT_SOURCE_DIR}/xbuild)
+ADD_DEFINITIONS(-march=x86-64)
 
 if (NOT RSOCK_TEST)     # for test
     set(RSOCK_RELEASE TRUE)
