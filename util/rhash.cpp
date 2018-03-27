@@ -24,7 +24,7 @@ static bool hash_equal(const HashBufType &hashed_buf, const std::string &key, co
 static int8_t compute_hash(HashBufType &hash, const std::string &key, const char *data, int data_len);
 
 int8_t compute_hash(HashBufType &hash, const std::string &key, const char *data, int data_len) {
-    if (!data || data <= 0) {
+    if (!data || data_len <= 0) {
         return -1;
     }
     assert(hash.size() <= MD5_LEN);
