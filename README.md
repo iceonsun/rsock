@@ -21,11 +21,13 @@ For other platforms, you can download source code and compile it by yourself. Li
 
 Take Ubuntu as an example:
 
-`sudo apt-get install g++ libuv1-dev libnet libpcap #note!It's libuv1-dev
+```
+sudo apt-get install g++ libuv1-dev libnet libpcap #note!It's libuv1-dev
 git clone https://github.com/iceonsun/rsock.git rsock
 cd rsock
 mkdir build && cd build
-cmake .. -DRSOCK_RELEASE=1 && make`
+cmake .. -DRSOCK_RELEASE=1 && make
+```
 
 To accelerate compilation, you can specify -jNumOfCpuCores. e.g make -j2
 
@@ -82,20 +84,21 @@ Parameter explanation:
 `sudo kill -SIGUSR1 pid # pid is id of rsock. It's 72294 in image above.`
 
 ### Parameters in detail
+
 ```
 	-d, --dev=[device]		name of network interface card of Internet.e.g,eth0,en0,eth1. Required.
 	-t, --taddr=[addr]		target address. e.g. 8.8.8.8:88,7.7.7.7. Required.
 	-l, --ludp=[addr]		local listened udp address. Only valid for client. Required by client.
-	-h, --help				Display help menu. Not available now.
-	-f						json config file
+	-h, --help			Display help menu. Not available now.
+	-f				json config file
 	--lcapIp=[ip]			Internet IP. Can omit -d if this parameter sepcified.
-	--unPath				Local unix domain socket. Not available now.
+	--unPath			Local unix domain socket. Not available now.
 	-p, --ports=[...]		tcp/udp port list for rsock server. e.g.10001,10010(2 ports); 10001-10010(11 ports); 80,443,10001-10010(12 ports). **NO** white spaces allowed. Default value: 10001-10010
-	--duration=[timeSec]	Time for app connection to persist if no data is transfered in the app connection. unit: seconds. defalt 30s
+	--duration=[timeSec]		Time for app connection to persist if no data is transfered in the app connection. unit: seconds. defalt 30s
 	--hash=[hashKey]		Not for encryption. Only for judgement if data belong to rsock. REPEAT: rsock don't encrypt data. Encryption is done by kcptun.
-	--type=[tcp|udp|all]	type of communication. One of tcp, udp or all. Default is tcp.
+	--type=[tcp|udp|all]		type of communication. One of tcp, udp or all. Default is tcp.
 	--daemon=[1|0]			Run as daemon. 1 yes. 0 no. default 1.
-	-v						verbose mode. (Better not change default value. There is an unsolved bug that will cause slow speed right now)
+	-v				verbose mode. (Better not change default value. There is an unsolved bug that will cause slow speed right now)
 	--log=[path/to/log]		Directory of log. Will create if not exist. Default: /var/log/rsock
 	--cap_timeout			timeout of libpcap. Don't change this value if know what it really means.
 
@@ -206,7 +209,7 @@ It is strongly recommended that kcptun server and rsock server run in background
 
 For rsock server, only need to specify parameter `--daemon=1`
 
-If servers run normally, try to restart shadowsocks client.
+If servers run normally, try to restart kcptun client(turn shadowsocks on/off, this will restart kcptun).
 
 **rsock DOES NOT encrypt data**. Encrption happens in app level(kcptun).
 
@@ -251,5 +254,4 @@ bitcoin
 or qrcode
 
 ![](doc/img/ethdonation.jpeg)
-
 
