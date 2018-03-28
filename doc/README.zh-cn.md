@@ -18,11 +18,14 @@ rsock仅仅不是加速（加速目前由kcptun进行），也不是vpn，而是
 其他平台可以自己下载源码进行编译。rsock依赖的第三方库有：libuv, libnet, libpcap。
 
 以ubuntu为例：
-`sudo apt-get install g++ libuv1-dev libnet libpcap # 注意是libuv1-dev
+
+```
+sudo apt-get install g++ libuv1-dev libnet libpcap #note!It's libuv1-dev
 git clone https://github.com/iceonsun/rsock.git rsock
 cd rsock
 mkdir build && cd build
-cmake .. -DRSOCK_RELEASE=1 && make`
+cmake .. -DRSOCK_RELEASE=1 && make
+```
 
 为了加快编译速度，make可以指定-j，后跟cpu核数。如：make -j2
 
@@ -81,16 +84,16 @@ I
 	-d, --dev=[device]		外网网卡地址。如, eth0, en0, eth1。必须指定
 	-t, --taddr=[addr]		目标地址。如：8.8.8.8:88, 7.7.7.7。必须指定。
 	-l, --ludp=[addr]		本地监听的udp地址。仅客户端有效。客户端必须指定。
-	-h, --help				显示帮助菜单. macOS暂时不可用
-	-f						json配置文件
+	-h, --help			显示帮助菜单. macOS暂时不可用
+	-f				json配置文件
 	--lcapIp=[ip]			外网ip。如果指定了这个参数，可以不指定 -d.
-	--unPath				本地监听的unix域套接字地址。暂时不可用
+	--unPath			本地监听的unix域套接字地址。暂时不可用
 	-p, --ports=[...]		服务器端使用的tcp/udp端口。如：10001,10010(2个） ; 10001-10010(11个）; 80,443,10001-10010(12个)。中间无空格。 默认值：10001-10010
-	--duration=[timeSec]	一段duration时间内，app连接如果无数据通信，会被关闭。单位秒。默认30s
+	--duration=[timeSec]		一段duration时间内，app连接如果无数据通信，会被关闭。单位秒。默认30s
 	--hash=[hashKey]		不是用来加密的。只是用来判断是否属于本程序的特征。再重复一次， 数据的加密由kcptun进行）
-	--type=[tcp|udp|all]	通信的方式。可以选择tcp，udp或者all。默认是tcp。
+	--type=[tcp|udp|all]		通信的方式。可以选择tcp，udp或者all。默认是tcp。
 	--daemon=[1|0]			是否以后台进程运行。1是，0否。默认是1。
-	-v						verbose模式。（最好不要改变默认值，目前有个未解的bug，会造成速度慢）
+	-v				verbose模式。（最好不要改变默认值，目前有个未解的bug，会造成速度慢）
 	--log=[path/to/log]		日志文件的目录地址。如果没有则会新建。默认是/var/log/rsock
 	--cap_timeout			libpcap抓包的超时时间。默认10ms。除非你知道是什么意思，否则不要改动。
 
@@ -196,7 +199,7 @@ kcptun的下载速度. 速度在2M左右。
 
 `nohup sudo -u nobody ./server_linux_amd64 -r ":port1" -l ":port2" -mode fast2 -key aKey >/dev/null 2>&1 &`
 
-如果都在正常运行，可以重启shadowsocks的客户端。
+如果都在正常运行，可以重启kcptun的客户端(turn shadowsocks off/turn，这样包括重启了kcptun）。
 
 **rsock没有对data进行加密**，因为加密一般都在app层（kcptun）中做了。
 
