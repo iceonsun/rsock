@@ -5,6 +5,8 @@
 #include <cstring>
 #include <cstdlib>
 
+#include <limits>
+
 #include <plog/Log.h>
 
 #include "ClientNetManager.h"
@@ -13,7 +15,8 @@
 #include "../conn/FakeTcp.h"
 #include "TcpAckPool.h"
 
-ClientNetManager::ClientNetManager(uv_loop_t *loop, TcpAckPool *ackPool) : INetManager(loop, ackPool) {
+ClientNetManager::ClientNetManager(uv_loop_t *loop, TcpAckPool *ackPool)
+        : INetManager(loop, ackPool), MAX_RETRY(std::numeric_limits<int>::max()) {
 }
 
 void ClientNetManager::Close() {
@@ -49,7 +52,7 @@ int ClientNetManager::DialTcpAsync(const ConnInfo &info, const ClientNetManager:
     DialHelper helper;
     helper.info = info;
     helper.cb = cb;
-    helper.nRetry = mRetry;
+    helper.nRetry = MAX_RETRY;
     helper.nextRetryMs = uv_now(mLoop) + helper.durationMs;
 
     mPending.push_back(helper);
