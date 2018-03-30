@@ -206,7 +206,7 @@ int IAppGroup::NetConnKeepAliveHelper::OnSendRequest(uint8_t cmd, ssize_t nread,
 }
 
 int IAppGroup::NetConnKeepAliveHelper::OnRecvResponse(INetConn::IntKeyType connKey) {
-    return mReqMap.erase(connKey);
+    return RemoveRequest(connKey);
 }
 
 INetConn *IAppGroup::NetConnKeepAliveHelper::ConnOfIntKey(INetConn::IntKeyType connKey) {
@@ -251,14 +251,19 @@ void IAppGroup::NetConnKeepAliveHelper::onFlush() {
     auto aCopy = mReqMap;
     for (auto &e: aCopy) {
         if (e.second >= MAX_RETRY) {        // keep alive timeout
+            LOGE << "keepalive timeout";
             mAppGroup->onNetconnDead(e.first);
-            mReqMap.erase(e.first);
+            RemoveRequest(e.first);
         }
     }
 }
 
 INetConnKeepAlive *IAppGroup::NetConnKeepAliveHelper::GetIKeepAlive() const {
     return mKeepAlive;
+}
+
+int IAppGroup::NetConnKeepAliveHelper::RemoveRequest(INetConnKeepAlive::IntKeyType connKey) {
+    return mReqMap.erase(connKey);
 }
 
 IAppGroup::ResetHelper::ResetHelper(IAppGroup *appGroup) {
