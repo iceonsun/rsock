@@ -32,6 +32,8 @@ public:
         virtual int SendNetConnRst(const ConnInfo &src, IntKeyType connKey) = 0;
 
         virtual INetConnKeepAlive *GetIKeepAlive() const = 0;
+
+        virtual int RemoveRequest(IntKeyType connKey) = 0;
     };
 
     using IntConnKeyType = uint32_t;
