@@ -48,11 +48,7 @@ struct RConfig {
     // if turned to debug, speed of rsock will be very slow on macOS.
     // if turned to verbose, speed of linux will be very slow!!!!
     // why????
-#if defined(__APPLE__)
-    plog::Severity log_level = plog::verbose;
-#else
     plog::Severity log_level = plog::debug;
-#endif
 
     std::string log_path = RLOG_FILE_PATH;
 

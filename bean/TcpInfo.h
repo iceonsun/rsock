@@ -6,7 +6,7 @@
 #define RSOCK_TCPINFO_H
 
 #include <cstdint>
-
+#include "../cap/cap_headers.h"
 #include "ConnInfo.h"
 
 struct TcpInfo : ConnInfo {

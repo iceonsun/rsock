@@ -9,6 +9,8 @@
 #include "rcommon.h"
 
 struct sockaddr;
+struct sockaddr_un;
+
 struct ConnInfo;
 
 struct sockaddr_in *new_addr4(const char *ip, int port);
@@ -19,9 +21,13 @@ struct sockaddr *new_addr(const struct sockaddr *addr);
 
 uv_poll_t *poll_dgram_fd(int fd, uv_loop_t *loop, uv_poll_cb cb, void *arg, int *err);
 
+uv_udp_t *poll_udp_fd(int fd, uv_loop_t *loop, uv_udp_recv_cb cb, void *arg, int *err);
+
 int checkFdType(int fd, int type);
 
 char *encode_sockaddr4(char *buf, const struct sockaddr_in *addr);
+
+const char *decode_inaddr(struct in_addr *addr, const char *p);
 
 const char *decode_sockaddr4(const char *buf, struct sockaddr_in *addr);
 
@@ -45,6 +51,8 @@ int GetUdpSelfInfo(ConnInfo &info, uv_udp_t *udp);
 // replace inet_ntoa because it's not thread safe
 std::string InAddr2Ip(in_addr addr);
 
+std::string InAddr2Ip(uint32_t addr);
+
 const rbuf_t new_buf(int nread, const rbuf_t &rbuf, void *data);
 
 const rbuf_t new_buf(int nread, const char *base, void *data);
@@ -56,5 +64,15 @@ std::string GetDstAddrStr(const ConnInfo &info);
 std::string GetSrcAddrStr(const ConnInfo &info);
 
 uint64_t rsk_now_ms();
+
+void ipStr2Addr(const std::string &ip, struct in_addr *addr);
+
+int getSendBufSize(int sock);
+
+int getRecvBufSize(int sock);
+
+int setSendBufSize(int sock, int size);
+
+int setRecvBufSize(int sock, int size);
 
 #endif //RSOCK_RSUTIL_H

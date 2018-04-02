@@ -39,7 +39,7 @@ IConn *SSockApp::CreateBridgeConn(RConfig &conf, IConn *btm, uv_loop_t *loop, IN
     SA4 target = {0};
     target.sin_family = AF_INET;
     target.sin_port = htons(conf.param.targetPort);
-    inet_aton(conf.param.targetIp.c_str(), &target.sin_addr);
+	target.sin_addr.s_addr = inet_addr(conf.param.targetIp.c_str());    
     return new ServerGroup(IdBuf2Str(conf.param.id), loop, (const SA *) (&target), btm, netManager);
 }
 

@@ -6,27 +6,10 @@
 #include <cstring>
 #include <cstdio>
 
-#include <unistd.h>
-#include <sys/socket.h>
-#include <fcntl.h>
-#include <sys/stat.h>
+#include "os.h"
 #include "FdUtil.h"
+#include "os_util.h"
 
-void FdUtil::CheckDgramFd(int fd) {
-    checkFdType(fd, SOCK_DGRAM);
-}
-
-void FdUtil::CheckStreamFd(int fd) {
-    checkFdType(fd, SOCK_STREAM);
-}
-
-void FdUtil::checkFdType(int fd, int type) {
-    assert(fd >= 0);
-    int currType;
-    socklen_t len = sizeof(socklen_t);
-    getsockopt(fd, SOL_SOCKET, SO_TYPE, &currType, &len);
-    assert(currType == type);
-}
 
 int FdUtil::SetNonblocking(int &fd) {
     int oflag = fcntl(fd, F_GETFL, 0);
@@ -57,7 +40,7 @@ int FdUtil::CreateFile(const std::string &fName, int mode) {
         }
         nret = open(fName.c_str(), O_WRONLY|O_CREAT, mode);
         if (nret >= 0) {
-            close(nret);    // just close the fd descriptor
+            CloseSocket(nret);    // just close the fd descriptor
         }
     }
     return nret;

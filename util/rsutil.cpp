@@ -7,10 +7,8 @@
 #include <cstdlib>
 #include <cassert>
 
-#include <sys/socket.h>
-#include <unistd.h>
-#include <sys/un.h>
-#include <sys/time.h>
+#include "os.h"
+#include "os_util.h"
 
 #include <rscomm.h>
 
@@ -41,7 +39,7 @@ int checkFdType(int fd, int type) {
     assert(fd >= 0);
     int currType = 0;
     socklen_t len = sizeof(socklen_t);
-    int nret = getsockopt(fd, SOL_SOCKET, SO_TYPE, &currType, &len);
+    int nret = getsockopt(fd, SOL_SOCKET, SO_TYPE, reinterpret_cast<char *>(&currType), &len);
     if (nret) {
         LOGE << "getsockopt, nret " << nret << ": " << strerror(errno);
     }
@@ -76,13 +74,49 @@ uv_poll_t *poll_dgram_fd(int fd, uv_loop_t *loop, uv_poll_cb cb, void *arg, int 
     memset(poll, 0, sizeof(uv_poll_t));
     int nret = uv_poll_init(loop, poll, fd);
     if (nret) {
+        fprintf(stdout, "%s:%d, nret: %d\n", __FUNCTION__, __LINE__, nret);
         *err = nret;
         free(poll);
         return NULL;
     }
     poll->data = arg;
-    uv_poll_start(poll, UV_READABLE, cb);
+    nret = uv_poll_start(poll, UV_READABLE, cb);
+    if (nret) {
+        fprintf(stdout, "%s:%d, nret: %d\n", __FUNCTION__, __LINE__, nret);
+        *err = nret;
+        uv_close((uv_handle_t *) (poll), close_cb);
+        return NULL;
+    }
     return poll;
+}
+
+uv_udp_t *poll_udp_fd(int fd, uv_loop_t *loop, uv_udp_recv_cb cb, void *arg, int *err) {
+    checkFdType(fd, SOCK_DGRAM);
+
+    uv_udp_t *udp = (uv_udp_t *) malloc(sizeof(uv_udp_t));
+    int nret = uv_udp_init(loop, udp);
+    if (nret) {
+        *err = nret;
+        free(udp);
+        return NULL;
+    }
+    udp->data = arg;
+    do {
+        nret = uv_udp_open(udp, fd);
+        fprintf(stdout, "%s:%d, nret: %d\n", __FUNCTION__, __LINE__, nret);
+        if (!nret) {
+            nret = uv_udp_recv_start(udp, alloc_buf, cb);
+            fprintf(stdout, "%s:%d, nret: %d\n", __FUNCTION__, __LINE__, nret);
+        }
+    } while (false);
+
+    if (nret) {
+        *err = nret;
+        uv_close((uv_handle_t *) udp, close_cb);
+        return NULL;
+    }
+
+    return udp;
 }
 
 
@@ -116,7 +150,6 @@ om_listen_udp_addr(const struct sockaddr_in *addr, uv_loop_t *loop, uv_udp_recv_
     return udp;
 }
 
-
 uv_udp_t *om_new_udp(uv_loop_t *loop, void *arg, uv_udp_recv_cb cb) {
     assert(cb != NULL);
     uv_udp_t *mUdp = (uv_udp_t *) (malloc(sizeof(uv_udp_t)));
@@ -134,7 +167,7 @@ om_listen_unix_dgram(const struct sockaddr_un *addr, uv_loop_t *loop, uv_poll_cb
     int nret = bind(un_sock, (const struct sockaddr *) addr, len);
     if (nret) {
         if (err) { *err = nret; }
-        close(un_sock);
+        CloseSocket(un_sock);
         LOGE << "failed to bind unix domain socket, " << nret << ": " << strerror(errno);
         return NULL;
     }
@@ -143,7 +176,7 @@ om_listen_unix_dgram(const struct sockaddr_un *addr, uv_loop_t *loop, uv_poll_cb
     nret = uv_poll_init(loop, poll, un_sock);
     if (nret) {
         if (err) { *err = nret; }
-        close(un_sock);
+        CloseSocket(un_sock);
         free(poll);
         LOGE << "failed to poll init, " << nret << ": " << uv_strerror(nret);
         return NULL;
@@ -161,9 +194,14 @@ char *encode_sockaddr4(char *buf, const struct sockaddr_in *addr) {
     return p;
 }
 
+const char *decode_inaddr(in_addr *addr, const char *p) {
+    uint32_t val = (uint32_t) (addr->s_addr);
+    return decode_uint32(&val, p);
+}
+
 const char *decode_sockaddr4(const char *buf, struct sockaddr_in *addr) {
     const char *p = buf;
-    p = decode_uint32(&addr->sin_addr.s_addr, p);
+    p = decode_inaddr(&addr->sin_addr, p);
     p = decode_uint16(&addr->sin_port, p);
     addr->sin_family = AF_INET;
     return p;
@@ -254,9 +292,9 @@ int GetUdpSelfInfo(ConnInfo &info, uv_udp_t *udp) {
     return 0;
 }
 
-std::string InAddr2Ip(in_addr addr) {
+std::string InAddr2Ip(uint32_t iaddr) {
     std::string ip;
-    auto iaddr = addr.s_addr;
+
     for (int i = 0; i < 4; i++) {
         if (i > 0) {
             ip += ".";
@@ -268,22 +306,21 @@ std::string InAddr2Ip(in_addr addr) {
     return ip;
 }
 
+std::string InAddr2Ip(in_addr addr) {
+    return InAddr2Ip(addr.s_addr);
+}
+
 const rbuf_t new_buf(int nread, const rbuf_t &rbuf, void *data) {
-    const rbuf_t result = {
-            .base = rbuf.base,
-            .len = nread,
-            .data = data,
-    };
-    return result;
+    return new_buf(nread, rbuf.base, data);
 }
 
 const rbuf_t new_buf(int nread, const char *base, void *data) {
-    const rbuf_t result = {
-            .base = const_cast<char *>(base),
-            .len = nread,
-            .data = data,
-    };
+    rbuf_t result = {0};
+    result.base = const_cast<char *>(base);
+    result.len = nread;
+    result.data = data;
     return result;
+
 }
 
 void *alloc_mem(size_t size) {
@@ -310,6 +347,44 @@ std::string GetDstAddrStr(const ConnInfo &info) {
 
 uint64_t rsk_now_ms() {
     struct timeval val;
-    gettimeofday(&val, 0);
+    rgettimeofday(&val);
     return (uint64_t) val.tv_sec * 1000 + val.tv_usec / 1000;
+}
+
+void ipStr2Addr(const std::string &ip, struct in_addr *addr) {
+    addr->s_addr = inet_addr(ip.c_str());
+}
+
+static inline int setSockBufSize(int sock, int size, int cmd) {
+    assert(cmd == SO_SNDBUF || cmd == SO_RCVBUF);
+    int bufSize = size;
+    return setsockopt(sock, SOL_SOCKET, cmd, (SOCKOPT_VAL_TYPE)&bufSize, sizeof(bufSize));
+}
+
+int setSendBufSize(int sock, int size) {
+    return setSockBufSize(sock, size, SO_SNDBUF);
+}
+
+int setRecvBufSize(int sock, int size) {
+    return setSockBufSize(sock, size, SO_RCVBUF);
+}
+
+static inline int getSockBufSize(int sock, int cmd) {
+    assert(cmd == SO_SNDBUF || cmd == SO_RCVBUF);
+    int bufSize = 0;
+    socklen_t socklen = sizeof(bufSize);
+
+    int nret = getsockopt(sock, SOL_SOCKET, cmd, (SOCKOPT_VAL_TYPE)&bufSize, &socklen);
+    if (nret) {
+        return -1;
+    }
+    return bufSize;
+}
+
+int getSendBufSize(int sock) {
+    return getSockBufSize(sock, SO_SNDBUF);
+}
+
+int getRecvBufSize(int sock) {
+    return getSockBufSize(sock, SO_RCVBUF);
 }

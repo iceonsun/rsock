@@ -1,13 +1,14 @@
-[![Build Status](https://travis-ci.org/iceonsun/rsock.svg?branch=master)](https://travis-ci.org/iceonsun/rsock)
+[![Build Status](https://travis-ci.org/iceonsun/rsock.svg?branch=master)](https://travis-ci.org/iceonsun/rsock) [![Build status](https://ci.appveyor.com/api/projects/status/cqtcqeg2n2k0eivl?svg=true)](https://ci.appveyor.com/project/iceonsun/rsock)
+
 -
 
 ### Introduction
 
 中文请点击[这里](doc/README.zh-cn.md).
 
-rsock is either accelerator, nor vpn. It merely turn a udp connection into multiple fake tcp connections, or multiple normal udp connections or both. It's very similar with udp because it's not reliable. It doesn't have flow control, timeout retransmission algorithms, etc. It's supposed to used together with kcptun or other udp client with ARQ. The purpose of rsock is that prevent qos to udp from ISP if any. It supports Mac(and other unices) and Linux. To see introduction and usage of kcptun click [here](https://github.com/xtaci/kcptun) . And shadowsocks, click [here](https://github.com/shadowsocks/shadowsocks-go) .
+rsock is neither accelerator, nor vpn. It merely turns a udp connection into multiple fake tcp connections, or multiple normal udp connections or both. It's very similar with udp because it's not reliable and has no flow control, timeout retransmission algorithms, etc. It's **cross platform**. It's supposed to used together with kcptun or other udp client with ARQ. The purpose of rsock is that prevent qos to udp from ISP if any. It supports **Windows, Mac and Linux**. To see introduction and usage of kcptun click [here](https://github.com/xtaci/kcptun) . And shadowsocks, click [here](https://github.com/shadowsocks/shadowsocks-go) .
 
-**REPEAT**: Data transfer of rsock is **NOT** reliable. Reliable data tranfer should be take cared of by app level(kcptun).
+**REPEAT**: Data transfer of rsock is **NOT** reliable. Reliable data tranfer should be taked care of by app level(kcptun).
 
 The following picture brifely shows principles
 
@@ -15,25 +16,15 @@ The following picture brifely shows principles
 
 ### Installation
 
-There are precompiled binaries for 64bit Linux and 64bit Mac. Download from [here](https://github.com/iceonsun/rsock/releases).
+There are precompiled binaries for 64bit Linux, 64bit Mac and x86/x64 windows. They can be downloaded from [here](https://github.com/iceonsun/rsock/releases).
 
-For other platforms, you can download source code and compile it by yourself. Library dependency list: libuv, libnet, libpcap.
+For **Windows** users, you have to install winpcap first. [winpcap](https://www.winpcap.org/install/default.htm)
 
-Take Ubuntu as an example:
+For other platforms, you can download source code and compile it by yourself. Compilation guide is [here](https://github.com/iceonsun/rsock/wiki/Manual-compilation-Guide)
 
-```
-sudo apt-get install g++ libuv1-dev libnet libpcap #note!It's libuv1-dev
-git clone https://github.com/iceonsun/rsock.git rsock
-cd rsock
-mkdir build && cd build
-cmake .. -DRSOCK_RELEASE=1 && make
-```
 
-To accelerate compilation, you can specify -jNumOfCpuCores. e.g make -j2
 
-note: libuv must be libuv1-dev, not libuv-dev. The libuv1-dev is the newer version.
-
-### Usage
+### Quick start
 
 #### Server
 
@@ -74,6 +65,14 @@ Parameter explanation:
 -t x.x.x.x , Address of rsock server。Attention. This is different from server. It only contains ip.
 
 -l , local listened udp address, aka target address of kcptun client(the address specified by -t).
+
+####NOTE
+
+1. If rsock doesn't work, you have to check whether your NIC supoorts winpcap. And routers may also filter packets, especially when you use Windows.
+
+2. For Windows users, speed is far slow than rsock on mac/Linux. （500-800KB/s  during my test)
+
+3. For Windows users, you'd better pass --lcapIp arguments instead of -d. Because it's hard to find NIC name for normal users.
 
 ### Exit
 
@@ -224,11 +223,11 @@ If servers run normally, try to restart kcptun client(turn shadowsocks on/off, t
 
 ### TODO
 
-1. windows support
+1. Add randomize port listening.
 
-1. Add idle mode. Stop repeatedly connect to server if no data for a period.
+1. Add idle mode. Don't repeatedly connect to server if no data for a period.
 
-1. Try to introduce reliable data transfer. Listen tcp directly and remove kcptun.
+1. Add other fake conn. e.g. ICMP, DNS.
 
 
 ### Donation

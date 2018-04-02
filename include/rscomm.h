@@ -29,7 +29,19 @@ extern "C" {
 #define MD5_LEN 16
 
 #ifndef RLOG_FILE_PATH
+#ifdef _WIN32
+#define RLOG_FILE_PATH "./rsock.log"
+#else
 #define RLOG_FILE_PATH "/var/log/rsock/rsock.log"
+#endif
+#endif
+
+#ifndef RSOCK_SOCK_BUF_TIMES
+#define RSOCK_SOCK_BUF_TIMES 64 // 4 * original buf size
+#endif
+
+#ifndef RSOCK_UV_MAX_BUF
+#define RSOCK_UV_MAX_BUF 65536  // 64K
 #endif
 
 #define OM_PCAP_TIMEOUT 10

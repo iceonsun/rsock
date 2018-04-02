@@ -1,0 +1,59 @@
+version: 1.0.{build}-{branch}
+
+branches:
+  only:
+    - master
+    - dev
+    - windows
+skip_tags: true
+
+skip_commits:
+  message: \[ci skip\]|\[skip ci\]      # Regex for matching commit message
+
+max_jobs: 1
+
+image: Visual Studio 2017
+
+clone_folder: c:\projects\myproject
+
+init:
+- ps: Update-AppveyorBuild -Version "$(Get-Date -format yyyy-MM-dd).$env:appveyor_build_number"
+
+install:
+  - cd c:\projects\myproject
+  - mkdir build
+  - cd build
+  - echo %APPVEYOR_REPO_COMMIT_TIMESTAMP% > VERSION.txt
+  - git rev-parse HEAD >> VERSION.txt
+  - cmake -DCMAKE_TOOLCHAIN_FILE=..\xbuild\cmake\Windows_x86.toolchain.cmake ..
+
+configuration: Debug
+
+build:
+  parallel: true                  # enable MSBuild parallel builds
+  project: build\rSock.sln      # path to Visual Studio solution or project
+
+matrix:
+  fast_finish: true
+
+  exclude:  # only x86 32bit debug
+      - platform: x64
+
+      - platform: 86
+        configuration: Release
+
+after_build:
+  - 7z a rsock-Windows-x86-%APPVEYOR_BUILD_VERSION%.zip  %APPVEYOR_BUILD_FOLDER%\build\Debug\*.exe %APPVEYOR_BUILD_FOLDER%\xbuild\lib\Windows_x86\*.dll %APPVEYOR_BUILD_FOLDER%\build\VERSION.txt
+  - appveyor PushArtifact rsock-Windows-x86-%APPVEYOR_BUILD_VERSION%.zip
+
+#environment:
+#  MY_MAIL:
+#    secure: qovhbBYOQ/jzEyiE3AGBA/Na4cUhT+JkzWJ7ppq/avI=
+
+#notifications:
+#  - provider: mail
+#    to:
+#      - %MY_MAIL%
+#    subject: 'Build {{status}}'                  # optional
+#    message: "{{message}}, {{commitId}}, ..."    # optional
+#    on_build_status_changed: true

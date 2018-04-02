@@ -8,7 +8,7 @@
 #include "rcommon.h"
 
 #define DEF_IP "127.0.0.1"
-#define DEF_PORT 30010
+#define DEF_PORT 30000
 
 void send_cb(uv_udp_send_t* req, int status) {
     if (status) {

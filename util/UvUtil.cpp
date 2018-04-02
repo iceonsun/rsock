@@ -22,3 +22,15 @@ uv_signal_s *UvUtil::WatchSignal(uv_loop_t *loop, int sig, uv_signal_cb cb, void
 void UvUtil::close_cb(uv_handle_t *handle) {
     free(handle);
 }
+
+void UvUtil::stop_and_close_loop_fully(uv_loop_t *loop) {
+    uv_stop(loop);
+    uv_walk(loop, close_walk_cb, nullptr);
+    uv_loop_close(loop);
+}
+
+void UvUtil::close_walk_cb(uv_handle_t *handle, void *arg) {
+    if (!uv_is_closing(handle)) {
+        uv_close(handle, nullptr);  // should be deleted by itself
+    }
+}

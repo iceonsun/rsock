@@ -10,6 +10,7 @@ IConn::IConn(const std::string &key) {
 }
 
 int IConn::Init() {
+	assert(mInited == false);
     mInited = true;
     return 0;
 }

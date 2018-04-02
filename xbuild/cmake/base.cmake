@@ -13,15 +13,21 @@ if (NOT RSOCK_TEST)     # for test
 endif()
 
 include_directories(${RSOCK_TOP_BUILD_DIR}/include/libuv)
-include_directories(${RSOCK_TOP_BUILD_DIR}/include/libpcap)
 include_directories(${RSOCK_TOP_BUILD_DIR}/include/libnet)
-
-link_directories(${RSOCK_TOP_BUILD_DIR}/lib/${CMAKE_SYSTEM_NAME}_${CMAKE_SYSTEM_PROCESSOR}/)
+if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
+    include_directories(${RSOCK_TOP_BUILD_DIR}/include/winpcap)
+	link_directories(${RSOCK_TOP_BUILD_DIR}/lib/Windows_x86/)   # force use 32bit
+	#force to generate 32bit binary
+else ()
+    include_directories(${RSOCK_TOP_BUILD_DIR}/include/libpcap)
+	link_directories(${RSOCK_TOP_BUILD_DIR}/lib/${CMAKE_SYSTEM_NAME}_${CMAKE_SYSTEM_PROCESSOR}/)
+endif ()
 
 message(STATUS "CMAKE_SYSTEM_NAME = ${CMAKE_SYSTEM_NAME}")
 message(STATUS "CMAKE_SYSTEM_VERSION = ${CMAKE_SYSTEM_VERSION}")
 message(STATUS "CMAKE_SYSTEM_PROCESSOR = ${CMAKE_SYSTEM_PROCESSOR}")
 message(STATUS "RSOCK_RELEASE = ${RSOCK_RELEASE}")
+message(STATUS "lin_directories: ${RSOCK_TOP_BUILD_DIR}/lib/${CMAKE_SYSTEM_NAME}_${CMAKE_SYSTEM_PROCESSOR}")
 
 message(STATUS "CMAKE_SYSROOT = ${CMAKE_SYSROOT}")
 message(STATUS "CMAKE_C_COMPILER = ${CMAKE_C_COMPILER}")

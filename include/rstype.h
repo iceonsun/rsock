@@ -12,6 +12,7 @@
 #define ID_BUF_SIZE 8
 
 // todo: declare a class. that can be used as key
+// last 8 digits of md5
 using HashBufType = std::array<char, HASH_BUF_SIZE>;
 using IdBufType = std::array<char, ID_BUF_SIZE>;
 

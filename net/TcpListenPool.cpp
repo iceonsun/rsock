@@ -24,7 +24,7 @@ int TcpListenPool::Init() {
 
     SA4 addr = {0};
     addr.sin_family = AF_INET;
-    inet_aton(mIp.c_str(), &addr.sin_addr);
+	addr.sin_addr.s_addr = inet_addr(mIp.c_str());   
     for (auto p : lists) {  // todo: if one fail, return -1 or number of successful conns
         addr.sin_port = htons(p);
         auto tcp = initTcp(&addr);

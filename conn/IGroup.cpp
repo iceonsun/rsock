@@ -22,11 +22,13 @@ int IGroup::Init() {
     }
 
     if (mBtm) {
+        /*
         nret = mBtm->Init();
         if (nret) {
             LOGE << "btm conn init failed: " << nret;
             return nret;
         }
+        */
 
         auto out = std::bind(&IConn::Send, mBtm, std::placeholders::_1, std::placeholders::_2);
         SetOutputCb(out);

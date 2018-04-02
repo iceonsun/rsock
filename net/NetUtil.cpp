@@ -9,6 +9,7 @@
 #include "../conn/FakeTcp.h"
 #include "NetUtil.h"
 #include "../util/rsutil.h"
+#include "os_util.h"
 
 BtmUdpConn *NetUtil::CreateBtmUdpConn(uv_loop_t *loop, const ConnInfo &info) {
     SA4 addr = {0};
@@ -42,7 +43,7 @@ FakeTcp *NetUtil::CreateTcpConn(uv_loop_t *loop, const ConnInfo &info) {
     int nret = uv_tcp_open(tcp, sock);
     if (nret) {
         free(tcp);
-        close(sock);
+		CloseSocket(sock);        
         LOGE << "uv_tcp_open failed: " << uv_strerror(nret);
         return nullptr;
     }
@@ -95,7 +96,7 @@ int NetUtil::createTcpSock(const SA4 *target, const SA4 *self) {
     int sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (self && self->sin_port) {
         int optval = 1;
-        int nret = setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
+        int nret = setsockopt(sock, SOL_SOCKET, SO_REUSEADDR,(SOCKOPT_VAL_TYPE) &optval, sizeof(optval));
         if (nret) {
             LOGE << "setsockopt failed: " << strerror(errno);
             return nret;
@@ -109,8 +110,8 @@ int NetUtil::createTcpSock(const SA4 *target, const SA4 *self) {
 
     int nret = connect(sock, (const SA *) (target), sizeof(SA4));
     if (nret) {
-        LOGE << "connect failed: " << strerror(errno);
-        close(sock);
+        LOGE << "connect " << Addr2Str((SA*)target) << " failed: " << strerror(errno);
+		CloseSocket(sock);        
         return nret;
     }
     return sock;
