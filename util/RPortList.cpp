@@ -12,7 +12,7 @@ RPortList::RPortList(const std::initializer_list<PortPair> &list) {
     buildRPortList(list);
 }
 
-void RPortList::AddPort(uint16_t port) {
+void RPortList::AddPort16(uint16_t port) {
     invalidState();
     mSingleOnes.push_back(port);
 }

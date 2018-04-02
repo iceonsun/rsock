@@ -1,8 +1,9 @@
 #include "../client/csock.h"
 
-#define DEV "lo0"
+#define DEV "en0"
+//#define DEV "lo0"
 #define TIP "127.0.0.1"
-#define TPORTS "20005-20006"
+//#define TPORTS "20005-20006"
 
 int main(int argc, char **argv) {
     if (argc > 1) {
@@ -14,9 +15,6 @@ int main(int argc, char **argv) {
             "--dev=" DEV,
             "--ludp=127.0.0.1:30000",
             "--taddr=" TIP,
-            "--ports=" TPORTS,
-            "-v",
-
     };
 
     return csock_main(sizeof(fakearg) / sizeof(fakearg[0]), fakearg);

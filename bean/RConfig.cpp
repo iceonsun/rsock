@@ -12,7 +12,7 @@
 #include "RConfig.h"
 #include "args.hxx"
 #include "../util/rhash.h"
-#include "../util/FdUtil.h"
+#include "FdUtil.h"
 #include "../cap/cap_util.h"
 
 using namespace args;
@@ -81,6 +81,9 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
 
             if (selfCapIp) {
                 param.selfCapIp = selfCapIp.Get();
+				if (!dev) {
+					devWithIpv4(param.dev, param.selfCapIp);
+				}
             }
 
             if (capPorts) {
@@ -249,6 +252,9 @@ void RConfig::parseJsonString(RConfig &c, const std::string &content, std::strin
         }
         if (o["lcapIp"].is_string()) {
             p.selfCapIp = o["lcapIp"].string_value();
+			if (!o["dev"].is_string()) {
+				devWithIpv4(p.dev, p.selfCapIp);
+			}
         }
         if (o["ports"].is_string()) {
             auto s = o["ports"].string_value();

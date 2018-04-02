@@ -9,7 +9,6 @@
 #include <mutex>
 #include <memory>
 #include <string>
-#include <sys/time.h>
 #include "uv.h"
 
 class Handler {

@@ -7,9 +7,10 @@
 #include <algorithm>
 #include <sstream>
 
-#include <arpa/inet.h>
 
 #include <pcap.h>
+
+#include "os_util.h"
 
 #include "plog/Log.h"
 
@@ -32,6 +33,7 @@ int ipv4OfDev(const char *dev, char *ip_buf, char *err) {
         pcap_if_t *anIf = nullptr;
         bool ok = false;
         for (anIf = dev_list; anIf != nullptr && !ok; anIf = anIf->next) {
+			fprintf(stderr, "dev name: %s\n", anIf->name);
             LOGV << "dev_name: " << anIf->name;
             if (!strcmp(dev, anIf->name)) {
                 struct pcap_addr *addr = nullptr;
@@ -150,7 +152,7 @@ int devWithIpv4(std::string &devName, const std::string &ip) {
 
     int nret = -1;
     in_addr ipaddr = {0};
-    inet_aton(ip.c_str(), &ipaddr);
+	ipStr2Addr(ip, &ipaddr);
 
     for (auto dev = dev_list; dev && nret; dev = dev->next) {
         for (auto addr = dev->addresses; addr; addr = addr->next) {
@@ -178,17 +180,9 @@ bool DevIpMatch(const std::string &dev, const std::string &ip) {
 }
 
 uint32_t NetIntOfIp(const char *ip) {
-    in_addr addr = {0};
-    inet_aton(ip, &addr);
-    return addr.s_addr;
+	return (uint32_t) inet_addr(ip);
 }
 
-u_int32_t hostIntOfIp(const std::string &ip) {
-    in_addr addr = {0};
-    int nret = inet_aton(ip.c_str(), &addr);
-    if (1 != nret) {
-        LOGE << "inet_aton failed, nret " << nret << ": " << strerror(errno);
-        return 0;
-    }
-    return ntohl(addr.s_addr);
+u_int32_t hostIntOfIp(const std::string &ip) {   
+    return ntohl((uint32_t)inet_addr(ip.c_str()));
 }

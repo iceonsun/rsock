@@ -5,7 +5,7 @@
 #include <cstring>
 #include <cstdlib>
 
-#include <limits>
+#include <climits>
 
 #include <plog/Log.h>
 
@@ -16,7 +16,7 @@
 #include "TcpAckPool.h"
 
 ClientNetManager::ClientNetManager(uv_loop_t *loop, TcpAckPool *ackPool)
-        : INetManager(loop, ackPool), MAX_RETRY(std::numeric_limits<int>::max()) {
+        : INetManager(loop, ackPool), MAX_RETRY(INT_MAX) {
 }
 
 void ClientNetManager::Close() {

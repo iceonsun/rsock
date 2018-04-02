@@ -5,7 +5,7 @@
 #ifndef RSOCK_ICLIENTGROUP_H
 #define RSOCK_ICLIENTGROUP_H
 
-#include <sys/un.h>
+#include "os.h"
 
 #include "../conn/IAppGroup.h"
 

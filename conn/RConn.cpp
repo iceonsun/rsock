@@ -23,10 +23,18 @@ RConn::RConn(const std::string &hashKey, const std::string &dev, uv_loop_t *loop
 }
 
 int RConn::Init() {
-    IGroup::Init();
+    int nret = IGroup::Init();
+    if (nret) {
+        return nret;
+    }
     auto fn = std::bind(&IConn::Input, this, _1, _2);
-    mRawTcp->SetOnRecvCb(fn);
-    return mRawTcp->Init();
+    
+     nret = mRawTcp->Init();
+	if (nret) {
+		return nret;
+	}
+	mRawTcp->SetOnRecvCb(fn);
+	return 0;
 }
 
 void RConn::Close() {

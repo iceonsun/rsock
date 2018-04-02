@@ -6,14 +6,14 @@
 #include <ctime>
 
 #include <string>
-
+#include "os_util.h"
 #include "uv.h"
 #include "ISockApp.h"
 #include "../conn/IConn.h"
 #include "plog/Log.h"
 #include "plog/Appenders/ConsoleAppender.h"
-#include "../util/FdUtil.h"
-#include "../util/ProcUtil.h"
+#include "FdUtil.h"
+#include "ProcUtil.h"
 #include "../util/RTimer.h"
 #include "../conn/IBtmConn.h"
 #include "../net/INetManager.h"
@@ -40,12 +40,18 @@ int ISockApp::Init() {
         fprintf(stderr, "configuration not inited.\n");
         assert(0);
     }
+
+	int nret = os_init_onstartup();
+	if (nret) {
+		fprintf(stderr, "startup init failed: %d\n", nret);
+		return nret;
+	}
+
     return doInit();
 }
 
 int ISockApp::doInit() {
     assert(mConf.Inited());
-
     if (makeDaemon(mConf.isDaemon)) {
         return -1;
     }
@@ -75,6 +81,11 @@ int ISockApp::doInit() {
     }
 
     mBtmConn = CreateBtmConn(mConf, mLoop, mAckPool, mCap->Datalink());
+	nret = mBtmConn->Init();
+	if (nret) {
+		return nret;
+	}
+
     assert(mBtmConn);
     mBtmConn->Attach(this);
     // cap#Start must be called before CreateBridgeConn because create btmconn will connect tcp
@@ -85,7 +96,7 @@ int ISockApp::doInit() {
         return -1;
     }
 
-    watchExitSignal();
+    watchExitSignals();
     mInited = true;
     srand(time(NULL));
 
@@ -126,13 +137,13 @@ void ISockApp::Flush(void *arg) {
 
 void ISockApp::Close() {
     LOGD << "";
-    mClosing = true;
-
-    if (mExitSig) {
-        uv_signal_stop(mExitSig);
-        uv_close(reinterpret_cast<uv_handle_t *>(mExitSig), close_cb);
-        mExitSig = nullptr;
+    if (mClosing) {
+        LOGD << "closing in process";
+        return;
     }
+
+    mClosing = true;
+    destroySignals();
 
     if (mTimer) {
         mTimer->Stop();
@@ -170,14 +181,12 @@ void ISockApp::Close() {
     }
 
     if (mLoop) {
-        uv_stop(mLoop);
-        if (!uv_loop_close(mLoop)) {
-            free(mLoop);
-//        } else {
-//            LOGE << "loop not closed properly";
-        }
+        UvUtil::stop_and_close_loop_fully(mLoop);
+        free(mLoop);
         mLoop = nullptr;
     }
+
+	os_clean();
 }
 
 void ISockApp::StartTimer(uint32_t timeout_ms, uint32_t repeat_ms) {
@@ -207,7 +216,7 @@ int ISockApp::makeDaemon(bool d) {
 std::vector<IBtmConn *> ISockApp::bindUdpConns(uint32_t src, const std::vector<uint16_t> &ports, uint32_t dst,
                                                const std::vector<uint16_t> &svr_ports) {
     std::vector<IBtmConn *> vec;
-    int n = std::min(ports.size(), svr_ports.size());
+    int n = std::min<int>(ports.size(), svr_ports.size());
     assert(n);
     ConnInfo info;
     info.src = src;
@@ -244,9 +253,16 @@ void ISockApp::onExitSignal() {
     Close();
 }
 
-void ISockApp::watchExitSignal() {
-    if (!mExitSig) {
-        mExitSig = UvUtil::WatchSignal(mLoop, SIG_EXIT, close_signal_handler, this);
+void ISockApp::watchExitSignals() {
+    if (mExitSignals.empty()) {
+        for (int sig: {SIGINT, SIGHUP}) {
+            auto s = UvUtil::WatchSignal(mLoop, sig, close_signal_handler, this);
+            if (s) {
+                mExitSignals.push_back(s);
+            } else {
+                LOGE << "failed to watch signal: " << sig;
+            }
+        }
     }
 }
 
@@ -291,4 +307,14 @@ int ISockApp::checkRoot(int argc, const char *const *argv) {
         return -1;
     }
     return 0;
+}
+
+void ISockApp::destroySignals() {
+    if (!mExitSignals.empty()) {
+        for (auto sig: mExitSignals) {
+            uv_signal_stop(sig);
+            uv_close(reinterpret_cast<uv_handle_t *>(sig), close_cb);
+        }
+        mExitSignals.clear();
+    }
 }

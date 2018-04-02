@@ -5,8 +5,9 @@
 #ifndef RSOCK_RTASK_H
 #define RSOCK_RTASK_H
 
+struct sockaddr;
+struct sockaddr_in;
 
-#include <sys/socket.h>
 #include <vector>
 #include "../conn/IConn.h"
 #include "../bean/EncHead.h"

@@ -8,6 +8,7 @@
 
 #include "SConn.h"
 #include "../util/rsutil.h"
+#include "os.h"
 
 SConn::SConn(const std::string &key, uv_loop_t *loop, const SA *target, uint32_t conv) : IConn(key) {
     assert(target->sa_family == AF_INET);

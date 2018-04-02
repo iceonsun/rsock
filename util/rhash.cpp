@@ -9,44 +9,38 @@
 #include <algorithm>
 #include <string>
 
-#include <netinet/in.h>
-#include <arpa/inet.h>
+#include "os.h"
 
 #include "rhash.h"
 #include "../thirdparty/md5.h"
 #include "rscomm.h"
 
-
 using u_char = unsigned char;
 
-static bool hash_equal(const HashBufType &hashed_buf, const std::string &key, const char *data, int data_len);
-
-static int8_t compute_hash(HashBufType &hash, const std::string &key, const char *data, int data_len);
-
-int8_t compute_hash(HashBufType &hash, const std::string &key, const char *data, int data_len) {
-    if (!data || data_len <= 0) {
-        return -1;
-    }
-    assert(hash.size() <= MD5_LEN);
-
-    const int hashLen = key.size() + 1;
-    char need_hash[hashLen];
-
-    std::copy(key.begin(), key.end(), need_hash);
-    need_hash[hashLen - 1] = data[0];
-
+static inline int8_t compute_hash(char * hash, int HASHED_LEN, const std::string &key, const char *data, int data_len) {
+    assert(data && data_len > 0);    
+    assert(HASHED_LEN <= MD5_LEN);
+	        
     MD5_CTX md5_ctx;
     MD5_Init(&md5_ctx);
-    MD5_Update(&md5_ctx, need_hash, hashLen);
+    MD5_Update(&md5_ctx, key.data(), key.size());
+    MD5_Update(&md5_ctx, data, 1);
+
     u_char md5_result[MD5_LEN] = {0};
     MD5_Final(md5_result, &md5_ctx);
 
-    u_char *p = md5_result + (MD5_LEN - hash.size());
-    std::copy(p, p + HASH_BUF_SIZE, std::begin(hash));
+    u_char *p = md5_result + (MD5_LEN - HASHED_LEN);
+    std::copy(p, p + HASH_BUF_SIZE, hash);
 
     return 0;
 }
 
+char * compute_hash(char *hash, const std::string &key, const char *data, int data_len) {    
+    compute_hash(hash, HASH_BUF_SIZE, key, data, data_len);    
+    return hash + HASH_BUF_SIZE;
+}
+
+/*
 bool hash_equal(const HashBufType &hashed_buf, const std::string &key, const char *data, int data_len) {
     assert(hashed_buf.size() <= MD5_LEN);
 
@@ -57,38 +51,48 @@ bool hash_equal(const HashBufType &hashed_buf, const std::string &key, const cha
     const int key_len = key.size();
     const int hashLen = key_len + 1;
 
-    char need_hash[hashLen];
+    //char need_hash[hashLen];
+	char *need_hash = new char[hashLen];
     std::copy(key.begin(), key.end(), need_hash);
     need_hash[hashLen - 1] = data[0];
 
     MD5_CTX md5_ctx;
     MD5_Init(&md5_ctx);
     MD5_Update(&md5_ctx, need_hash, hashLen);
+	delete[]  need_hash;
+	need_hash = nullptr;
     char md5_result[MD5_LEN] = {0};
     MD5_Final(reinterpret_cast<unsigned char *>(md5_result), &md5_ctx);
 
     return std::equal(std::begin(hashed_buf), std::end(hashed_buf), md5_result + (MD5_LEN - hashed_buf.size()));
 }
+*/
 
-std::string HashBuf2String(const HashBufType &hash) {
-    return std::string(hash.begin(), hash.end());
+static inline bool hash_equal(const char *hashed_buf, int HASHED_LEN, const std::string& key, const char *data, int data_len) {
+    assert(HASHED_LEN <= MD5_LEN);
+    if (!data || data_len <= 0) {
+        return false;
+    }
+
+    const int key_len = key.size();
+    MD5_CTX md5_ctx;
+    MD5_Init(&md5_ctx);
+    MD5_Update(&md5_ctx, key.data(), key.size());
+    MD5_Update(&md5_ctx, data, 1);
+
+    char md5_result[MD5_LEN] = { 0 };
+    MD5_Final(reinterpret_cast<unsigned char *>(md5_result), &md5_ctx);
+
+    return std::equal(hashed_buf, hashed_buf + HASHED_LEN, md5_result + (MD5_LEN - HASHED_LEN));
 }
 
 // todo: change
 bool hash_equal(const char *hashed_buf, const std::string &key, const char *data, int data_len) {
-    assert(data && data_len > 0);
-    HashBufType buf{{0}};
-    std::copy(hashed_buf, hashed_buf + HASH_BUF_SIZE, buf.begin());
-    return hash_equal(buf, key, data, data_len);
+    return hash_equal(hashed_buf, HASH_BUF_SIZE, key, data, data_len);
 }
 
-char * compute_hash(char *hash, const std::string &key, const char *data, int data_len) {
-    assert(data && data_len > 0);
-
-    HashBufType buf{{0}};
-    compute_hash(buf, key, data, data_len);
-    std::copy(buf.begin(), buf.end(), hash);
-    return hash + buf.size();
+std::string HashBuf2String(const HashBufType &hash) {
+    return std::string(hash.begin(), hash.end());
 }
 
 
@@ -101,11 +105,14 @@ void GenerateIdBuf(IdBufType &hash, const std::string &key) {
     const int APRIME = 709217;
     sec %= APRIME;
     const int buflen = 12 + key.size();
-    char buf[buflen];
+    //char buf[buflen];
+	char *buf = new char[buflen];
     snprintf(buf, buflen, "%6ld%6ld%s", sec, ((long) (&sec)) % APRIME, key.c_str());
 
     MD5_CTX ctx;
     MD5_Update(&ctx, buf, buflen);
+	delete[] buf;
+	buf = nullptr;
     u_char md5_result[MD5_LEN] = {0};
     MD5_Final(md5_result, &ctx);
     int len = ID_BUF_SIZE;

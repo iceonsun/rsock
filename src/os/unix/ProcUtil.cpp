@@ -11,6 +11,7 @@
 #include <cstring>
 #include "ProcUtil.h"
 
+
 int ProcUtil::MakeDaemon() {
     const int pid = fork();
     if (pid == 0) {
@@ -24,7 +25,7 @@ int ProcUtil::MakeDaemon() {
             return nret;
         }
         for (auto f: {STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO}) {
-            close(f);
+			close(f);	// since we know it's used in unix. just use close to avoid introduce os_util.h
         }
         int fd = open("/dev/null", O_RDWR);
         dup2(fd, STDOUT_FILENO);

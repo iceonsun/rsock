@@ -1,4 +1,5 @@
-[![Build Status](https://travis-ci.org/iceonsun/rsock.svg?branch=master)](https://travis-ci.org/iceonsun/rsock)
+[![Build Status](https://travis-ci.org/iceonsun/rsock.svg?branch=master)](https://travis-ci.org/iceonsun/rsock) [![Build status](https://ci.appveyor.com/api/projects/status/cqtcqeg2n2k0eivl?svg=true)](https://ci.appveyor.com/project/iceonsun/rsock)
+
 -
 
 ### 简介
@@ -13,23 +14,12 @@ rsock仅仅不是加速（加速目前由kcptun进行），也不是vpn，而是
 
 ### 安装指南
 
-64位Linux和64位Mac已经预编译好了。可以直接下载二进制。点击[这里](https://github.com/iceonsun/rsock/releases).
+64位Linux、64位Mac还有Windows已经预编译好了。可以直接下载二进制。点击[这里](https://github.com/iceonsun/rsock/releases).
 
-其他平台可以自己下载源码进行编译。rsock依赖的第三方库有：libuv, libnet, libpcap。
+Windows需要安装winpcap. 点击[这里](https://www.winpcap.org/install/default.htm) 。
 
-以ubuntu为例：
+其他平台可以自己下载源码进行编译。rsock依赖的第三方库有：libuv, libnet, libpcap。编译指南在[这里](https://github.com/iceonsun/rsock/wiki/%E7%BC%96%E8%AF%91%E6%8C%87%E5%8D%97)
 
-```
-sudo apt-get install g++ libuv1-dev libnet libpcap #note!It's libuv1-dev
-git clone https://github.com/iceonsun/rsock.git rsock
-cd rsock
-mkdir build && cd build
-cmake .. -DRSOCK_RELEASE=1 && make
-```
-
-为了加快编译速度，make可以指定-j，后跟cpu核数。如：make -j2
-
-注意：libuv是libuv1-dev，不是libuv-dev。那是两个不同的版本
 
 ### 快速指南
 
@@ -71,8 +61,16 @@ done
 
 -l 127.0.0.1:30000 是本地监听的udp端口。即kcptun客户端的目标地址(kcptun中-t 参数对应的地址）。
 
+####注意
+
+1. 如果rsock不能正常工作，请检查你的网卡是否支持winpcap工作。路由器也有可能过滤掉包(特别是windows系统）。
+
+2. 在Windows系统上，rsock的速度要远慢于mac/linux上。我测试的情况是，速度在500-800KB/s之间。
+
+3. 在windows系统上，建议传入 --lcapIp参数，而不是-d。因为要找到网卡名字，并不容易。
+
 ### 退出运行
-I
+
 `ps axu|grep rsock`
 
 ![](img/pid.png)
@@ -213,12 +211,12 @@ kcptun的下载速度. 速度在2M左右。
 
 
 ### TODO
-   
-1. windows 支持
+  
+1. 增加随机端口监听。
 
 1. 增加闲置模式。当没有数据通过的时候，不要一直重连服务器。
 
-1. 尝试引入类似kcp的可靠数据传输。直接监听tcp，取消kcptun中转。
+1. 添加其他通信方式。比如: ICMP, DNS
 
 ### 捐赠
 

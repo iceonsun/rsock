@@ -10,6 +10,7 @@
 #include "ClientGroup.h"
 #include "../util/rsutil.h"
 #include "../bean/ConnInfo.h"
+#include "os_util.h"
 
 using namespace std::placeholders;
 
@@ -167,7 +168,7 @@ void ClientGroup::Close() {
 
     if (mUnPoll) {
         uv_poll_stop(mUnPoll);
-        close(mUnSock);
+		CloseSocket(mUnSock);
         uv_close(reinterpret_cast<uv_handle_t *>(mUnPoll), close_cb);
 //        free(mUnPoll);    // may cause bug!
     }

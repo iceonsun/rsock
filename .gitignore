@@ -12,3 +12,4 @@ cmake-build-debug/
 *.o
 a.out*
 /xbuild/build
+.vs

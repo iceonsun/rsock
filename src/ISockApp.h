@@ -71,13 +71,16 @@ protected:
 
     virtual void onExitSignal();
 
-    virtual void watchExitSignal();
+    virtual void watchExitSignals();
+
+    virtual void destroySignals();
 
     virtual int newLoop();
 
     static void close_signal_handler(uv_signal_t *handle, int signum);
 
-    static const int SIG_EXIT = SIGUSR1;
+    // todo: use uv siginit
+    static const int SIG_EXIT = 0;
 private:
     int doInit();
 
@@ -102,7 +105,7 @@ private:
     bool mInited = false;
     INetManager *mNetManager = nullptr;
     TcpAckPool *mAckPool = nullptr;
-    uv_signal_t *mExitSig = nullptr;
+    std::vector<uv_signal_t*> mExitSignals;
     bool mClosing = false;
 };
 

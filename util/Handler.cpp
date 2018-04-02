@@ -8,6 +8,7 @@
 #include <vector>
 #include <random>
 #include "Handler.h"
+#include "os_util.h"
 
 Handler::SPHandler Handler::NewHandler(uv_loop_t *loop) {
     return std::make_shared<Handler>(loop);
@@ -273,7 +274,7 @@ bool Handler::RemoveMessages(int what) {
 
 uint64_t Handler::now_ms() {
     struct timeval val;
-    gettimeofday(&val, nullptr);
+    rgettimeofday(&val);
     return ((uint64_t) val.tv_sec * 1000) + val.tv_usec / 1000;
 }
 

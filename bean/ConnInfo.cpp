@@ -3,9 +3,8 @@
 //
 
 #include <sstream>
-#include <arpa/inet.h>
-#include <sys/un.h>
 #include <cassert>
+#include "os.h"
 #include "ConnInfo.h"
 #include "../util/enc.h"
 #include "../util/rsutil.h"
@@ -20,8 +19,8 @@ std::string ConnInfo::BuildKey(const ConnInfo &info) {
     } else {
         out << "tcp:";
     }
-    out << std::string(InAddr2Ip({info.src})) << ":" << info.sp << "-";
-    out << std::string(InAddr2Ip({info.dst})) << ":" << info.dp;
+    out << InAddr2Ip({info.src}) << ":" << info.sp << "-";
+    out << InAddr2Ip({info.dst}) << ":" << info.dp;
     return out.str();
 }
 

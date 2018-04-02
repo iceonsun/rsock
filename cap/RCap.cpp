@@ -7,6 +7,7 @@
 #include "uv.h"
 #include "plog/Log.h"
 #include "RCap.h"
+#include "os.h"
 
 
 RCap::RCap(const std::string &dev, const std::string &selfIp, const RPortList &selfPorts, const RPortList &srcPorts,
@@ -77,6 +78,7 @@ int RCap::Init() {
             sprintf(err, "only support ethernet or loopback. the datalink of sepcifed device is %d", datalink);
             nret = -1;
         }
+#ifndef PCAP_NO_DIRECTION
         if (datalink == DLT_EN10MB) {   // if DLT_NULL, setting PCAP_D_IN will not work.
             if (!mIsServer) {   // server will capture SYN|ACK of self
                 if (-1 == (nret = pcap_setdirection(mCap, PCAP_D_IN))) {
@@ -85,6 +87,7 @@ int RCap::Init() {
                 }
             }
         }
+#endif // PCAP_NO_DIRECTION
     } while (false);
 
     if (nret) {
