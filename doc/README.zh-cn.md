@@ -224,10 +224,6 @@ kcptun的下载速度. 速度在2M左右。
 
 非常欢迎。
 
-微信打赏
-
-![](img/wxdonation.jpg)
-
 比特币
 
 11451A1Y4e8vtK3Jb7DoW8BTqj1afuWSn8
