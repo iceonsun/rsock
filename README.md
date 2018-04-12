@@ -235,10 +235,6 @@ If servers run normally, try to restart kcptun client(turn shadowsocks on/off, t
 
 Donation is very welcome.
 
-Wechat pay
-
-![](doc/img/wxdonation.jpg)
-
 Ethereum
 
 11451A1Y4e8vtK3Jb7DoW8BTqj1afuWSn8
