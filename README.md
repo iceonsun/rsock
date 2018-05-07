@@ -72,7 +72,9 @@ Parameter explanation:
 
 2. For Windows users, speed is far slow than rsock on mac/Linux. （500-800KB/s  during my test)
 
-3. For Windows users, you'd better pass --lcapIp arguments instead of -d. Because it's hard to find NIC name for normal users.
+3. For Windows users, you'd better pass --lcapIp arguments instead of -d. e.g. `--lcapIp=x.x.x.x` Where `x.x.x.x` is your Internet IP. Because it's hard to find NIC name for normal users.
+
+4. For Windows users, rsock doesn't behave very well like it does on Linux and Mac. e.g. On Mac/Linux, rsock can support to watch 1080P youtube video smoothly. For windows users, rsock can only support 720P youtube video.
 
 ### Exit
 

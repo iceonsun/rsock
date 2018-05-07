@@ -67,7 +67,9 @@ done
 
 2. 在Windows系统上，rsock的速度要远慢于mac/linux上。我测试的情况是，速度在500-800KB/s之间。
 
-3. 在windows系统上，建议传入 --lcapIp参数，而不是-d。因为要找到网卡名字，并不容易。
+3. 在windows系统上，建议传入 --lcapIp参数，而不是-d。因为要找到网卡名字，并不容易。比如: `--lcapIp=x.x.x.x` 其中 `x.x.x.x`是你的ip地址。
+
+4. 在Windows系统上，rsock的表现没有它在Linux和Mac上好。举个例子：Linux和Mac用户，可以流畅的观看1080P youtube。Windows用户只能看720P，1080P会有点卡。
 
 ### 退出运行
 
