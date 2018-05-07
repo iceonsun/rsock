@@ -46,7 +46,7 @@ void INetConn::Close() {
     mErrCb = nullptr;
 }
 
-INetConn::IntKeyType INetConn::HashKey(const ConnInfo &info) {
+IntKeyType INetConn::HashKey(const ConnInfo &info) {
     IntKeyType key = info.sp << 1;
     if (info.IsUdp()) {
         key |= 0x1;
@@ -54,10 +54,10 @@ INetConn::IntKeyType INetConn::HashKey(const ConnInfo &info) {
     return static_cast<IntKeyType>(key);
 }
 
-INetConn::IntKeyType INetConn::IntKey() {
+IntKeyType INetConn::IntKey() {
     return mIntKey;
 }
 
-void INetConn::SetIntKey(INetConn::IntKeyType intKey) {
+void INetConn::SetIntKey(IntKeyType intKey) {
     mIntKey = intKey;
 }

@@ -8,7 +8,7 @@
 #include "IGroup.h"
 #include "../callbacks/ITcpObserver.h"
 #include "../bean/EncHead.h"
-#include "../callbacks/NetConnKeepAlive.h"
+#include "../callbacks/INetConnKeepAlive.h"
 #include "../callbacks/IReset.h"
 
 class INetGroup;
@@ -17,11 +17,13 @@ class INetConn;
 
 struct ConnInfo;
 
+
 class IAppGroup : public IGroup, public ITcpObserver {
 public:
     using IntKeyType = uint32_t;
 
-    IAppGroup(const std::string &groupId, INetGroup *fakeNetGroup, IConn *btm, bool activeKeepAlive, const std::string &printableStr = "");
+    IAppGroup(const std::string &groupId, INetGroup *fakeNetGroup, IConn *btm, bool activeKeepAlive,
+              const std::string &printableStr = "");
 
     int Init() override;
 
@@ -47,7 +49,7 @@ public:
 
     const std::string ToStr() override;
 
-protected:
+//protected:
     virtual int sendNetConnRst(const ConnInfo &src, IntKeyType key);
 
     virtual int onPeerNetConnRst(const ConnInfo &src, uint32_t key);
@@ -60,65 +62,6 @@ protected:
 
     virtual int onNetconnDead(uint32_t key);
 
-protected:
-    class NetConnKeepAliveHelper : public NetConnKeepAlive::INetConnAliveHelper {
-    public:
-        explicit NetConnKeepAliveHelper(IAppGroup *group, uv_loop_t *loop, bool active = true);
-
-        int OnSendResponse(uint8_t cmd, ssize_t nread, const rbuf_t &rbuf) override;
-
-        int OnRecvResponse(IntKeyType connKey) override;
-
-        int OnSendRequest(uint8_t cmd, ssize_t nread, const rbuf_t &rbuf) override;
-
-        INetConn *ConnOfIntKey(IntKeyType connKey) override;
-
-        int SendNetConnRst(const ConnInfo &src, IntKeyType connKey) override;
-
-        void Close() override;
-
-        INetConnKeepAlive *GetIKeepAlive() const override;
-
-        int RemoveRequest(IntKeyType connKey) override;
-
-    private:
-        void onFlush();
-
-    private:
-        void setupTimer(uv_loop_t *loop);
-
-        static void timer_cb(uv_timer_t *timer);
-
-    private:
-        const int MAX_RETRY = 3;
-        const uint32_t FLUSH_INTERVAL = 2000;  // every 2sec
-        const uint32_t FIRST_FLUSH_DELAY = 5000;   // on app start
-        IAppGroup *mAppGroup = nullptr;
-        uv_timer_t *mFlushTimer = nullptr;
-        std::map<IntKeyType, int> mReqMap;
-        INetConnKeepAlive *mKeepAlive = nullptr;
-    };
-
-    class ResetHelper : public IReset::IRestHelper {
-    public:
-        explicit ResetHelper(IAppGroup *appGroup);
-
-        void Close() override;
-
-        int OnSendNetConnReset(uint8_t cmd, const ConnInfo &src, ssize_t nread, const rbuf_t &rbuf) override;
-
-        int OnSendConvRst(uint8_t cmd, ssize_t nread, const rbuf_t &rbuf) override;
-
-        int OnRecvNetconnRst(const ConnInfo &src, IntKeyType key) override;
-
-        int OnRecvConvRst(const ConnInfo &src, uint32_t conv) override;
-
-        IReset *GetReset() override;
-
-    private:
-        IAppGroup *mAppGroup = nullptr;
-        IReset *mReset = nullptr;
-    };
 
 protected:
     EncHead mHead;
@@ -126,8 +69,8 @@ protected:
 private:
     bool mActive = true;
     std::string mPrintableStr;
-    ResetHelper *mResetHelper = nullptr;
-    NetConnKeepAliveHelper::INetConnAliveHelper *mKeepAliveHelper = nullptr;
+    IReset::IRestHelper *mResetHelper = nullptr;
+    INetConnKeepAlive::INetConnAliveHelper *mKeepAliveHelper = nullptr;
     INetGroup *mFakeNetGroup = nullptr;
 };
 

@@ -6,13 +6,12 @@
 #define RSOCK_IRESET_H
 
 #include "rcommon.h"
+#include "rscomm.h"
 
 struct ConnInfo;
 
 class IReset {
 public:
-    using IntKeyType = uint32_t;
-
     class IRestHelper {
     public:
         virtual ~IRestHelper() = default;

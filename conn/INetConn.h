@@ -8,12 +8,12 @@
 
 #include "IConn.h"
 #include "../bean/EncHead.h"
+#include "rscomm.h"
 
 struct ConnInfo;
 
 class INetConn : public IConn {
 public:
-    using IntKeyType = EncHead::IntConnKeyType;
 
     explicit INetConn(const std::string &key);
 

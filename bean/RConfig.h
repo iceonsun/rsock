@@ -43,6 +43,8 @@ struct RConfig {
 
         int type = OM_PIPE_TCP;     // default tcp ports
         uint16_t cap_timeout = OM_PCAP_TIMEOUT;
+
+        int keepAliveInterval = 5;  // default 5s, 3 times
     };
 
     // if turned to debug, speed of rsock will be very slow on macOS.

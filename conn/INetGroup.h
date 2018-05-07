@@ -40,7 +40,7 @@ public:
     // flush detect error
     bool OnConnDead(IConn *conn) override;
 
-    INetConn *ConnOfIntKey(INetConn::IntKeyType key);
+    INetConn *ConnOfIntKey(IntKeyType key);
 
     uv_loop_t *GetLoop() const { return mLoop; }
 
@@ -59,6 +59,7 @@ private:
     uv_loop_t *mLoop = nullptr;
     Handler::SPHandler mHandler = nullptr;
     NetConnErrCb mErrCb = nullptr;
+    IConn *mDefaultFakeConn = nullptr;
 };
 
 

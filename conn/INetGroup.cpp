@@ -8,6 +8,7 @@
 #include "INetGroup.h"
 #include "../bean/ConnInfo.h"
 #include "../bean/TcpInfo.h"
+#include "DefaultFakeConn.h"
 
 using namespace std::placeholders;
 
@@ -24,6 +25,16 @@ int INetGroup::Init() {
 
     auto cb = std::bind(&INetGroup::handleMessage, this, std::placeholders::_1);
     mHandler = Handler::NewHandler(mLoop, cb);
+
+    mDefaultFakeConn = new DefaultFakeConn();
+    nret = mDefaultFakeConn->Init();
+    if (nret) {
+        return nret;
+    }
+
+    auto fn = std::bind(&IConn::OnRecv, this, _1, _2);
+    mDefaultFakeConn->SetOnRecvCb(fn);
+
     return 0;
 }
 
@@ -31,6 +42,11 @@ void INetGroup::Close() {
     IGroup::Close();
     mErrCb = nullptr;
     mHandler = nullptr; // handler will automatically remove all pending messages and tasks
+    if (mDefaultFakeConn) {
+        mDefaultFakeConn->Close();
+        delete mDefaultFakeConn;
+        mDefaultFakeConn = nullptr;
+    }
 }
 
 int INetGroup::Input(ssize_t nread, const rbuf_t &rbuf) {
@@ -52,8 +68,9 @@ int INetGroup::Input(ssize_t nread, const rbuf_t &rbuf) {
             afterInput(n);
             return n;
         }
-        LOGD << "Cannot input, no such conn: " << key;  // todo: send conn rst
-        return ERR_NO_CONN;
+
+        LOGD << "Cannot input, no such conn: " << key << ", use default conn to process data";
+        return mDefaultFakeConn->Input(nread, rbuf);
     }
     return nread;
 }
@@ -69,8 +86,7 @@ void INetGroup::AddNetConn(INetConn *conn) {
 
 int INetGroup::Send(ssize_t nread, const rbuf_t &rbuf) {
     if (nread > 0) {
-        decltype(mConns) fails;
-        while (fails.size() < mConns.size()) {
+        while (!mConns.empty()) {
             int n = rand() % mConns.size();
             auto it = mConns.begin();
             std::advance(it, n);
@@ -79,12 +95,10 @@ int INetGroup::Send(ssize_t nread, const rbuf_t &rbuf) {
                 afterSend(n);
                 return n;
             }
-            LOGW << "send, conn " << it->second->Key() << " is dead but not removed";
-            fails.emplace(it->first, it->second);
+            LOGW << "send, conn " << it->second->Key() << " is dead. Remove it now";
+            childConnErrCb(dynamic_cast<INetConn *>(it->second), -1);
         }
-        for (auto &e: fails) {  // remove dead conn
-            childConnErrCb(dynamic_cast<INetConn *>(e.second), -1);
-        }
+        LOGE << "All conns are dead!!! Wait to reconnect";
         return -1;
     }
     return nread;
@@ -145,7 +159,7 @@ void INetGroup::netConnErr(const ConnInfo &info) {
     }
 }
 
-INetConn *INetGroup::ConnOfIntKey(INetConn::IntKeyType key) {
+INetConn *INetGroup::ConnOfIntKey(IntKeyType key) {
     auto &conns = GetAllConns();
     for (auto &e: conns) {
         INetConn *conn = dynamic_cast<INetConn *>(e.second);

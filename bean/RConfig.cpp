@@ -61,6 +61,8 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
 
     args::ValueFlag<uint16_t> cap_timeout(opt, "", "pcap timeout(ms). > 0 and <= 50", {"cap_timeout"});
 
+    args::ValueFlag<int> keepAlive(opt, "keepalive interval", "interval used to send keepalive request. default 5s."
+                                                              , {"keepalive"});
     try {
         parser.ParseCLI(argc, argv);
         do {
@@ -145,6 +147,13 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
                 this->isDaemon = (daemon.Get() != 0);
             }
 
+            if (keepAlive) {
+                this->param.keepAliveInterval = keepAlive.Get();
+                if (this->param.keepAliveInterval <= 0) {
+                    throw args::Error("keepalive must > 0: " + std::to_string(this->param.keepAliveInterval));
+                }
+            }
+
         } while (false);
 
         if (param.selfCapIp.empty()) {
@@ -197,6 +206,8 @@ void RConfig::CheckValidation(const RConfig &c) {
     assert(!EmptyIdBuf(p.id));
     assert((p.type == OM_PIPE_TCP) || (p.type == OM_PIPE_UDP) || (p.type == OM_PIPE_ALL));
     assert(p.cap_timeout > 0 && p.cap_timeout < 50);
+
+    assert(p.keepAliveInterval > 0);
 
     if (!DevIpMatch(p.dev, p.selfCapIp)) {
         char buf[BUFSIZ] = {0};
@@ -300,6 +311,10 @@ void RConfig::parseJsonString(RConfig &c, const std::string &content, std::strin
         if (o["cap_timeout"].is_string()) {
             p.cap_timeout = o["cap_timeout"].int_value();
         }
+
+        if (o["keepalive"].is_number()) {
+            p.keepAliveInterval = o["keepalive"].int_value();
+        }
     }
 }
 
@@ -322,6 +337,7 @@ json11::Json RConfig::to_json() const {
                     {"duration",    (int) param.conn_duration_sec},
                     {"type",        strOfType(param.type)},
                     {"hash",        param.hashKey},
+                    {"keepalive",   param.keepAliveInterval},
                     {"cap_timeout", param.cap_timeout},
             }},
     };
@@ -406,6 +422,8 @@ std::string RConfig::BuildExampleString() {
     out << "client:\n";
 #ifdef __MACH__
     out << "sudo ./client_rsock_Darwin -d en0";
+#elif _WIN32
+    out << "./client_rsock_Windows.exe --lcapIp=127.0.0.1:30000 ";
 #else
     out << "sudo ./client_rsock_Linux -d wlan0";
 #endif
