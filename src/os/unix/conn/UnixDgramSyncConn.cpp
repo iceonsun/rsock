@@ -1,6 +1,7 @@
 #include <cassert>
 #include "uv.h"
 #include <plog/Log.h>
+#include <os.h>
 #include "UnixDgramSyncConn.h"
 #include "os_util.h"
 #include "../../../../util/rsutil.h"

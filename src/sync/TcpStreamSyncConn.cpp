@@ -175,7 +175,6 @@ int TcpStreamSyncConn::rawInput(int nread, const char *buf) {
 
         if (totLen > mNextLen) {    // totLen > mNextLen. copy two buf into one
             char *pbuf = mLargeBuf; // mLargeBuf is large enough to store both mTempBuf and buf
-            const int BUF_LEN = totLen;
             int left = totLen;
             if (mNextLen > 0) { // if nextLen valid. prepend it to buf.
                 *(COUNT_TYPE*)pbuf = mNextLen;

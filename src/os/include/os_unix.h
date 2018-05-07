@@ -17,6 +17,11 @@
 #include <netinet/udp.h>
 
 #define SOCKOPT_VAL_TYPE void*
+
+#ifndef RSOCK_SOCK_BUF_TIMES
+#define RSOCK_SOCK_BUF_TIMES 64 // 64 * original buf size
+#endif
+
 #endif // !_WIN32
 
 #endif // !OS_UNIX_H

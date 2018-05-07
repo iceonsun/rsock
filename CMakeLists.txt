@@ -18,12 +18,12 @@ set(SOURCE_FILES
         cap/cap_util.cpp cap/RCap.cpp
         thirdparty/md5.c thirdparty/json11.cpp
         conn/INetConn.cpp conn/BtmUdpConn.cpp conn/FakeTcp.cpp conn/INetGroup.cpp conn/IGroup.cpp conn/FakeUdp.cpp
-        conn/IConn.cpp conn/RConn.cpp conn/RawTcp.cpp conn/IAppGroup.cpp conn/IBtmConn.cpp
+        conn/IConn.cpp conn/RConn.cpp conn/RawTcp.cpp conn/IAppGroup.cpp conn/IBtmConn.cpp conn/DefaultFakeConn.cpp
         net/NetUtil.cpp net/ClientNetManager.cpp net/TcpAckPool.cpp net/TcpListenPool.cpp net/INetManager.cpp
         net/ServerNetManager.cpp
         src/sync/SyncConnFactory.cpp src/sync/LoopSreamSyncConn.cpp src/sync/ISyncConn.cpp src/sync/UdpSyncConn.cpp
         src/sync/TcpStreamSyncConn.cpp src/sync/IPacketSyncConn.cpp
-        )
+        callbacks/NetConnKeepAliveHelper.cpp callbacks/NetConnKeepAliveHelper.h callbacks/ResetHelper.cpp callbacks/ResetHelper.h)
 
 # platform dependent dir		
 SET(ROS_DIR src/os/unix)

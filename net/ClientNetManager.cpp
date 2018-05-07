@@ -73,7 +73,7 @@ void ClientNetManager::flushPending(uint64_t now) {
 
         // not running and timeout
         if (!helper.req && now >= helper.nextRetryMs) {
-            LOGD << "retry to connect " << helper.info.ToStr();
+            LOGD << "retry to connect " << helper.info.ToStr() << ", nRetry left: " << helper.nRetry;
             auto req = NetUtil::ConnectTcp(mLoop, helper.info, connectCb, this);
             if (req) {
                 helper.req = req;
@@ -102,7 +102,6 @@ void ClientNetManager::onTcpConnect(uv_connect_t *req, int status) {
                 if (0 == add2PoolAutoClose(c)) {
                     c = TransferConn(c->Key());
                     it->cb(c, tcpInfo);
-
                 };
                 mPending.erase(it);
             }
@@ -131,4 +130,7 @@ void ClientNetManager::DialHelper::dialFailed(uint64_t now) {
         durationMs = 1000;
     }
     nextRetryMs = now + durationMs;
+    if (nRetry > 0) {
+        LOGD << "will connect " << (durationMs / 1000) << " seconds later: " << info.ToStr();
+    }
 }

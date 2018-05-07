@@ -6,6 +6,7 @@
 #define RSOCK_IKEEPALIVE_H
 
 #include "rcommon.h"
+#include "rscomm.h"
 
 class INetConn;
 
@@ -13,8 +14,6 @@ struct ConnInfo;
 
 class INetConnKeepAlive {
 public:
-    using IntKeyType = uint32_t ;
-
     class INetConnAliveHelper {
     public:
         virtual ~INetConnAliveHelper() = default;

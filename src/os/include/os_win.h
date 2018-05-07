@@ -87,6 +87,10 @@ struct sockaddr_un {
 #define F_OK 00
 #endif // !F_OK
 
+#ifndef RSOCK_SOCK_BUF_TIMES
+#define RSOCK_SOCK_BUF_TIMES 256 // 256  * 8K(original buf size) = 2MB
+#endif
+
 #endif // _cplusplus
 #endif // _WIN32
 #endif // !OS_WIN_H
