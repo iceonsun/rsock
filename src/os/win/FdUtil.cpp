@@ -29,7 +29,7 @@ int FdUtil::CreateFile(const std::string &fName, int mode) {
 	if (!FileExists(fName.c_str())) {
 		HANDLE fileHandle = ::CreateFile(fName.c_str(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_WRITE, 0, CREATE_NEW, 0, 0);
 		if (fileHandle == INVALID_HANDLE_VALUE) {
-			fprintf(stderr, "failed to create file: %s, err: %d\n", fName.c_str(), GetLastError());
+			fprintf(stdout, "failed to create file: %s, err: %d\n", fName.c_str(), GetLastError());
 			return -1;
 		}
 

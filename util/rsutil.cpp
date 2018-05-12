@@ -139,9 +139,6 @@ om_listen_udp_addr(const struct sockaddr_in *addr, uv_loop_t *loop, uv_udp_recv_
         if (err) { *err = nret; }
         LOGE << "failed to bind udp on " << InAddr2Ip(addr->sin_addr) << ":" << ntohs(addr->sin_port) << ", nret: "
              << nret << ", err: " << uv_strerror(nret);
-#ifndef NNDEBUG
-        assert(0);
-#endif
         free(udp);
         return NULL;
     }

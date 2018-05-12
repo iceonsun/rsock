@@ -38,7 +38,9 @@ extern "C" {
 #endif
 #endif
 
-
+#ifndef RSOCK_BUILD_TIME
+#define RSOCK_BUILD_TIME "Unknown"
+#endif
 
 #ifndef RSOCK_UV_MAX_BUF
 #define RSOCK_UV_MAX_BUF 65536  // 64K

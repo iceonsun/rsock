@@ -37,7 +37,7 @@ function build_cross_binaries {
 
     get_num_core
     local num_core=$?
-    for chainfile in ${BUILD_DIR}/cmake/*.toolchain.cmake; do
+    for chainfile in ${BUILD_DIR}/cmake/Darwin_x86_64.toolchain.cmake ${BUILD_DIR}/cmake/Linux_x86_64.toolchain.cmake; do
         echo "toolchain file: ${chainfile}"
         local filename=$(basename "$chainfile")
 

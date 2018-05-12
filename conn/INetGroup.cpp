@@ -57,7 +57,6 @@ int INetGroup::Input(ssize_t nread, const rbuf_t &rbuf) {
         if (!conn) {
             auto netconn = CreateNetConn(key, info);
             if (netconn) {
-                LOGD << "new INetConn: " << netconn->Key();
                 AddNetConn(netconn);
             }
             conn = netconn;
@@ -70,7 +69,8 @@ int INetGroup::Input(ssize_t nread, const rbuf_t &rbuf) {
         }
 
         LOGD << "Cannot input, no such conn: " << key << ", use default conn to process data";
-        return mDefaultFakeConn->Input(nread, rbuf);
+        mDefaultFakeConn->Input(nread, rbuf);
+        return ERR_NO_CONN;
     }
     return nread;
 }
@@ -99,7 +99,7 @@ int INetGroup::Send(ssize_t nread, const rbuf_t &rbuf) {
             childConnErrCb(dynamic_cast<INetConn *>(it->second), -1);
         }
         LOGE << "All conns are dead!!! Wait to reconnect";
-        return -1;
+        return ERR_NO_CONN;
     }
     return nread;
 }

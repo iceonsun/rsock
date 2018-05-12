@@ -84,7 +84,7 @@ void NetConnKeepAliveHelper::onFlush() {
     auto aCopy = mReqMap;
     for (auto &e: aCopy) {
         if (e.second >= MAX_RETRY) {        // keep alive timeout
-            LOGE << "keepalive timeout";
+            LOGE << "keepalive timeout, key: " << e.first;
             mAppGroup->onNetconnDead(e.first);
             RemoveRequest(e.first);
         }

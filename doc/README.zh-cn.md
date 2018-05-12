@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.org/iceonsun/rsock.svg?branch=master)](https://travis-ci.org/iceonsun/rsock) [![Build status](https://ci.appveyor.com/api/projects/status/cqtcqeg2n2k0eivl?svg=true)](https://ci.appveyor.com/project/iceonsun/rsock)
 
--
+---
 
 ### 简介
 
@@ -39,29 +39,26 @@ done
 
 表示允许客户端连接从10001到10010的端口。(**rsock服务端默认使用10001-10010，共10个端口。如果想修改默认端口范围，请见下面的参数详解。**)
 
-`sudo ./server_rsock_Linux -d eth0 -t 127.0.0.1:9999`
+`sudo ./server_rsock_Linux -t 127.0.0.1:9999`
 
 
 参数解释:
 
--d eth0，外网网卡名称。
 -t 127.0.0.1:9999 ，目标地址，即kcptun服务端工作的ip和端口。
 
 #### 客户端
 
 以mac为例：
 
-`sudo ./client_rsock_Darwin -d en0 --taddr=x.x.x.x -l 127.0.0.1:30000`
+`sudo ./client_rsock_Darwin --taddr=x.x.x.x -l 127.0.0.1:30000`
 
 参数解释：
-
--d en0，外网网卡名称。对于mac，如果连的是wifi，一般是en0。如果是有线，一般是eth1。
 
 -t x.x.x.x，替换成rsock服务器端地址。注意，这里和服务器端不一样：无需指定端口。
 
 -l 127.0.0.1:30000 是本地监听的udp端口。即kcptun客户端的目标地址(kcptun中-t 参数对应的地址）。
 
-####注意
+#### 注意
 
 1. 如果rsock不能正常工作，请检查你的网卡是否支持winpcap工作。路由器也有可能过滤掉包(特别是windows系统）。
 
@@ -70,6 +67,8 @@ done
 3. 在windows系统上，建议传入 --lcapIp参数，而不是-d。因为要找到网卡名字，并不容易。比如: `--lcapIp=x.x.x.x` 其中 `x.x.x.x`是你的ip地址。
 
 4. 在Windows系统上，rsock的表现没有它在Linux和Mac上好。举个例子：Linux和Mac用户，可以流畅的观看1080P youtube。Windows用户只能看720P，1080P会有点卡。
+
+5. 在Windows系统上，如果你装了虚拟机，最好指定-d参数。后面有讲解。
 
 ### 退出运行
 
@@ -81,12 +80,13 @@ done
 
 ### 参数详解
 ```
-	-d, --dev=[device]		外网网卡地址。如, eth0, en0, eth1。必须指定
+
 	-t, --taddr=[addr]		目标地址。如：8.8.8.8:88, 7.7.7.7。必须指定。
 	-l, --ludp=[addr]		本地监听的udp地址。仅客户端有效。客户端必须指定。
+	-d, --dev=[device]		外网网卡地址。如, eth0, en0, eth1。rsock可以自动检测合适的网卡。当检测的网卡不能正常工作时，可以指定这个参数。
 	-h, --help			显示帮助菜单. macOS暂时不可用
 	-f				json配置文件
-	--lcapIp=[ip]			外网ip。如果指定了这个参数，可以不指定 -d.
+	--lcapIp=[ip]			外网ip。如果指定了这个参数，可以不指定 -d. 当检测的网卡不能正常工作时，可以指定这个参数。
 	--unPath			本地监听的unix域套接字地址。暂时不可用
 	-p, --ports=[...]		服务器端使用的tcp/udp端口。如：10001,10010(2个） ; 10001-10010(11个）; 80,443,10001-10010(12个)。中间无空格。 默认值：10001-10010
 	--duration=[timeSec]		一段duration时间内，app连接如果无数据通信，会被关闭。单位秒。默认30s
@@ -214,6 +214,10 @@ kcptun的下载速度. 速度在2M左右。
 
 ### TODO
   
+1. 代码重构
+
+1. 自动检测网络变更
+
 1. 增加随机端口监听。
 
 1. 增加闲置模式。当没有数据通过的时候，不要一直重连服务器。

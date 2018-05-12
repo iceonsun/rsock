@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.org/iceonsun/rsock.svg?branch=master)](https://travis-ci.org/iceonsun/rsock) [![Build status](https://ci.appveyor.com/api/projects/status/cqtcqeg2n2k0eivl?svg=true)](https://ci.appveyor.com/project/iceonsun/rsock)
 
--
+---
 
 ### Introduction
 
@@ -44,11 +44,9 @@ done
 It means allow client connects to server from port 10000 to 10010.
 (**rsock use port range 10001-10010 by default. If you want to change the default value, please check Parameter Explanation section.**)
 
-`sudo ./server_rsock_Linux -d eth0 -t 127.0.0.1:9999`
+`sudo ./server_rsock_Linux -t 127.0.0.1:9999`
 
 Parameter explanation:
-
-eth0, name of network interface card of Internet, not LAN, e.g. eth1
 
 127.0.0.1:9999, target address，aka address of kcptun server working on.
 
@@ -56,17 +54,15 @@ eth0, name of network interface card of Internet, not LAN, e.g. eth1
 
 Take mac as an example:
 
-`sudo ./client_rsock_Darwin -d en0 --taddr=x.x.x.x -l 127.0.0.1:30000`
+`sudo ./client_rsock_Darwin --taddr=x.x.x.x -l 127.0.0.1:30000`
 
 Parameter explanation:
-
--d en0. name of network interface card of Internet, not LAN, e.g. eth0. For mac, it is typically en0 for wifi, eth1 for ethernet.
 
 -t x.x.x.x , Address of rsock server。Attention. This is different from server. It only contains ip.
 
 -l , local listened udp address, aka target address of kcptun client(the address specified by -t).
 
-####NOTE
+#### NOTE
 
 1. If rsock doesn't work, you have to check whether your NIC supoorts winpcap. And routers may also filter packets, especially when you use Windows.
 
@@ -75,6 +71,8 @@ Parameter explanation:
 3. For Windows users, you'd better pass --lcapIp arguments instead of -d. e.g. `--lcapIp=x.x.x.x` Where `x.x.x.x` is your Internet IP. Because it's hard to find NIC name for normal users.
 
 4. For Windows users, rsock doesn't behave very well like it does on Linux and Mac. e.g. On Mac/Linux, rsock can support to watch 1080P youtube video smoothly. For windows users, rsock can only support 720P youtube video.
+
+5. For Windows users, if your are running virtuam machines, you'd specify -d parameter as explained below.
 
 ### Exit
 
@@ -87,12 +85,13 @@ Parameter explanation:
 ### Parameters in detail
 
 ```
-	-d, --dev=[device]		name of network interface card of Internet.e.g,eth0,en0,eth1. Required.
+
 	-t, --taddr=[addr]		target address. e.g. 8.8.8.8:88,7.7.7.7. Required.
 	-l, --ludp=[addr]		local listened udp address. Only valid for client. Required by client.
+	-d, --dev=[device]		name of network interface card of Internet.e.g,eth0, en0. rsock can auto detect right device to work on. Use this when the default can't work.
 	-h, --help			Display help menu. Not available now.
 	-f				json config file
-	--lcapIp=[ip]			Internet IP. Can omit -d if this parameter sepcified.
+	--lcapIp=[ip]			Internet IP. Can omit the -d if this parameter sepcified. rsock can auto detect right device to work on. Use this when the default can't work.
 	--unPath			Local unix domain socket. Not available now.
 	-p, --ports=[...]		tcp/udp port list for rsock server. e.g.10001,10010(2 ports); 10001-10010(11 ports); 80,443,10001-10010(12 ports). **NO** white spaces allowed. Default value: 10001-10010
 	--duration=[timeSec]		Time for app connection to persist if no data is transfered in the app connection. unit: seconds. defalt 30s
@@ -224,6 +223,10 @@ If servers run normally, try to restart kcptun client(turn shadowsocks on/off, t
 
 
 ### TODO
+
+1. Refactor code.
+
+1. Auto detect network change
 
 1. Add randomize port listening.
 
