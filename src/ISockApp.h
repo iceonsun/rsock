@@ -31,7 +31,7 @@ class RConn;
 
 class ISockApp : public ITcpObserver {
 public:
-    ISockApp(bool is_server);
+    explicit ISockApp(bool is_server);
 
     virtual ~ISockApp();
 
@@ -105,9 +105,9 @@ private:
     bool mInited = false;
     INetManager *mNetManager = nullptr;
     TcpAckPool *mAckPool = nullptr;
-    std::vector<uv_signal_t*> mExitSignals;
+    std::vector<uv_signal_t *> mExitSignals;
     bool mClosing = false;
+    uv_thread_t mCapThread = 0;
 };
-
 
 #endif //RSOCK_ISOCKAPP_H

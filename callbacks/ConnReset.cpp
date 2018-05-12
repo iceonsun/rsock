@@ -53,14 +53,12 @@ int ConnReset::Input(uint8_t cmd, ssize_t nread, const rbuf_t &rbuf) {
         }
         return -1;
     } else if (EncHead::TYPE_NETCONN_RST == cmd) {
-        if (nread > sizeof(IntKeyType)) {
+        if (nread >= sizeof(IntKeyType)) {
             IntKeyType key;
             auto p = base;
             p = decode_uint32(&key, p);
             LOGD << "intKey: " << key;
-            if (p) {
-                return mHelper->OnRecvNetconnRst(*info, key);
-            }
+            return mHelper->OnRecvNetconnRst(*info, key);
         }
         return -1;
     }

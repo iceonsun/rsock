@@ -45,6 +45,8 @@ struct RConfig {
         uint16_t cap_timeout = OM_PCAP_TIMEOUT;
 
         int keepAliveInterval = 5;  // default 5s, 3 times
+
+        const std::string version = RSOCK_BUILD_TIME;
     };
 
     // if turned to debug, speed of rsock will be very slow on macOS.

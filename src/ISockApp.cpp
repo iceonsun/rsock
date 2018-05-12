@@ -41,11 +41,11 @@ int ISockApp::Init() {
         assert(0);
     }
 
-	int nret = os_init_onstartup();
-	if (nret) {
-		fprintf(stderr, "startup init failed: %d\n", nret);
-		return nret;
-	}
+    int nret = os_init_onstartup();
+    if (nret) {
+        fprintf(stderr, "startup init failed: %d\n", nret);
+        return nret;
+    }
 
     return doInit();
 }
@@ -81,15 +81,15 @@ int ISockApp::doInit() {
     }
 
     mBtmConn = CreateBtmConn(mConf, mLoop, mAckPool, mCap->Datalink());
-	nret = mBtmConn->Init();
-	if (nret) {
-		return nret;
-	}
+    nret = mBtmConn->Init();
+    if (nret) {
+        return nret;
+    }
 
     assert(mBtmConn);
     mBtmConn->Attach(this);
     // cap#Start must be called before CreateBridgeConn because create btmconn will connect tcp
-    mCap->Start(RConn::CapInputCb, (u_char *) (mBtmConn));
+    mCapThread = mCap->Start(RConn::CapInputCb, (u_char *) (mBtmConn));
 
     mBridge = CreateBridgeConn(mConf, mBtmConn, mLoop, mNetManager);
     if (!mBridge || mBridge->Init()) {
@@ -111,7 +111,7 @@ int ISockApp::initLog() {
                 return nret;
             }
         }
-        mFileAppender = new plog::RollingFileAppender<plog::TxtFormatter>(mConf.log_path.c_str(), 100000, 5);
+        mFileAppender = new plog::RollingFileAppender<plog::TxtFormatter>(mConf.log_path.c_str(), 1000000, 1);
     } else {
         fprintf(stderr, "warning: log path empty\n");
     }
@@ -157,6 +157,11 @@ void ISockApp::Close() {
         mCap = nullptr;
     }
 
+    if (mCapThread != 0) {
+        uv_thread_join(&mCapThread);
+        mCapThread = 0;
+    }
+
     if (mBtmConn) {
         mBtmConn->Detach(this); // it will be closed when closing bridge
     }
@@ -186,7 +191,7 @@ void ISockApp::Close() {
         mLoop = nullptr;
     }
 
-	os_clean();
+    os_clean();
 }
 
 void ISockApp::StartTimer(uint32_t timeout_ms, uint32_t repeat_ms) {

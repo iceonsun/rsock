@@ -10,17 +10,22 @@ set(RSOCK_TOP_BUILD_DIR ${PROJECT_SOURCE_DIR}/xbuild)
 
 if (NOT RSOCK_TEST)     # for test
     set(RSOCK_RELEASE TRUE)
-endif()
+endif ()
+
+# yyyymmdd_hourOfDay
+STRING(TIMESTAMP RSOCK_BUILD_TIME "%Y%m%d_%H" UTC)
+
+add_definitions(-DRSOCK_BUILD_TIME="${RSOCK_BUILD_TIME}")
 
 include_directories(${RSOCK_TOP_BUILD_DIR}/include/libuv)
 include_directories(${RSOCK_TOP_BUILD_DIR}/include/libnet)
 if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
     include_directories(${RSOCK_TOP_BUILD_DIR}/include/winpcap)
-	link_directories(${RSOCK_TOP_BUILD_DIR}/lib/Windows_x86/)   # force use 32bit
-	#force to generate 32bit binary
+    link_directories(${RSOCK_TOP_BUILD_DIR}/lib/Windows_x86/)   # force use 32bit
+    #force to generate 32bit binary
 else ()
     include_directories(${RSOCK_TOP_BUILD_DIR}/include/libpcap)
-	link_directories(${RSOCK_TOP_BUILD_DIR}/lib/${CMAKE_SYSTEM_NAME}_${CMAKE_SYSTEM_PROCESSOR}/)
+    link_directories(${RSOCK_TOP_BUILD_DIR}/lib/${CMAKE_SYSTEM_NAME}_${CMAKE_SYSTEM_PROCESSOR}/)
 endif ()
 
 message(STATUS "CMAKE_SYSTEM_NAME = ${CMAKE_SYSTEM_NAME}")
@@ -41,6 +46,7 @@ message(STATUS "CMAKE_OBJCOPY = ${CMAKE_OBJCOPY}")
 message(STATUS "CMAKE_OBJDUMP = ${CMAKE_OBJDUMP}")
 message(STATUS "CMAKE_STRIP = ${CMAKE_STRIP}")
 message(STATUS "CMAKE_EXE_LINKER_FLAGS = ${CMAKE_EXE_LINKER_FLAGS}")
+message(STATUS "RSOCK_BUILD_TIME = ${RSOCK_BUILD_TIME}")
 
 # Set or retrieve the cached flags.
 # This is necessary in case the user sets/changes flags in subsequent

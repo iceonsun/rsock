@@ -3,6 +3,7 @@
 //
 
 #include <cstring>
+#include <cstdlib>
 
 #include <algorithm>
 #include <sstream>
@@ -33,7 +34,7 @@ int ipv4OfDev(const char *dev, char *ip_buf, char *err) {
         pcap_if_t *anIf = nullptr;
         bool ok = false;
         for (anIf = dev_list; anIf != nullptr && !ok; anIf = anIf->next) {
-			fprintf(stderr, "dev name: %s\n", anIf->name);
+			fprintf(stdout, "dev name: %s\n", anIf->name);
             LOGV << "dev_name: " << anIf->name;
             if (!strcmp(dev, anIf->name)) {
                 struct pcap_addr *addr = nullptr;
@@ -42,6 +43,7 @@ int ipv4OfDev(const char *dev, char *ip_buf, char *err) {
                     if (a->sa_family == AF_INET) {
                         struct sockaddr_in *addr4 = reinterpret_cast<struct sockaddr_in *>(a);
                         sprintf(ip_buf, "%s", InAddr2Ip(addr4->sin_addr).c_str());
+                        fprintf(stdout, "dev: %s, ipv4: %s\n", dev, ip_buf);
                         LOGV << "dev: " << dev << ", ipv4: " << InAddr2Ip(addr4->sin_addr);
                         ok = true;
                         break;
@@ -183,6 +185,27 @@ uint32_t NetIntOfIp(const char *ip) {
 	return (uint32_t) inet_addr(ip);
 }
 
-u_int32_t hostIntOfIp(const std::string &ip) {   
-    return ntohl((uint32_t)inet_addr(ip.c_str()));
+int firstDev(char *dev) {
+    pcap_if_t *dev_list = nullptr;
+    char err[PCAP_ERRBUF_SIZE] = {0};
+    int nret = pcap_findalldevs(&dev_list, err);
+    if (0 == nret) {
+        memcpy(dev, dev_list->name, strlen(dev_list->name));
+    }
+    if (dev_list) {
+        pcap_freealldevs(dev_list);
+    }
+    return nret;
+}
+
+int DefaultDev(std::string &dev) {
+    char err[PCAP_ERRBUF_SIZE] = {0};
+    char devBuf[BUFSIZ] = {0};
+    int nret = firstDev(devBuf);
+    if (nret) {
+        fprintf(stdout, "failed to find suitable dev: %s\n", err);
+        return -1;
+    }
+    dev = std::string(devBuf);
+    return nret;
 }

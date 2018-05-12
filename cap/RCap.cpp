@@ -15,8 +15,8 @@ RCap::RCap(const std::string &dev, const std::string &selfIp, const RPortList &s
     mDev = dev;
     mSrcIp = srcIp;
     mDstIp = selfIp;
-    mSrc = srcPorts;
-    mDest = selfPorts;
+    mSrcPorts = srcPorts;
+    mDestPorts = selfPorts;
     mIsServer = server;
 }
 
@@ -47,7 +47,7 @@ int RCap::Init() {
         }
     }
 
-    auto filterStr = BuildFilterStr("tcp", mSrcIp, mDstIp, mSrc, mDest, mIsServer);
+    auto filterStr = BuildFilterStr("tcp", mSrcIp, mDstIp, mSrcPorts, mDestPorts, mIsServer);
     LOGD << "filter : " << filterStr;
     if (filterStr.empty()) {
         LOGE << "failed to build capture filter";
@@ -133,6 +133,7 @@ int RCap::Close() {
         pcap_close(mCap);
         mCap = nullptr;
     }
+    mHandler = nullptr;
     mDone = true;
     return 0;
 }
@@ -148,14 +149,10 @@ void RCap::SetCapHandler(pcap_handler handler, u_char *args) {
 }
 
 void RCap::HandlePkt(u_char *args, const struct pcap_pkthdr *hdr, const u_char *pkt) {
-#ifndef NNDEBUG
-    assert(mHandler != nullptr);
-#else
     if (!mHandler) {
         LOGE << "handler cannot be null";
         return;
     }
-#endif
     mHandler(args, hdr, pkt);
 }
 

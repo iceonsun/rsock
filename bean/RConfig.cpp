@@ -6,6 +6,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <os_util.h>
 
 #include "plog/Log.h"
 
@@ -20,20 +21,25 @@ using namespace json11;
 
 int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
     this->isServer = is_server;
-    ArgumentParser parser("This software is for study purpose only.", BuildExampleString());
+    ArgumentParser parser("This software is for study purpose only.",
+                          BuildExampleString() + "version: " + param.version + "\n");
 
 
     Group required(parser, "Required arguments");
-    ValueFlag<std::string> dev(required, "deviceName", "The network interface to work around.", {'d', "dev"});
     ValueFlag<std::string> targetAddr(required, "target udp address",
                                       "The target address.(e.g. client, 8.8.8.8 . server, 7.7.7.7:80. "
-                                              "Port is ignored if it's client.)", {'t', "taddr"}, "127.0.0.1:10030");
+                                      "Port is ignored if it's client.)", {'t', "taddr"}, "127.0.0.1:10030");
 
     Group opt(parser, "Optional arguments");
+    ValueFlag<std::string> dev(opt, "deviceName",
+                               "Specify the network interface to work around if default device can't work.",
+                               {'d', "dev"});
 
     HelpFlag help(opt, "help", "Display this help menu. You can see example usage below for help.", {'h', "help"});
     ValueFlag<std::string> json(opt, "/path/to/config_file", "json config file path", {'f'});
-    ValueFlag<std::string> selfCapIp(opt, "", "Optional. Local capture IP. e.g: 192.168.1.4", {"lcapIp"});
+    ValueFlag<std::string> selfCapIp(opt, "",
+                                     "Specify local capture IP. e.g: 192.168.1.4, if default device can't work, especially for Windows users",
+                                     {"lcapIp"});
     ValueFlag<std::string> localUn(opt, "", "Local listening unix domain socket path.(disabled currenty)", {"unPath"});
 
     Group *groupForClient = &required;
@@ -46,14 +52,15 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
                                     {'l', "ludp"});
 
     ValueFlag<std::string> capPorts(opt, "", "Capture port list. default(tcp: 10001-10005) "
-            "(e.g.3000,3001,4000-4050. No blank spaces or other characters allowed)", {'p', "ports"});
+                                             "(e.g.3000,3001,4000-4050. No blank spaces or other characters allowed)",
+                                    {'p', "ports"});
     ValueFlag<uint32_t> duration(opt, "",
                                  "Interval(sec) to invalid connection. Client need to set to same value with server. "
-                                         "(default 30s. min: 10s, max: 60s.)", {"duration"});
+                                 "(default 30s. min: 10s, max: 60s.)", {"duration"});
     ValueFlag<std::string> key(opt, "HashKey", "Key to check validation of packet. (default hello1235)", {"hash"});
     ValueFlag<std::string> type(opt, "tcp|udp|all",
                                 "Type used to communicate with server. tcp for tcp only mode, udp for udp only mode. "
-                                        "all for both tcp and udp ", {"type"});
+                                "all for both tcp and udp ", {"type"});
     args::ValueFlag<int> daemon(opt, "daemon", "1 for running as daemon, 0 for not. (default 1)",
                                 {"daemon"});
     args::Flag verbose(opt, "verbose", "enable verbose mode", {'v'});
@@ -61,8 +68,9 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
 
     args::ValueFlag<uint16_t> cap_timeout(opt, "", "pcap timeout(ms). > 0 and <= 50", {"cap_timeout"});
 
-    args::ValueFlag<int> keepAlive(opt, "keepalive interval", "interval used to send keepalive request. default 5s."
-                                                              , {"keepalive"});
+    args::ValueFlag<int> keepAlive(opt, "keepalive interval",
+                                   "interval used to send keepalive request. default 5s. no use right know",
+                                   {"keepalive"});
     try {
         parser.ParseCLI(argc, argv);
         do {
@@ -78,14 +86,18 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
             if (dev) {
                 param.dev = dev.Get();
             } else {
-                LOGI << "use default device: ", param.dev.c_str();
+                if (!selfCapIp) {
+                    int nret = DefaultDev(param.dev);
+                    if (nret || param.dev.empty()) {
+                        throw args::Error("unable to find default device");
+                    }
+                    LOGI << "use default device: ", param.dev.c_str();
+                }
             }
 
             if (selfCapIp) {
                 param.selfCapIp = selfCapIp.Get();
-				if (!dev) {
-					devWithIpv4(param.dev, param.selfCapIp);
-				}
+                devWithIpv4(param.dev, param.selfCapIp);
             }
 
             if (capPorts) {
@@ -153,7 +165,6 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
                     throw args::Error("keepalive must > 0: " + std::to_string(this->param.keepAliveInterval));
                 }
             }
-
         } while (false);
 
         if (param.selfCapIp.empty()) {
@@ -182,7 +193,10 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
 
 void RConfig::CheckValidation(const RConfig &c) {
     const RParam &p = c.param;
-    assert(!c.param.dev.empty());
+    if (c.param.dev.empty()) {
+        throw args::Error("device empty. Please specify a device!");
+    }
+//    assert(!c.param.dev.empty());
 
     if (!c.isServer) {
         assert(!p.localUdpIp.empty());;
@@ -263,9 +277,9 @@ void RConfig::parseJsonString(RConfig &c, const std::string &content, std::strin
         }
         if (o["lcapIp"].is_string()) {
             p.selfCapIp = o["lcapIp"].string_value();
-			if (!o["dev"].is_string()) {
-				devWithIpv4(p.dev, p.selfCapIp);
-			}
+            if (!o["dev"].is_string()) {
+                devWithIpv4(p.dev, p.selfCapIp);
+            }
         }
         if (o["ports"].is_string()) {
             auto s = o["ports"].string_value();
@@ -319,13 +333,13 @@ void RConfig::parseJsonString(RConfig &c, const std::string &content, std::strin
 }
 
 json11::Json RConfig::to_json() const {
-    auto j = Json::object {
+    auto j = Json::object{
             {"daemon",  isDaemon},
             {"server",  isServer},
             {"verbose", log_level == plog::verbose},
             {"log",     log_path},
             {
-             "param",   Json::object {
+             "param",   Json::object{
                     {"dev",         param.dev},
                     {"unPath",      param.selfUnPath},
                     {"ludp",        isServer ? param.localUdpIp :
@@ -416,23 +430,17 @@ std::string RConfig::BuildExampleString() {
     std::ostringstream out;
     out << "Example usages:\n";
     out << "server:\n";
-    out << "sudo ./server_rsock_Linux -d eth0" << " -t 127.0.0.1:8388 \n"
-            "###(note:replace 127.0.0.1:8388 with client kcptun target adddress)\n";
+    out << "sudo ./server_rsock_Linux" << " -t 127.0.0.1:8388 \n"
+                                          "###(note:replace 127.0.0.1:8388 with client kcptun target adddress)\n";
 
     out << "client:\n";
-#ifdef __MACH__
-    out << "sudo ./client_rsock_Darwin -d en0";
-#elif _WIN32
-    out << "./client_rsock_Windows.exe --lcapIp=127.0.0.1:30000 ";
-#else
-    out << "sudo ./client_rsock_Linux -d wlan0";
-#endif
+    out << "sudo ./client_rsock_Darwin";
 
     out << " -t x.x.x.x -l 127.0.0.1:8388\n";
     out << "### (note:replace x.x.x.x with real server ip. "
-            "replace 127.0.0.1:8388 with your client kcptun target address.";
+           "replace 127.0.0.1:8388 with your client kcptun target address.";
     out << " replace en0/wlan0 with your Internet(WAN) network interface card"
-            "(typically wlan0/eth0 for linux wireless/ethernet, en0 for macOS wireless, en1 for macOS ethernet)"
+           "(typically wlan0/eth0 for linux wireless/ethernet, en0 for macOS wireless, en1 for macOS ethernet)"
         << "\n";
     out << "For more, please visit: https://github.com/iceonsun/rsock" << std::endl;
 

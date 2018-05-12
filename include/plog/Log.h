@@ -3,19 +3,17 @@
 //  Documentation and sources: https://github.com/SergiusTheBest/plog
 //  License: MPL 2.0, http://mozilla.org/MPL/2.0/
 
-#ifndef PLOG_LOG_H  // modified by rsock
-#define PLOG_LOG_H
-//#pragma once
+#pragma once
 #include <plog/Logger.h>
 #include <plog/Init.h>
 
 //////////////////////////////////////////////////////////////////////////
 // Helper macros that get context info
 
-#if _MSC_VER >= 1600 && !defined(__INTELLISENSE__) // >= Visual Studio 2010 and skip IntelliSense
+#if defined(_MSC_VER) && _MSC_VER >= 1600 && !defined(__INTELLISENSE__) && !defined(__INTEL_COMPILER) // >= Visual Studio 2010, skip IntelliSense and Intel Compiler
 #   define PLOG_GET_THIS()      __if_exists(this) { this } __if_not_exists(this) { 0 }
 #else
-#   define PLOG_GET_THIS()      0
+#   define PLOG_GET_THIS()      reinterpret_cast<void*>(0)
 #endif
 
 #ifdef _MSC_VER
@@ -26,7 +24,7 @@
 #   define PLOG_GET_FUNC()      __PRETTY_FUNCTION__
 #endif
 
-#if PLOG_CAPTURE_FILE
+#ifdef PLOG_CAPTURE_FILE
 #   define PLOG_GET_FILE()      __FILE__
 #else
 #   define PLOG_GET_FILE()      ""
@@ -113,5 +111,3 @@
 #define LOGE_IF_(instance, condition)           LOG_ERROR_IF_(instance, condition)
 #define LOGF_IF_(instance, condition)           LOG_FATAL_IF_(instance, condition)
 #define LOGN_IF_(instance, condition)           LOG_NONE_IF_(instance, condition)
-
-#endif

@@ -54,8 +54,8 @@ private:
     std::string mDstIp;
     std::string mDev;
     pcap_t *mCap = nullptr;
-    RPortList mSrc;
-    RPortList mDest;
+    RPortList mSrcPorts;
+    RPortList mDestPorts;
     bool mDone = false;
     const int TIMEOUT;
 
