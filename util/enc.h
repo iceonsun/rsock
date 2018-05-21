@@ -13,6 +13,8 @@ extern "C" {
 
 char *encode_uint32(uint32_t i, char *p);
 
+char *encode_uint64(uint64_t i, char *p);
+
 char *encode_uint16(uint16_t i, char *p);
 
 char *encode_uint8(uint8_t i, char *p);
@@ -22,6 +24,8 @@ const char *decode_uint32(uint32_t *i, const char *p);
 const char *decode_uint16(uint16_t *i, const char *p);
 
 const char *decode_uint8(uint8_t *i, const char *p);
+
+const char *decode_uint64(uint64_t *i, const char *p);
 
 int8_t is_little_endian();
 

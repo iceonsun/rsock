@@ -5,8 +5,12 @@
 #include <cassert>
 #include "IConn.h"
 
-IConn::IConn(const std::string &key) {
+IConn::IConn(const std::string &key): IConn(key, key) {
+}
+
+IConn::IConn(const std::string &key, const std::string &printableStr) {
     mKey = key;
+    mPrintableStr = printableStr;
 }
 
 int IConn::Init() {
@@ -15,9 +19,10 @@ int IConn::Init() {
     return 0;
 }
 
-void IConn::Close() {
+int IConn::Close() {
     mOnRecvCb = nullptr;
     mOutputCb = nullptr;
+    return 0;
 }
 
 int IConn::Send(ssize_t nread, const rbuf_t &rbuf) {
@@ -36,12 +41,14 @@ int IConn::Output(ssize_t nread, const rbuf_t &rbuf) {
 }
 
 int IConn::Input(ssize_t nread, const rbuf_t &rbuf) {
+    assert(mInited);
     int n = OnRecv(nread, rbuf);
     afterInput(n);
     return n;
 }
 
 int IConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
+    assert(mInited);
     if (mOnRecvCb) {
         return mOnRecvCb(nread, rbuf);
     }

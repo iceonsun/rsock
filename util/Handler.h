@@ -129,8 +129,13 @@ public:
     // virtual function is called on dynamic type. while default arguments are base on static type.
     virtual Message ObtainMessage(int what, int arg1, const std::string &msg, void *obj);
 
+    virtual bool HasMessages(int what);
+
     virtual bool SendMessage(const Message &message);
 
+    /*
+     * @param delay milliseconds to delay execution.
+     */
     virtual bool SendMessageDelayed(const Message &msg, uint64_t delay);
 
     virtual bool SendMessageAtTime(const Message &msg, uint64_t ts);

@@ -12,6 +12,8 @@
 #include "INetConn.h"
 #include "../util/Handler.h"
 
+class INetConnErrorHandler;
+
 // if any error occurs in subconn, they should be removed from group
 // contains only fake udp and fake tcp. the real conns lie in rconn
 class INetGroup : public IGroup {
@@ -28,23 +30,33 @@ public:
 
     int Send(ssize_t nread, const rbuf_t &rbuf) override;
 
-    void Close() override;
+    int Close() override;
 
-    virtual INetConn *CreateNetConn(const std::string &key, const ConnInfo *info) = 0;
+    virtual INetConn *CreateNetConn(IntKeyType key, const ConnInfo *info) = 0;
 
     //can only add fakeconn
     virtual void AddNetConn(INetConn *conn);
 
-    void SetNetConnErrCb(const NetConnErrCb &cb);
+    bool RemoveConn(IConn *conn) override;
 
-    // flush detect error
-    bool OnConnDead(IConn *conn) override;
+    void OnConnDead(IConn *conn) override;
 
     INetConn *ConnOfIntKey(IntKeyType key);
 
     uv_loop_t *GetLoop() const { return mLoop; }
 
+    /*
+     * The caller must be responsible to free the handler itself.
+     */
+    void SetNetConnErrorHandler(INetConnErrorHandler *handler);
+
+    virtual int SendNetConnReset(ssize_t nread, const rbuf_t &rbuf, IntKeyType keyOfConnToReset);
+
+protected:
+    virtual int doSend(ssize_t nread, const rbuf_t &rbuf, IntKeyType keyOfConnToReset);
+
 private:
+    using IGroup::ConnOfKey;
     using IGroup::AddConn;
 
     inline void netConnErr(const ConnInfo &info);
@@ -58,8 +70,9 @@ private:
     static const int MSG_CONN_ERR = 0;
     uv_loop_t *mLoop = nullptr;
     Handler::SPHandler mHandler = nullptr;
-    NetConnErrCb mErrCb = nullptr;
     IConn *mDefaultFakeConn = nullptr;
+    INetConnErrorHandler *mErrHandler = nullptr;
+    std::map<IntKeyType, INetConn *> mConnMap;
 };
 
 

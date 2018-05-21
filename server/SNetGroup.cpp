@@ -5,22 +5,29 @@
 #include <plog/Log.h>
 #include "SNetGroup.h"
 #include "../conn/FakeUdp.h"
-#include "../net/INetManager.h"
+#include "ServerNetManager.h"
+#include "../src/util/KeyGenerator.h"
+#include "../conn/FakeTcp.h"
 
 using namespace std::placeholders;
 
-SNetGroup::SNetGroup(const std::string &groupId, uv_loop_t *loop, INetManager *netManager)
+SNetGroup::SNetGroup(const std::string &groupId, uv_loop_t *loop, ServerNetManager *netManager)
         : INetGroup(groupId, loop) {
     mNetManager = netManager;
     assert(mNetManager);
 }
 
-INetConn *SNetGroup::CreateNetConn(const std::string &key, const ConnInfo *info) {
+INetConn *SNetGroup::CreateNetConn(IntKeyType key, const ConnInfo *info) {
     INetConn *c = nullptr;
     if (info->IsUdp()) {
         c = new FakeUdp(key, *info);
     } else {
-        c = mNetManager->TransferConn(key);
+        TcpInfo tcpInfo(*info);
+        auto tcp = mNetManager->GetTcp(tcpInfo);
+        if (tcp) {
+            c = new FakeTcp(tcp, key, tcpInfo);
+//            c = new FakeTcp(tcp, KeyGenerator::KeyForConnInfo(tcpInfo));  bug: Can't use key generation here!!!
+        }
     }
 
     if (c) {
@@ -31,10 +38,9 @@ INetConn *SNetGroup::CreateNetConn(const std::string &key, const ConnInfo *info)
             delete c;
             return nullptr;
         }
-        c->SetIntKey(hd->ConnKey());
         return c;
     }
 
-    LOGW << "Cannot create conn, no netconn: " << key;
+    LOGW << "Cannot create conn, no netconn: " << key << ", info: " << info->ToStr();
     return nullptr;
 }

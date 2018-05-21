@@ -6,10 +6,7 @@
 #define RSOCK_ISOCKAPP_H
 
 #include <uv.h>
-#include "../bean/RConfig.h"
-#include "../callbacks/ITcpObserver.h"
-
-class RTimer;
+#include <vector>
 
 struct RConfig;
 
@@ -29,7 +26,13 @@ class RCap;
 
 class RConn;
 
-class ISockApp : public ITcpObserver {
+class AppTimer;
+
+class AppNetObserver;
+
+struct TcpInfo;
+
+class ISockApp {
 public:
     explicit ISockApp(bool is_server);
 
@@ -43,17 +46,17 @@ public:
 
     virtual void Close();
 
-    virtual void Flush(void *arg);
+    virtual void Flush(uint64_t timestamp);
 
-    virtual RCap *CreateCap(RConfig &conf) = 0;
+    virtual RCap *CreateCap(const RConfig &conf) = 0;
 
-    virtual void StartTimer(uint32_t timeout_ms, uint32_t repeat_ms);
+    virtual int StartTimer(uint32_t repeat_ms);
 
-    virtual RConn *CreateBtmConn(RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool, int datalink) = 0;
+    virtual RConn *CreateBtmConn(RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool) = 0;
 
     virtual IConn *CreateBridgeConn(RConfig &conf, IConn *btm, uv_loop_t *loop, INetManager *netManager) = 0;
 
-    virtual INetManager *CreateNetManager(RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool) = 0;
+    virtual INetManager *CreateNetManager(const RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool) = 0;
 
     INetManager *GetNetManager() const { return mNetManager; }
 
@@ -63,11 +66,25 @@ public:
 
     bool IsClosing() { return mClosing; }
 
-    bool OnTcpFinOrRst(const TcpInfo &info) override;
+    virtual void OnTcpFinOrRst(const TcpInfo &info);
 
 protected:
     std::vector<IBtmConn *> bindUdpConns(uint32_t src, const std::vector<uint16_t> &ports, uint32_t dst,
                                          const std::vector<uint16_t> &svr_ports);
+
+    virtual int initServices(const RConfig &conf);
+
+    virtual int initObservers();
+
+    virtual void destroyObservers();
+
+    virtual void destroySingletons();
+
+    virtual void destroyGlobalSingletons();
+
+    virtual int initGlobalSingletons();
+
+    virtual void initSingletons();
 
     virtual void onExitSignal();
 
@@ -79,8 +96,6 @@ protected:
 
     static void close_signal_handler(uv_signal_t *handle, int signum);
 
-    // todo: use uv siginit
-    static const int SIG_EXIT = 0;
 private:
     int doInit();
 
@@ -96,18 +111,17 @@ private:
     plog::IAppender *mConsoleAppender = nullptr;
 
     uv_loop_t *mLoop = nullptr;
-    RTimer *mTimer = nullptr;
+    AppTimer *mTimer = nullptr;
+    AppNetObserver *mNetObserver = nullptr;
     bool mServer;
     RCap *mCap = nullptr;
     IConn *mBridge = nullptr;
     RConn *mBtmConn = nullptr;
-    RConfig mConf;
     bool mInited = false;
     INetManager *mNetManager = nullptr;
     TcpAckPool *mAckPool = nullptr;
     std::vector<uv_signal_t *> mExitSignals;
     bool mClosing = false;
-    uv_thread_t mCapThread = 0;
 };
 
 #endif //RSOCK_ISOCKAPP_H

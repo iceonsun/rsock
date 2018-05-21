@@ -8,7 +8,7 @@
 
 #include "SConn.h"
 #include "../util/rsutil.h"
-#include "os.h"
+#include "../conn/CConn.h"
 
 SConn::SConn(const std::string &key, uv_loop_t *loop, const SA *target, uint32_t conv) : IConn(key) {
     assert(target->sa_family == AF_INET);
@@ -19,7 +19,13 @@ SConn::SConn(const std::string &key, uv_loop_t *loop, const SA *target, uint32_t
     mConv = conv;
 }
 
-void SConn::Close() {
+int SConn::Init() {
+    IConn::Init();
+
+    return 0;
+}
+
+int SConn::Close() {
     IConn::Close();
 
     if (mTarget) {
@@ -36,6 +42,7 @@ void SConn::Close() {
         uv_close(reinterpret_cast<uv_handle_t *>(mUdp), close_cb);
         mUdp = nullptr;
     }
+    return 0;
 }
 
 void SConn::udpRecvCb(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf, const SA *addr, unsigned flags) {
@@ -44,6 +51,8 @@ void SConn::udpRecvCb(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf, cons
         if (nullptr == conn->mSelfAddr) {
             int socklen = sizeof(SA4);
             conn->mSelfAddr = static_cast<SA4 *>(malloc(sizeof(SA4)));
+            conn->SetPrintableStr(CConn::BuildPrintableStr((SA *) conn->mSelfAddr));
+
             memset(conn->mSelfAddr, 0, sizeof(SA4));
             int err = uv_udp_getsockname(handle, reinterpret_cast<SA *>(conn->mSelfAddr), &socklen);
             if (err) {
@@ -52,7 +61,7 @@ void SConn::udpRecvCb(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf, cons
             }
             LOGV << "sconn addr: " << Addr2Str((SA *) conn->mSelfAddr);
         }
-        LOGV << "receive " << nread << " bytes from " << Addr2Str(addr);
+//        LOGV << "receive " << nread << " bytes from " << Addr2Str(addr);
         const rbuf_t rbuf = new_buf(nread, buf->base, conn);
         conn->Send(nread, rbuf);
     } else if (nread < 0) {
@@ -85,9 +94,6 @@ void SConn::sendCb(uv_udp_send_t *req, int status) {
     if (status) {
 //        todo: add err processing
         LOGE << "udp send error, err " << status << ": " << uv_strerror(status);
-#ifndef NNDEBUG
-        assert(0);
-#endif
     }
 
     free_rudp_send(udp);

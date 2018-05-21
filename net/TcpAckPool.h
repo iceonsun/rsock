@@ -15,42 +15,48 @@
 #include "rscomm.h"
 
 #include "../bean/TcpInfo.h"
+#include "../src/service/ITimerObserver.h"
+#include "../src/util/TcpCmpFn.h"
 
 // store ack information of incomming connection
-class TcpAckPool {
+class TcpAckPool : public ITimerObserver {
 public:
-    explicit TcpAckPool(uv_loop_t *loop, uint64_t expireMs);
+    explicit TcpAckPool(uint64_t expireMs);
+
+    int Init() override;
+
+    int Close() override;
 
     // sp or dp == 0 is not valid
     bool AddInfoFromPeer(const TcpInfo &infoFromPeer, uint8_t flags);
 
     ssize_t RemoveInfo(const TcpInfo &tcpInfo);
 
-    bool Wait2Info(TcpInfo &info, std::chrono::milliseconds milliSec);
-
-    void Flush(uint64_t now);
-
-    void Close() {}
+    /*
+     * This will tranfer captured tcpInfo. You need to increment Caution: see TcpUtil.
+     */
+    bool Wait2TransferInfo(TcpInfo &info, const std::chrono::milliseconds milliSec);
 
     std::string Dump();
 
-    uint64_t PersistMs() const { return EXPIRE_INTERVAL; }
+    uint64_t PersistMs() const;
+
+    void OnFlush(uint64_t timestamp) override;
+
+    bool ContainsInfo(const TcpInfo &info, const std::chrono::milliseconds milliSec);
 
 protected:
     // no lock protection
     bool getInfoIfExists(TcpInfo &info);
 
-protected:
-    struct TcpCmpFn {
-        inline bool operator()(const TcpInfo &info1, const TcpInfo &info2) const;
-    };
+    ssize_t locklessRemove(const TcpInfo &tcpInfo);
 
 private:
-    const uint64_t EXPIRE_INTERVAL = 30000; // by default.
+    // Be same with app keepalive. if not removed from the pool manually, the conn info will be removed automatically
+    const uint64_t EXPIRE_INTERVAL_MS = 0;
     std::map<TcpInfo, uint64_t, TcpCmpFn> mInfoPool;
     std::mutex mMutex;
     std::condition_variable mCondVar;
-    uv_loop_t *mLoop = nullptr;
 };
 
 

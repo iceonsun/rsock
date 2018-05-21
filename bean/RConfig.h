@@ -15,6 +15,9 @@
 #include "plog/Severity.h"
 
 struct RConfig {
+    RConfig() = default;
+
+    RConfig(const RConfig &) = default;
 
     struct RParam {
         std::string dev;
@@ -35,7 +38,7 @@ struct RConfig {
         std::string targetIp;
         uint16_t targetPort = 0;
 
-        uint32_t conn_duration_sec = 30;  // 30s
+        uint32_t appKeepAliveSec = 600;   // 10min
         uint32_t selfCapInt = 0;
         uint32_t targetCapInt = 0;
         std::string hashKey = "hello135";
@@ -44,9 +47,15 @@ struct RConfig {
         int type = OM_PIPE_TCP;     // default tcp ports
         uint16_t cap_timeout = OM_PCAP_TIMEOUT;
 
-        int keepAliveInterval = 5;  // default 5s, 3 times
+#ifdef RSOCK_IS_SERVER_
+        int keepAliveIntervalSec = 4;  // default 4s, 3 times
+#else
+        int keepAliveIntervalSec = 2;  // default 2s, 3 times
+#endif
 
         const std::string version = RSOCK_BUILD_TIME;
+
+        RParam &operator=(const RParam &) = default;
     };
 
     // if turned to debug, speed of rsock will be very slow on macOS.
@@ -74,7 +83,7 @@ public:
     int Parse(bool is_server, int argc, const char *const *argv);
 
     // if caller called Config#Parse() or call SetInited manually, this method will return true
-    bool Inited();
+    bool Inited() const;
 
     void SetInited(bool init);
 
@@ -83,6 +92,7 @@ public:
     static void CheckValidation(const RConfig &c);
 
     static std::string BuildExampleString();
+
 private:
     static void parseJsonFile(RConfig &conf, const std::string &fName, std::string &err);
 

@@ -5,29 +5,28 @@
 #ifndef RSOCK_IAPPCONN_H
 #define RSOCK_IAPPCONN_H
 
+#include <rscomm.h>
 #include "IGroup.h"
-#include "../callbacks/ITcpObserver.h"
 #include "../bean/EncHead.h"
-#include "../callbacks/INetConnKeepAlive.h"
-#include "../callbacks/IReset.h"
+#include "../src/service/INetObserver.h"
 
 class INetGroup;
 
 class INetConn;
 
+class INetConnKeepAlive;
+
+class IReset;
+
 struct ConnInfo;
 
-
-class IAppGroup : public IGroup, public ITcpObserver {
+class IAppGroup : public IGroup {
 public:
-    using IntKeyType = uint32_t;
-
-    IAppGroup(const std::string &groupId, INetGroup *fakeNetGroup, IConn *btm, bool activeKeepAlive,
-              const std::string &printableStr = "");
+    IAppGroup(const std::string &groupId, INetGroup *fakeNetGroup, IConn *btm);
 
     int Init() override;
 
-    void Close() override;
+    int Close() override;
 
     int Send(ssize_t nread, const rbuf_t &rbuf) override;
 
@@ -39,7 +38,10 @@ public:
 
     INetGroup *NetGroup() { return mFakeNetGroup; }
 
-    bool OnTcpFinOrRst(const TcpInfo &info) override;
+    /*
+     * return true if this rst/fin information is processed by this group
+     */
+    bool ProcessTcpFinOrRst(const TcpInfo &info);
 
 //    bool OnUdpRst(const ConnInfo &info) override;
 
@@ -47,30 +49,17 @@ public:
 
     virtual int SendConvRst(uint32_t conv);
 
-    const std::string ToStr() override;
-
-//protected:
-    virtual int sendNetConnRst(const ConnInfo &src, IntKeyType key);
-
-    virtual int onPeerNetConnRst(const ConnInfo &src, uint32_t key);
-
-    virtual int onPeerConvRst(const ConnInfo &src, uint32_t rstConv);
-
-    virtual bool onSelfNetConnRst(const ConnInfo &info);
-
     virtual int doSendCmd(uint8_t cmd, ssize_t nread, const rbuf_t &rbuf);
 
-    virtual int onNetconnDead(uint32_t key);
-
+    // todo: refactor mhead and this method
+    virtual int SendNetConnReset(ssize_t nread, const rbuf_t &rbuf, IntKeyType keyOfConnToReset);
 
 protected:
-    EncHead mHead;
+    EncHead mHead;  // todo: refactor mhead. error prone
 
 private:
-    bool mActive = true;
-    std::string mPrintableStr;
-    IReset::IRestHelper *mResetHelper = nullptr;
-    INetConnKeepAlive::INetConnAliveHelper *mKeepAliveHelper = nullptr;
+    IReset *mResetHelper = nullptr;
+    INetConnKeepAlive *mKeepAlive = nullptr;
     INetGroup *mFakeNetGroup = nullptr;
 };
 

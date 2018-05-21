@@ -3,8 +3,9 @@
 //
 
 #include "DefaultFakeConn.h"
+#include "../src/util/KeyGenerator.h"
 
-DefaultFakeConn::DefaultFakeConn() : INetConn("DefaultFakeConn") {}
+DefaultFakeConn::DefaultFakeConn() : INetConn(KeyGenerator::INVALID_KEY) {}
 
 bool DefaultFakeConn::Alive() {
     return true;
@@ -18,10 +19,15 @@ ConnInfo *DefaultFakeConn::GetInfo() {
     return nullptr;
 }
 
-IntKeyType DefaultFakeConn::IntKey() {
-    return 0;
-}
-
 int DefaultFakeConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
     return IConn::OnRecv(nread, rbuf);
+}
+
+int DefaultFakeConn::Init() {
+    int nret = INetConn::Init();
+    if (nret) {
+        return nret;
+    }
+    SetPrintableStr("DefaultFakeConn");
+    return 0;
 }

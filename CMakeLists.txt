@@ -10,26 +10,48 @@ include_directories(./src/os/include)
 #include(xbuild/cmake/base.cmake)   # uncomment for vs local dev
 set(SOURCE_FILES
         src/rcommon.c src/ISockApp.cpp
+
         bean/RConfig.cpp bean/ConnInfo.cpp bean/TcpInfo.cpp bean/EncHead.cpp
-        callbacks/ITcpObserver.h callbacks/ITcpInformer.cpp callbacks/RConnReset.cpp callbacks/INetConnKeepAlive.h callbacks/NetConnKeepAlive.h
-        callbacks/IReset.h callbacks/NetConnKeepAlive.cpp callbacks/ConnReset.cpp
-        util/enc.c util/rsutil.cpp util/rhash.cpp util/RTimer.cpp util/TextUtils.h util/RPortList.cpp
+
+        callbacks/RConnReset.cpp callbacks/INetConnKeepAlive.h
+        callbacks/IReset.h callbacks/NetConnKeepAlive.cpp callbacks/ConnReset.cpp callbacks/KeepAliveRouteObserver.cpp
+
+        util/enc.c util/rsutil.cpp util/rhash.cpp util/TextUtils.h util/RPortList.cpp
         util/PortPair.cpp util/Handler.cpp util/ShotHandler.cpp util/UvUtil.cpp
-        cap/cap_util.cpp cap/RCap.cpp
+
+        cap/cap_util.cpp cap/RCap.cpp cap/CapUtil.cpp
+
         thirdparty/md5.c thirdparty/json11.cpp
+
         conn/INetConn.cpp conn/BtmUdpConn.cpp conn/FakeTcp.cpp conn/INetGroup.cpp conn/IGroup.cpp conn/FakeUdp.cpp
         conn/IConn.cpp conn/RConn.cpp conn/RawTcp.cpp conn/IAppGroup.cpp conn/IBtmConn.cpp conn/DefaultFakeConn.cpp
-        net/NetUtil.cpp net/ClientNetManager.cpp net/TcpAckPool.cpp net/TcpListenPool.cpp net/INetManager.cpp
-        net/ServerNetManager.cpp
-        src/sync/SyncConnFactory.cpp src/sync/LoopSreamSyncConn.cpp src/sync/ISyncConn.cpp src/sync/UdpSyncConn.cpp
+        conn/CConn.cpp conn/INetConnErrorHandler.h
+
+        net/NetUtil.cpp net/TcpAckPool.cpp net/TcpListenPool.cpp net/INetManager.cpp
+        net/NetManagerTimer.cpp
+
+        src/sync/SyncConnFactory.cpp src/sync/LoopStreamSyncConn.cpp src/sync/ISyncConn.cpp src/sync/UdpSyncConn.cpp
         src/sync/TcpStreamSyncConn.cpp src/sync/IPacketSyncConn.cpp
-        callbacks/NetConnKeepAliveHelper.cpp callbacks/NetConnKeepAliveHelper.h callbacks/ResetHelper.cpp callbacks/ResetHelper.h)
+
+        src/service/IObserver.h src/service/IService.cpp
+        src/service/ITimerObserver.h src/service/TimerService.cpp
+        src/service/IRouteObserver.h src/service/RouteService.cpp src/service/NetService.cpp
+        #src/service/ServiceUtil.cpp # template involved
+
+        src/service/ServiceUtil.h src/service/IBaseService.h src/service/INetObserver.h
+        src/app/AppTimer.cpp src/app/AppNetObserver.cpp
+
+        src/singletons/ConfManager.cpp src/singletons/Singleton.h src/singletons/HandlerUtil.cpp
+        src/singletons/RouteManager.cpp src/singletons/ServiceManager.cpp
+
+        src/util/ICloseable.h src/util/KeyGenerator.cpp src/util/TcpCmpFn.cpp src/util/TcpUtil.cpp
+        src/util/RouteUtil.cpp)
 
 # platform dependent dir		
 SET(ROS_DIR src/os/unix)
 
 if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
-	set(ROS_DIR src/os/win)
+    set(ROS_DIR src/os/win)
 endif ()
 
 # code {
@@ -41,37 +63,40 @@ set(ROS_COMMON_DIR src/os/common)
 # common code
 set(SOURCE_FILES ${SOURCE_FILES} ${ROS_COMMON_DIR}/FdUtil_common.cpp)
 if (NOT "${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
-	set(SOURCE_FILES ${SOURCE_FILES} src/os/unix/conn/UnixDgramSyncConn.cpp)
+    set(SOURCE_FILES ${SOURCE_FILES} src/os/unix/conn/UnixDgramSyncConn.cpp)
 endif ()
 MESSAGE(STATUS "source files: ${SOURCE_FILES}")
 ## } code
 
 set(SVR_SOURCE_FILES ${SOURCE_FILES} server/SConn.cpp server/SSockApp.cpp server/ssock.cpp server/SNetGroup.cpp
-        server/ServerGroup.cpp server/SubGroup.cpp)
-set(CLI_SOURCE_FILES ${SOURCE_FILES} client/CConn.cpp client/csock.cpp client/CSockApp.cpp client/ClientGroup.cpp
-        client/CNetGroup.cpp)
+        server/ServerGroup.cpp server/SubGroup.cpp server/ServerNetManager.cpp)
+set(CLI_SOURCE_FILES ${SOURCE_FILES} client/csock.cpp client/CSockApp.cpp client/ClientGroup.cpp
+        client/CNetGroup.cpp client/ClientNetObserver.cpp client/CConnErrHandler.cpp client/ClientNetManager.cpp)
 
 ##### release {
 add_executable(server_rsock_${CMAKE_SYSTEM_NAME} ${SVR_SOURCE_FILES} server/main.cpp)
 target_compile_options(server_rsock_${CMAKE_SYSTEM_NAME} PRIVATE -DRSOCK_IS_SERVER_ -DRSOCK_NNDEBUG)
 
 add_executable(client_rsock_${CMAKE_SYSTEM_NAME} ${CLI_SOURCE_FILES} client/main.cpp)
-target_compile_options(client_rsock_${CMAKE_SYSTEM_NAME} PRIVATE  -DRSOCK_NNDEBUG)
+target_compile_options(client_rsock_${CMAKE_SYSTEM_NAME} PRIVATE -DRSOCK_NNDEBUG)
 ##### }
 
 
-if (NOT "${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")	
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -Wsign-compare")
-	add_definitions(-Wall -fvisibility=default)
+if (NOT "${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -Wsign-compare")
+    add_definitions(-Wall -fvisibility=default -Werror=return-type)
+else ()
+	#add_definitions(-D_XKEYCHECK_H /SAFESEH:NO) # /SAFESEH:NO doesn't work with offical dnet.a
+	add_definitions(-D_XKEYCHECK_H)
 endif ()
 
-set(libs uv net )
+set(libs uv net dnet)
 if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
-	set(OS_LIBS ws2_32 IPHLPAPI Psapi userenv advapi32 shell32)
-	set(libs ${libs} wpcap packet ${OS_LIBS})
+    set(OS_LIBS ws2_32 IPHLPAPI Psapi userenv advapi32 shell32)
+    set(libs ${libs} wpcap packet ${OS_LIBS})
 else ()
-	set(OS_LIBS pthread)
-	set(libs ${libs} pcap ${OS_LIBS})
+    set(OS_LIBS pthread)
+    set(libs ${libs} pcap ${OS_LIBS})
 endif ()
 MESSAGE(STATUS "libs for rsock binary: ${libs}")
 target_link_libraries(server_rsock_${CMAKE_SYSTEM_NAME} ${libs})
@@ -92,7 +117,7 @@ if (NOT RSOCK_RELEASE)
     target_link_libraries(test_client ${libs} ${OS_LIBS})
     target_link_libraries(test_server ${libs} ${OS_LIBS})
 
-    target_link_libraries(echo_client uv ${OS_LIBS}) 
+    target_link_libraries(echo_client uv ${OS_LIBS})
     target_link_libraries(echo_server uv ${OS_LIBS})
 else ()
     MESSAGE(STATUS "Release build")

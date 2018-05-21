@@ -9,22 +9,23 @@
 #include "SConn.h"
 #include "../conn/INetGroup.h"
 #include "../util/rsutil.h"
+#include "../src/util/KeyGenerator.h"
 
 using namespace std::placeholders;
 
 SubGroup::SubGroup(const std::string &groupId, uv_loop_t *loop, const struct sockaddr *target, INetGroup *fakeNetGroup,
-                   IConn *btm, const std::string &printableStr)
-        : IAppGroup(groupId, fakeNetGroup, btm, false, printableStr) {
+                   IConn *btm) : IAppGroup(groupId, fakeNetGroup, btm) {
     mLoop = loop;
     mTarget = new_addr(target);
 }
 
-void SubGroup::Close() {
+int SubGroup::Close() {
     IAppGroup::Close();
     if (mTarget) {
         free(mTarget);
         mTarget = nullptr;
     }
+    return 0;
 }
 
 int SubGroup::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
@@ -34,7 +35,8 @@ int SubGroup::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
         EncHead *head = info->head;
         assert(head);
 
-        auto key = ConnInfo::BuildConvKey(info->dst, head->Conv());
+        // todo: client and server: BuildConvKey() has different values
+        auto key = KeyGenerator::BuildConvKey(info->dst, head->Conv());
         auto conn = ConnOfKey(key);
         if (!conn) {
             conn = newConn(key, head->Conv());
@@ -60,7 +62,7 @@ IConn *SubGroup::newConn(const std::string &key, uint32_t conv) {
     auto out = std::bind(&SubGroup::sconnSend, this, _1, _2);
     AddConn(conn, out, nullptr);
 
-    LOGD << "new SConn, key: " << conn->Key();
+    LOGD << "new SConn, key: " << conn->ToStr();
 
     return conn;
 }

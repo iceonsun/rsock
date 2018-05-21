@@ -19,60 +19,42 @@ class TcpAckPool;
 
 struct ConnInfo;
 
+struct TcpInfo;
+
+class NetManagerTimer;
+
+/*
+ * Consider combine some func of TcpAckPool
+ */
 class INetManager {
 public:
     explicit INetManager(uv_loop_t *loop, TcpAckPool *ackPool);
 
     virtual ~INetManager() = default;
 
-    virtual int Add2Pool(INetConn *conn, bool closeIfFail);
-
     virtual int Init();
 
-    virtual void Close();
-
-    INetConn *TransferConn(const std::string &key);
-
-    virtual void Flush(uint64_t now);
+    virtual int Close();
 
     INetManager &operator=(const INetManager &) = delete;
 
     IBtmConn *BindUdp(const ConnInfo &info);
 
+    virtual bool Wait2GetInfo(TcpInfo &info);
+
+    virtual void OnFlush(uint64_t timestamp);
+
 protected:
-    virtual int add2PoolAutoClose(INetConn *conn);
-
-private:
-    static void timerCb(uv_timer_t *handle);
-
-    inline void setupTimer();
-
-    inline void destroyTimer();
-
-private:
-    struct ConnHelper {
-        INetConn *conn = nullptr;
-
-        uint64_t expireMs = 0;
-
-        ConnHelper(INetConn *aConn, uint64_t expireMs) {
-            conn = aConn;
-            this->expireMs = expireMs;
-        }
-    };
+    void closeTcp(uv_tcp_t *tcp);
 
 protected:
     uv_loop_t *mLoop = nullptr;
     TcpAckPool *mTcpAckPool = nullptr;
 
-private:
+protected:
     const std::chrono::milliseconds BLOCK_WAIT_MS = std::chrono::milliseconds(500);
-
     const uint64_t FLUSH_INTERVAL = 1000;   // 1s
-    const uint64_t POOL_PERSIST_MS = 30000; // 30s
-    std::map<std::string, ConnHelper> mPool;
-    uv_timer_t *mFlushTimer = nullptr;
-
+    NetManagerTimer *mTimer = nullptr;
 };
 
 #endif //RSOCK_CONNPOOL_H

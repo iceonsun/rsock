@@ -6,17 +6,18 @@
 
 #include "plog/Log.h"
 
-#include "CConn.h"
+#include "../conn/CConn.h"
 #include "ClientGroup.h"
 #include "../util/rsutil.h"
 #include "../bean/ConnInfo.h"
 #include "os_util.h"
+#include "ClientNetObserver.h"
 
 using namespace std::placeholders;
 
 ClientGroup::ClientGroup(const std::string &groupId, const std::string &listenUnPath, const std::string &listenUdpIp,
                          uint16_t listenUdpPort, uv_loop_t *loop, INetGroup *fakeGroup, IConn *btm)
-        : IAppGroup(groupId, fakeGroup, btm, true, "ClientGroup") {
+        : IAppGroup(groupId, fakeGroup, btm) {
     assert(fakeGroup != nullptr);
     if (!listenUdpIp.empty()) {
         mUdpAddr = new_addr4(listenUdpIp.c_str(), listenUdpPort);
@@ -28,6 +29,7 @@ ClientGroup::ClientGroup(const std::string &groupId, const std::string &listenUn
     }
 
     mLoop = loop;
+    SetPrintableStr("ClientGroup");
 }
 
 int ClientGroup::Init() {
@@ -52,7 +54,11 @@ int ClientGroup::Init() {
         mUnSock = nret;
         LOGD << "client, listening on unix socket: " << mUnAddr->sun_path;
     }
-    return 0;
+    if (!mNetObserver) {
+        mNetObserver = new ClientNetObserver(this);
+        return mNetObserver->Init();
+    }
+    return -1;
 }
 
 // recv from peer. send data to origin
@@ -120,7 +126,6 @@ void ClientGroup::udpRecvCb(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf
 //             << ntohs(addr4->sin_port);
         conn->onLocalRecv(nread, buf->base, addr);
     } else if (nread < 0) {
-        // todo: error processing
         LOGE << "udp error: " << uv_strerror(nread);
 #ifndef NNDEBUG
         assert(0);
@@ -146,20 +151,22 @@ void ClientGroup::pollCb(uv_poll_t *handle, int status, int events) {
             return;
         }
 
-//        todo: just close conn
         if (nread < 0) {
             LOGE << "read error on listened unix domain sock, " << nread << ": " << strerror(errno);
-#ifndef NNDEBUG
-            assert(0);
-#endif
             return;
         }
         conn->onLocalRecv(nread, buf, reinterpret_cast<const sockaddr *>(&addr));
     }
 }
 
-void ClientGroup::Close() {
+int ClientGroup::Close() {
     IAppGroup::Close();
+
+    if (mNetObserver) {
+        mNetObserver->Close();
+        delete mNetObserver;
+        mNetObserver = nullptr;
+    }
 
     if (mUdp) {
         uv_close(reinterpret_cast<uv_handle_t *>(mUdp), close_cb);
@@ -168,7 +175,7 @@ void ClientGroup::Close() {
 
     if (mUnPoll) {
         uv_poll_stop(mUnPoll);
-		CloseSocket(mUnSock);
+        CloseSocket(mUnSock);
         uv_close(reinterpret_cast<uv_handle_t *>(mUnPoll), close_cb);
 //        free(mUnPoll);    // may cause bug!
     }
@@ -182,10 +189,11 @@ void ClientGroup::Close() {
         free(mUnAddr);
         mUnAddr = nullptr;
     }
+    return 0;
 }
 
 void ClientGroup::onLocalRecv(ssize_t nread, const char *base, const struct sockaddr *addr) {
-    auto key = ConnInfo::BuildAddrKey(addr);
+    auto key = CConn::BuildKey(addr);
     auto conn = ConnOfKey(key);
     if (!conn) {
         conn = newConn(key, addr, ++mConvCounter);
@@ -226,9 +234,4 @@ int ClientGroup::cconSend(ssize_t nread, const rbuf_t &rbuf) {
     mHead.SetConv(cConn->Conv());
     rbuf_t buf = new_buf(nread, rbuf, &mHead);
     return Send(nread, buf);
-}
-// todo: override Alive to enable auto restart
-
-const std::string ClientGroup::ToStr() {
-    return IConn::ToStr();
 }

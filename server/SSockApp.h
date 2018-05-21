@@ -12,13 +12,13 @@ class SSockApp : public ISockApp {
 public:
     explicit SSockApp();
 
-    RCap *CreateCap(RConfig &conf) override;
+    RCap *CreateCap(const RConfig &conf) override;
 
-    RConn *CreateBtmConn(RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool, int datalink) override;
+    RConn *CreateBtmConn(RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool) override;
 
     IConn *CreateBridgeConn(RConfig &conf, IConn *btm, uv_loop_t *loop, INetManager *netManager) override;
 
-    INetManager *CreateNetManager(RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool) override;
+    INetManager *CreateNetManager(const RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool) override;
 };
 
 

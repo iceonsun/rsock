@@ -12,9 +12,9 @@
 class SubGroup : public IAppGroup {
 public:
     SubGroup(const std::string &groupId, uv_loop_t *loop, const struct sockaddr *target, INetGroup *fakeNetGroup,
-                 IConn *btm, const std::string &printableStr = "");
+                 IConn *btm);
 
-    void Close() override;
+    int Close() override;
 
     int OnRecv(ssize_t nread, const rbuf_t &rbuf) override;
 

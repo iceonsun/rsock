@@ -13,6 +13,8 @@ class CConn;
 
 class RPortList;
 
+class ClientNetObserver;
+
 class ClientGroup : public IAppGroup {
 public:
     ClientGroup(const std::string &groupId, const std::string &listenUnPath, const std::string &listenUdpIp,
@@ -22,11 +24,9 @@ public:
 
     int OnRecv(ssize_t nread, const rbuf_t &rbuf) override;
 
-    void Close() override;
+    int Close() override;
 
     bool RemoveConn(IConn *conn) override;
-
-    const std::string ToStr() override;
 
 private:
     int subconnRecv(ssize_t nread, const rbuf_t &rbuf);
@@ -53,6 +53,7 @@ private:
 
     uv_udp_t *mUdp = nullptr;
     uv_poll_t *mUnPoll = nullptr;
+    ClientNetObserver *mNetObserver = nullptr;
     int mUnSock;
 
     struct sockaddr_in *mUdpAddr = nullptr;

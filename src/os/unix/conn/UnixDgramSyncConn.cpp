@@ -7,8 +7,8 @@
 #include "../../../../util/rsutil.h"
 #include "rscomm.h"
 
-UnixDgramSyncConn::UnixDgramSyncConn(struct uv_loop_s *loop, const Callback &cb, void *obj) : IPacketSyncConn(loop, cb,
-                                                                                                              obj) {
+UnixDgramSyncConn::UnixDgramSyncConn(struct uv_loop_s *loop, const Callback &cb, void *obj)
+        : IPacketSyncConn(loop, cb, obj) {
 }
 
 int UnixDgramSyncConn::CreateSockPair(uv_loop_s *loop, sock_pair_t *socks) {

@@ -13,11 +13,11 @@
 #include "../../util/rsutil.h"
 
 TcpStreamSyncConn::TcpStreamSyncConn(uv_loop_t *loop, const Callback cb, void *obj)
-    : ISyncConn(loop, cb, obj) {
+        : ISyncConn(loop, cb, obj) {
 }
 
 int TcpStreamSyncConn::Init() {
-    SA4 addr = { 0 };
+    SA4 addr = {0};
     uv_ip4_addr("127.0.0.1", 0, &addr);
 
     int listenSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -30,7 +30,7 @@ int TcpStreamSyncConn::Init() {
     int writeSock = -1;
     uv_tcp_t *tcp = nullptr;
     do {
-        nret = bind(listenSock, (SA *)&addr, sizeof(addr));
+        nret = bind(listenSock, (SA *) &addr, sizeof(addr));
         if (nret) {
             err = "bind listenSock failed: ";
             err += std::to_string(GetPrevSockErr());
@@ -38,13 +38,13 @@ int TcpStreamSyncConn::Init() {
         }
 
         socklen_t socklen = sizeof(addr);
-        nret = getsockname(listenSock, (SA *)&addr, &socklen);
+        nret = getsockname(listenSock, (SA *) &addr, &socklen);
         if (nret) {
             err = "getsockname failed: ";
             err += std::to_string(GetPrevSockErr());
             break;
         }
-        LOGD << "readFd addr: " << Addr2Str((SA *)&addr);
+        LOGD << "readFd addr: " << Addr2Str((SA *) &addr);
 
         nret = listen(listenSock, 1);
         if (nret) {
@@ -58,7 +58,7 @@ int TcpStreamSyncConn::Init() {
         std::thread t1(connectCb, &serverAddr, &writeSock);
         memset(&addr, 0, sizeof(addr));
 
-        readSock = accept(listenSock, (SA *)&addr, &socklen);
+        readSock = accept(listenSock, (SA *) &addr, &socklen);
         t1.join();
         if (-1 == readSock) {
             err = "accept failed: ";
@@ -67,7 +67,7 @@ int TcpStreamSyncConn::Init() {
         }
 
         assert(writeSock != -1);
-        LOGD << "writeSock addr: " << Addr2Str((SA *)&addr);
+        LOGD << "writeSock addr: " << Addr2Str((SA *) &addr);
 
         trySetGoodBufSize(RSOCK_SOCK_BUF_TIMES, readSock, writeSock);
 
@@ -128,10 +128,10 @@ void TcpStreamSyncConn::connectCb(SA4 *addr, int *clientSock) {
     std::this_thread::sleep_for(std::chrono::milliseconds(500));    // wait for server thread to call accept
 
     int sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    int nret = connect(sock, (SA *)addr, sizeof(SA4));
+    int nret = connect(sock, (SA *) addr, sizeof(SA4));
 
     if (nret) {
-        LOGE << "connect on " << Addr2Str((SA *)addr) << " failed";
+        LOGE << "connect on " << Addr2Str((SA *) addr) << " failed";
         CloseSocket(sock);
         return;
     }
@@ -141,7 +141,7 @@ void TcpStreamSyncConn::connectCb(SA4 *addr, int *clientSock) {
 int TcpStreamSyncConn::Send(int nread, const rbuf_t &rbuf) {
     if (nread > 0) {
         char buf[MAX_BUF_SIZE];
-        *(COUNT_TYPE *)buf = nread;
+        *(COUNT_TYPE *) buf = nread;
         char *p = buf + COUNT_SIZE;
         memcpy(p, rbuf.base, nread);
         assert(nread + COUNT_SIZE <= MAX_BUF_SIZE);
@@ -177,7 +177,7 @@ int TcpStreamSyncConn::rawInput(int nread, const char *buf) {
             char *pbuf = mLargeBuf; // mLargeBuf is large enough to store both mTempBuf and buf
             int left = totLen;
             if (mNextLen > 0) { // if nextLen valid. prepend it to buf.
-                *(COUNT_TYPE*)pbuf = mNextLen;
+                *(COUNT_TYPE *) pbuf = mNextLen;
                 pbuf += COUNT_SIZE;
                 left += COUNT_SIZE; // DON'T FORGET THIS !!!!
             }
@@ -188,30 +188,30 @@ int TcpStreamSyncConn::rawInput(int nread, const char *buf) {
 
             const char *p = mLargeBuf;
             int nret = 0;
-            
+
             std::vector<int> head;
 
             // now mLargeBuf always starts with len information
             while (left >= 0) {
                 if (left < COUNT_SIZE) {    // left is only part of int, prevent invalid memory access.
                     markTempBuf(0, p, left);
-                  //  LOGD << "mNextLen: " << mNextLen << ", left: " << left << ", mBufLen: " << mBufLen;
+                    //  LOGD << "mNextLen: " << mNextLen << ", left: " << left << ", mBufLen: " << mBufLen;
                     break;
                 }
-                
-                COUNT_TYPE nextLen = *(COUNT_TYPE *)p;
+
+                COUNT_TYPE nextLen = *(COUNT_TYPE *) p;
                 //LOGD << "nextLen: " << nextLen << ", left: " << left;
                 head.push_back(nextLen);
-                assert(nextLen > 0 && nextLen < MAX_BUF_SIZE);                
+                assert(nextLen > 0 && nextLen < MAX_BUF_SIZE);
                 p += COUNT_SIZE;
                 left -= COUNT_SIZE;
                 if (nextLen <= left) {
-                    nret = Input(nextLen, new_buf(nextLen, p, nullptr));                    
+                    nret = Input(nextLen, new_buf(nextLen, p, nullptr));
                     left -= nextLen;
-                    p += nextLen;       
+                    p += nextLen;
                     //LOGD << "nret: " << nret << ", nextLen: " << nextLen << ", left: " << left << ", p - mLargeBuf: " << (p - mLargeBuf);
                     if (left >= COUNT_SIZE) {
-                        COUNT_TYPE temp = *(COUNT_TYPE*)p;
+                        COUNT_TYPE temp = *(COUNT_TYPE *) p;
                         if (temp <= 0 || temp > OM_MAX_PKT_SIZE) {
                             LOGE << "temp error: " << temp;
                         }
@@ -242,7 +242,7 @@ int TcpStreamSyncConn::rawInput(int nread, const char *buf) {
         LOGE << "nread = EOF";
     } else if (nread < 0) {
         LOGE << "error: " << uv_strerror(nread);
-        assert(0);  // todo: when error occurs, should close this synconn and create a new one        
+        assert(0);
     }
     return nread;
 }

@@ -12,8 +12,9 @@
 #include <thread>
 #include "cap_util.h"
 #include "../util/RPortList.h"
+#include "../src/service/IRouteObserver.h"
 
-class RCap {
+class RCap : public IRouteObserver {
 public:
     struct CapThreadArgs {
         RCap *instance = nullptr;
@@ -24,11 +25,14 @@ public:
     RCap(const std::string &dev, const std::string &selfIp, const RPortList &selfPorts, const RPortList &srcPorts,
          const std::string &srcIp, int timeout_ms, bool server);
 
-    virtual ~RCap() = default;
+//    ~RCap() override = default;
 
-    virtual int Init();
+    int Init() override;
 
-    virtual int Close();
+    int Close() override;
+
+    // wait thread to close
+    virtual int WaitAndClose();
 
     // run in a seperate thread.
     uv_thread_t Start(pcap_handler handler, u_char *args);
@@ -42,12 +46,21 @@ public:
 
     virtual void HandlePkt(u_char *args, const struct pcap_pkthdr *hdr, const u_char *pkt);
 
+    void OnNetConnected(const std::string &ifName, const std::string &ip) override;
+
+    void OnNetDisconnected() override;
+
 protected:
     static void threadCb(void *threadArg);
+
     static void capHandler(u_char *, const struct pcap_pkthdr *, const u_char *);
 
 private:
     int initDevAndIp();
+
+    int doInit();
+
+    void joinPcapThread();
 
 private:
     std::string mSrcIp;
@@ -63,6 +76,7 @@ private:
     u_char *mArgs = nullptr;
     pcap_handler mHandler = nullptr;
     bool mIsServer = false;
+    uv_thread_t mCapThread = 0;
 };
 
 

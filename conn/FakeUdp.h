@@ -10,11 +10,14 @@
 
 class FakeUdp : public INetConn {
 public:
-    FakeUdp(const std::string &key, const ConnInfo &info);
+    FakeUdp(IntKeyType key, const ConnInfo &info);
 
     ConnInfo *GetInfo() override;
 
     inline bool IsUdp() override;
+
+    // The FakeUdp is always true in case keepalive fails
+    bool Alive() override;
 
 private:
     ConnInfo mInfo;

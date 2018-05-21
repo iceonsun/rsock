@@ -3,6 +3,7 @@
 //
 
 #include <algorithm>
+#include <sstream>
 #include "TcpInfo.h"
 #include "../util/enc.h"
 

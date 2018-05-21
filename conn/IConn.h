@@ -17,9 +17,11 @@ public:
 
     explicit IConn(const std::string &key);
 
+    IConn(const std::string &key, const std::string &printableStr);
+
     virtual ~IConn();
 
-    virtual void Close();
+    virtual int Close();
 
     virtual int Init();
 
@@ -31,35 +33,37 @@ public:
 
     virtual int OnRecv(ssize_t nread, const rbuf_t &rbuf);
 
-    void SetOutputCb(const IConnCb &cb) { mOutputCb = cb; };
+    void SetOutputCb(const IConnCb &cb) { mOutputCb = cb; }
 
-    void SetOnRecvCb(const IConnCb &cb) { mOnRecvCb = cb; };
+    void SetOnRecvCb(const IConnCb &cb) { mOnRecvCb = cb; }
 
-    virtual const std::string &Key() { return mKey; }
+    virtual const std::string Key() const { return mKey; }
 
     // if return reference, it may crush if subclass return string on allocated stack
-    virtual const std::string ToStr() { return mKey; }
+    virtual const std::string ToStr() const { return mPrintableStr; }
 
     // if no data send/input since last check, return true.
-    virtual void Flush(uint64_t now) { mStat.Flush(); };
+    virtual void Flush(uint64_t now) { mStat.Flush(); }
 
     virtual bool Alive() { return mStat.Alive(); }
 
     // empty implementation. for IGroup
-    virtual void AddConn(IConn *conn, const IConnCb &outCb, const IConnCb &recvCb) {}
+//    virtual void AddConn(IConn *conn, const IConnCb &outCb, const IConnCb &recvCb) {}
+//
+//    virtual bool RemoveConn(IConn *conn) { return false; }
+//
+//    virtual bool CloseConn(IConn *conn) { return false; }
+//
+//    virtual IConn *ConnOfKey(const std::string &key) { return nullptr; }
 
-    virtual bool RemoveConn(IConn *conn) { return false; }
-
-    virtual bool CloseConn(IConn *conn) { return false; }
-
-    virtual IConn *ConnOfKey(const std::string &key) { return nullptr; }
+    void SetPrintableStr(const std::string &str) { mPrintableStr = str; }
 
     IConn &operator=(const IConn &) = delete;
 
 protected:
-    void afterInput(ssize_t nread) { mStat.afterInput(nread); };
+    void afterInput(ssize_t nread) { mStat.afterInput(nread); }
 
-    void afterSend(ssize_t nread) { mStat.afterSend(nread); };
+    void afterSend(ssize_t nread) { mStat.afterSend(nread); }
 
 private:
     class DataStat {
@@ -68,9 +72,9 @@ private:
 
         void afterSend(ssize_t nread);
 
-        bool Alive() { return mAlive; };
+        bool Alive() { return mAlive; }
 
-        void Flush();;
+        void Flush();
 
     private:
         uint32_t prev_in = 0;
@@ -87,6 +91,7 @@ private:
     IConnCb mOnRecvCb = nullptr;
 
     std::string mKey;
+    std::string mPrintableStr;
 };
 
 

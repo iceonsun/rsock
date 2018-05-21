@@ -9,24 +9,36 @@
 #include "../util/rhash.h"
 #include "../util/rsutil.h"
 #include "SNetGroup.h"
-#include "../net/INetManager.h"
+#include "ServerNetManager.h"
 #include "SubGroup.h"
+#include "../src/service/ServiceUtil.h"
+#include "../src/service/NetService.h"
 
 using namespace std::placeholders;
 
 ServerGroup::ServerGroup(const std::string &groupId, uv_loop_t *loop, const struct sockaddr *target, IConn *btm,
-                         INetManager *netManager) : IGroup(groupId, btm) {
+                         ServerNetManager *netManager) : IGroup(groupId, btm) {
     mLoop = loop;
     mTarget = new_addr(target);
     mNetManager = netManager;
+    SetPrintableStr("ServerGroup");
 }
 
-void ServerGroup::Close() {
+int ServerGroup::Init() {
+    int nret = IGroup::Init();
+    if (nret) {
+        return nret;
+    }
+    return ServiceUtil::GetService<NetService *>(ServiceManager::NET_SERVICE)->RegisterObserver(this);
+}
+
+int ServerGroup::Close() {
     IGroup::Close();
     if (mTarget) {
         free(mTarget);
         mTarget = nullptr;
     }
+    return ServiceUtil::GetService<NetService *>(ServiceManager::NET_SERVICE)->UnRegisterObserver(this);
 }
 
 int ServerGroup::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
@@ -53,7 +65,8 @@ int ServerGroup::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
 IConn *ServerGroup::newConn(const std::string &groupId, uv_loop_t *loop, const struct sockaddr *target,
                             const ConnInfo &info) {
     auto fakenet = new SNetGroup(groupId, loop, mNetManager);
-    auto conn = new SubGroup(groupId, loop, target, fakenet, nullptr, GetDstAddrStr(info));
+    auto conn = new SubGroup(groupId, loop, target, fakenet, nullptr);
+    conn->SetPrintableStr(GetDstAddrStr(info));
     LOGD << "new group: " << GetDstAddrStr(info) << ", groupId: " << groupId;
     if (conn->Init()) {
         conn->Close();
@@ -65,7 +78,7 @@ IConn *ServerGroup::newConn(const std::string &groupId, uv_loop_t *loop, const s
     return conn;
 }
 
-bool ServerGroup::OnTcpFinOrRst(const TcpInfo &info) {
+void ServerGroup::OnTcpFinOrRst(const TcpInfo &info) {
     auto &conns = GetAllConns();
     for (auto &e: conns) {
         // if cast ot observer, there may crash. reinterpret_cast problem of multiple inheritance
@@ -73,16 +86,11 @@ bool ServerGroup::OnTcpFinOrRst(const TcpInfo &info) {
         auto *observer = dynamic_cast<SubGroup *>(e.second);
 
         assert(observer);
-        if (observer->OnTcpFinOrRst(info)) {
-            if (!e.second->Alive()) {
-                CloseConn(e.second);    // close and remove group if dead
-            }
-            return true;
+        if (observer->ProcessTcpFinOrRst(info)) {    // processed by subgroup
+//            if (!e.second->Alive()) {
+//                CloseConn(e.second);    // close and remove group if dead
+//            }
+            break;
         }
     }
-    return false;
-}
-
-const std::string ServerGroup::ToStr() {
-    return "ServerGroup";
 }

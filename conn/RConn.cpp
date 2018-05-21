@@ -10,15 +10,18 @@
 #include "../bean/TcpInfo.h"
 #include "../bean/EncHead.h"
 #include "../callbacks/RConnReset.h"
+#include "../src/util/KeyGenerator.h"
+#include "../src/service/ServiceUtil.h"
+#include "../src/service/NetService.h"
 
 using namespace std::placeholders;
 
 // todo: this will change if add some other headers
 const int RConn::HEAD_SIZE = EncHead::GetMinEncSize() + HASH_BUF_SIZE;
 
-RConn::RConn(const std::string &hashKey, const std::string &dev, uv_loop_t *loop, TcpAckPool *ackPool, int datalink,
+RConn::RConn(const std::string &hashKey, const std::string &dev, uv_loop_t *loop, TcpAckPool *ackPool,
              bool isServer) : IGroup("RConn", nullptr), mHashKey(hashKey) {
-    mRawTcp = new RawTcp(dev, loop, ackPool, datalink, isServer);
+    mRawTcp = new RawTcp(dev, loop, ackPool, isServer);
     mReset = new RConnReset(this);
 }
 
@@ -28,16 +31,16 @@ int RConn::Init() {
         return nret;
     }
     auto fn = std::bind(&IConn::Input, this, _1, _2);
-    
-     nret = mRawTcp->Init();
-	if (nret) {
-		return nret;
-	}
-	mRawTcp->SetOnRecvCb(fn);
-	return 0;
+
+    nret = mRawTcp->Init();
+    if (nret) {
+        return nret;
+    }
+    mRawTcp->SetOnRecvCb(fn);
+    return 0;
 }
 
-void RConn::Close() {
+int RConn::Close() {
     IGroup::Close();
     if (mReset) {
         mReset->Close();
@@ -50,6 +53,7 @@ void RConn::Close() {
         delete mRawTcp;
         mRawTcp = nullptr;
     }
+    return 0;
 }
 
 void RConn::AddUdpConn(IBtmConn *conn) {
@@ -73,7 +77,7 @@ int RConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
     } else if (!info->IsUdp()) {
         TcpInfo *tcpInfo = dynamic_cast<TcpInfo *>(info);
         if (tcpInfo && tcpInfo->HasCloseFlag()) {
-            Notify(*tcpInfo);
+            ServiceUtil::GetService<NetService *>(ServiceManager::NET_SERVICE)->NotifyTcpFinOrRst(*tcpInfo);
             return 0;
         }
     }
@@ -102,7 +106,7 @@ int RConn::Output(ssize_t nread, const rbuf_t &rbuf) {
 
         const rbuf_t buf = new_buf((p - base), base, rbuf.data);
         if (info->IsUdp()) {
-            auto key = ConnInfo::KeyForUdpBtm(info->src, info->sp);
+            auto key = KeyGenerator::StrForIntKey(KeyGenerator::KeyForConnInfo(*info));
             auto conn = ConnOfKey(key);
             if (conn) {
                 return conn->Send(buf.len, buf);

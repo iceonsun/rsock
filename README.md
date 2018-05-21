@@ -66,13 +66,7 @@ Parameter explanation:
 
 1. If rsock doesn't work, you have to check whether your NIC supoorts winpcap. And routers may also filter packets, especially when you use Windows.
 
-2. For Windows users, speed is far slow than rsock on mac/Linux. （500-800KB/s  during my test)
-
-3. For Windows users, you'd better pass --lcapIp arguments instead of -d. e.g. `--lcapIp=x.x.x.x` Where `x.x.x.x` is your Internet IP. Because it's hard to find NIC name for normal users.
-
-4. For Windows users, rsock doesn't behave very well like it does on Linux and Mac. e.g. On Mac/Linux, rsock can support to watch 1080P youtube video smoothly. For windows users, rsock can only support 720P youtube video.
-
-5. For Windows users, if your are running virtuam machines, you'd specify -d parameter as explained below.
+2. For Windows users, speed is far slow than rsock on mac/Linux. （500-800KB/s  during my test) e.g. On Mac/Linux, rsock can support to watch 1080P youtube video smoothly. For windows users, rsock can only support 720P youtube video.
 
 ### Exit
 
@@ -225,8 +219,6 @@ If servers run normally, try to restart kcptun client(turn shadowsocks on/off, t
 ### TODO
 
 1. Refactor code.
-
-1. Auto detect network change
 
 1. Add randomize port listening.
 

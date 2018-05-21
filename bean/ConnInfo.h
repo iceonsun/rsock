@@ -30,15 +30,7 @@ struct ConnInfo {
 
     virtual const char *Decode(const char *buf, int len);
 
-    const char *DecodeBase(const char *buf, int len);;
-
-    static std::string BuildKey(const ConnInfo &info);
-
-    static std::string KeyForUdpBtm(uint32_t src, uint16_t sp);
-
-    static std::string BuildConvKey(uint32_t dst, uint32_t conv);
-
-    static std::string BuildAddrKey(const sockaddr *addr);
+    const char *DecodeBase(const char *buf, int len);
 
     virtual std::string ToStr() const;
 

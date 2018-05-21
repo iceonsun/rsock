@@ -3,16 +3,20 @@
 //
 
 #include "CNetGroup.h"
-#include "../bean/ConnInfo.h"
+#include "../src/service/RouteService.h"
+#include "../src/service/ServiceUtil.h"
 
 CNetGroup::CNetGroup(const std::string &groupId, uv_loop_t *loop) : INetGroup(groupId, loop) {}
 
-INetConn *CNetGroup::CreateNetConn(const std::string &key, const ConnInfo *info) {
+INetConn *CNetGroup::CreateNetConn(IntKeyType key, const ConnInfo *info) {
     return nullptr;
 }
 
-void CNetGroup::AddNetConn(INetConn *conn) {
-    auto key = INetConn::HashKey(*conn->GetInfo());
-    conn->SetIntKey(key);
-    INetGroup::AddNetConn(conn);
+int CNetGroup::Send(ssize_t nread, const rbuf_t &rbuf) {
+    int n = INetGroup::Send(nread, rbuf);
+    if (ERR_NO_CONN == n) { // no connection
+        auto *service = ServiceUtil::GetService<RouteService*>(ServiceManager::ROUTE_SERVICE);
+        service->CheckNetworkStatusDelayed();
+    }
+    return n;
 }

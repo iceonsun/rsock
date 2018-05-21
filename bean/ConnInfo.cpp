@@ -4,37 +4,10 @@
 
 #include <sstream>
 #include <cassert>
-#include "os.h"
 #include "ConnInfo.h"
 #include "../util/enc.h"
 #include "../util/rsutil.h"
 #include <algorithm>
-#include <rscomm.h>
-
-// cannot use conv as part of key!!!
-std::string ConnInfo::BuildKey(const ConnInfo &info) {
-    std::ostringstream out;
-    if (info.IsUdp()) {
-        out << "udp:";
-    } else {
-        out << "tcp:";
-    }
-    out << InAddr2Ip({info.src}) << ":" << info.sp << "-";
-    out << InAddr2Ip({info.dst}) << ":" << info.dp;
-    return out.str();
-}
-
-std::string ConnInfo::KeyForUdpBtm(uint32_t src, uint16_t sp) {
-    std::ostringstream out;
-    out << "udp:" << InAddr2Ip({src}) << ":" << sp;
-    return out.str();
-}
-
-std::string ConnInfo::BuildConvKey(uint32_t dst, uint32_t conv) {
-    std::ostringstream out;
-    out << "conv:" << InAddr2Ip({dst}) << ":" << conv;
-    return out.str();
-}
 
 char *ConnInfo::Encode(char *buf, int len) const {
     if (len < sizeof(*this)) {
@@ -58,25 +31,11 @@ const char *ConnInfo::Decode(const char *buf, int len) {
     return p;
 }
 
-// use port
-std::string ConnInfo::BuildAddrKey(const struct sockaddr *addr) {
-    if (addr->sa_family == AF_INET) {
-        struct sockaddr_in *addr4 = (struct sockaddr_in *) addr;
-        std::ostringstream out;
-        out << InAddr2Ip(addr4->sin_addr) << ":" << ntohs(addr4->sin_port);
-        return out.str();
-    } else if (addr->sa_family == AF_UNIX) {
-        struct sockaddr_un *un = (struct sockaddr_un *) addr;
-        return un->sun_path;
-    }
-    return "";
-}
-
 std::string ConnInfo::ToStr() const {
     std::ostringstream out;
     out << (IsUdp() ? "udp" : "tcp") << ":";
-    out << "src:" << InAddr2Ip({src}) << ", sp:" << sp;
-    out << ", dst:" << InAddr2Ip({dst}) << ", dp: " << dp;
+    out << "src:" << InAddr2Ip(src) << ", sp:" << sp;
+    out << ", dst:" << InAddr2Ip(dst) << ", dp: " << dp;
     return out.str();
 }
 

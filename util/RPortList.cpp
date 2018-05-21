@@ -41,7 +41,7 @@ const RPortList::PortList &RPortList::GetRawList() {
     return mRawList;
 }
 
-bool RPortList::valid() {
+bool RPortList::valid() const {
     return mValid;
 }
 

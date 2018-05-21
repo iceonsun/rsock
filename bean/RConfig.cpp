@@ -15,6 +15,7 @@
 #include "../util/rhash.h"
 #include "FdUtil.h"
 #include "../cap/cap_util.h"
+#include "../src/singletons/RouteManager.h"
 
 using namespace args;
 using namespace json11;
@@ -55,8 +56,8 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
                                              "(e.g.3000,3001,4000-4050. No blank spaces or other characters allowed)",
                                     {'p', "ports"});
     ValueFlag<uint32_t> duration(opt, "",
-                                 "Interval(sec) to invalid connection. Client need to set to same value with server. "
-                                 "(default 30s. min: 10s, max: 60s.)", {"duration"});
+                                 "Interval(sec) to invalidate connection. Client need to set to same value with server. "
+                                 "(default 10m. min: 10, max: 6000.)", {"duration"});
     ValueFlag<std::string> key(opt, "HashKey", "Key to check validation of packet. (default hello1235)", {"hash"});
     ValueFlag<std::string> type(opt, "tcp|udp|all",
                                 "Type used to communicate with server. tcp for tcp only mode, udp for udp only mode. "
@@ -69,7 +70,7 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
     args::ValueFlag<uint16_t> cap_timeout(opt, "", "pcap timeout(ms). > 0 and <= 50", {"cap_timeout"});
 
     args::ValueFlag<int> keepAlive(opt, "keepalive interval",
-                                   "interval used to send keepalive request. default 5s. no use right know",
+                                   "interval used to send keepalive request. default 2s for client, 4s for server.",
                                    {"keepalive"});
     try {
         parser.ParseCLI(argc, argv);
@@ -83,11 +84,21 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
                 }
                 break;
             }
+
+            if (targetAddr) {
+                if (!parseAddr(targetAddr.Get(), param.targetIp, param.targetPort, is_server) ||
+                    !ValidIp4(param.targetIp)) {
+                    throw args::Error("Unable to parse target address: " + targetAddr.Get());
+                }
+            } else {
+                throw args::Error("You must specify target address.");
+            }
+
             if (dev) {
                 param.dev = dev.Get();
             } else {
                 if (!selfCapIp) {
-                    int nret = DefaultDev(param.dev);
+                    int nret = RouteManager::GetInstance()->GetWanInfo(param.dev, param.selfCapIp);
                     if (nret || param.dev.empty()) {
                         throw args::Error("unable to find default device");
                     }
@@ -120,16 +131,8 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
                 throw args::Error("For client you must specify local listening udp address. e.g -l 127.0.0.1:30000");
             }
 
-            if (targetAddr) {
-                if (!parseAddr(targetAddr.Get(), param.targetIp, param.targetPort, is_server)) {
-                    throw args::Error("Unable to parse target address: " + targetAddr.Get());
-                }
-            } else {
-                throw args::Error("You must specify target address.");
-            }
-
             if (duration) {
-                param.conn_duration_sec = duration.Get();
+                param.appKeepAliveSec = duration.Get();
             }
 
             if (key) {
@@ -160,9 +163,9 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
             }
 
             if (keepAlive) {
-                this->param.keepAliveInterval = keepAlive.Get();
-                if (this->param.keepAliveInterval <= 0) {
-                    throw args::Error("keepalive must > 0: " + std::to_string(this->param.keepAliveInterval));
+                this->param.keepAliveIntervalSec = keepAlive.Get();
+                if (this->param.keepAliveIntervalSec <= 0) {
+                    throw args::Error("keepalive must > 0: " + std::to_string(this->param.keepAliveIntervalSec));
                 }
             }
         } while (false);
@@ -221,7 +224,7 @@ void RConfig::CheckValidation(const RConfig &c) {
     assert((p.type == OM_PIPE_TCP) || (p.type == OM_PIPE_UDP) || (p.type == OM_PIPE_ALL));
     assert(p.cap_timeout > 0 && p.cap_timeout < 50);
 
-    assert(p.keepAliveInterval > 0);
+    assert(p.keepAliveIntervalSec > 0);
 
     if (!DevIpMatch(p.dev, p.selfCapIp)) {
         char buf[BUFSIZ] = {0};
@@ -230,8 +233,8 @@ void RConfig::CheckValidation(const RConfig &c) {
         throw args::Error(buf);
     }
 
-    if (p.conn_duration_sec < 10 || p.conn_duration_sec > 60) {
-        throw args::Error("Duration must be in range [10, 60]");
+    if (p.appKeepAliveSec < 10 || p.appKeepAliveSec > 6000) {
+        throw args::Error("Duration must be in range [10, 6000]");
     }
 }
 
@@ -307,7 +310,7 @@ void RConfig::parseJsonString(RConfig &c, const std::string &content, std::strin
         }
 
         if (o["duration"].is_number()) {
-            p.conn_duration_sec = o["duration"].int_value();
+            p.appKeepAliveSec = o["duration"].int_value();
         }
 
         if (o["hash"].is_string()) {
@@ -327,7 +330,7 @@ void RConfig::parseJsonString(RConfig &c, const std::string &content, std::strin
         }
 
         if (o["keepalive"].is_number()) {
-            p.keepAliveInterval = o["keepalive"].int_value();
+            p.keepAliveIntervalSec = o["keepalive"].int_value();
         }
     }
 }
@@ -348,10 +351,10 @@ json11::Json RConfig::to_json() const {
                     {"ports",       RPortList::ToString(param.capPorts)},
                     {"taddr",       isServer ? (param.targetIp + ":" + std::to_string(param.targetPort))
                                              : param.targetIp},
-                    {"duration",    (int) param.conn_duration_sec},
+                    {"duration",    (int) param.appKeepAliveSec},
                     {"type",        strOfType(param.type)},
                     {"hash",        param.hashKey},
-                    {"keepalive",   param.keepAliveInterval},
+                    {"keepalive",   param.keepAliveIntervalSec},
                     {"cap_timeout", param.cap_timeout},
             }},
     };
@@ -418,7 +421,7 @@ std::string RConfig::strOfType(int type) {
     }
 }
 
-bool RConfig::Inited() {
+bool RConfig::Inited() const {
     return mInited;
 }
 

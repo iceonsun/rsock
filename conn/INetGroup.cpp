@@ -9,6 +9,9 @@
 #include "../bean/ConnInfo.h"
 #include "../bean/TcpInfo.h"
 #include "DefaultFakeConn.h"
+#include "../src/util/KeyGenerator.h"
+#include "INetConnErrorHandler.h"
+#include "../src/singletons/HandlerUtil.h"
 
 using namespace std::placeholders;
 
@@ -24,7 +27,7 @@ int INetGroup::Init() {
     }
 
     auto cb = std::bind(&INetGroup::handleMessage, this, std::placeholders::_1);
-    mHandler = Handler::NewHandler(mLoop, cb);
+    mHandler = HandlerUtil::ObtainHandler(cb);
 
     mDefaultFakeConn = new DefaultFakeConn();
     nret = mDefaultFakeConn->Init();
@@ -38,28 +41,32 @@ int INetGroup::Init() {
     return 0;
 }
 
-void INetGroup::Close() {
+int INetGroup::Close() {
     IGroup::Close();
-    mErrCb = nullptr;
+    mErrHandler = nullptr;
     mHandler = nullptr; // handler will automatically remove all pending messages and tasks
     if (mDefaultFakeConn) {
         mDefaultFakeConn->Close();
         delete mDefaultFakeConn;
         mDefaultFakeConn = nullptr;
     }
+    mConnMap.clear();   // netconn is cleared in mConnMap
+    return 0;
 }
 
 int INetGroup::Input(ssize_t nread, const rbuf_t &rbuf) {
     if (nread > 0) {
-        ConnInfo *info = static_cast<ConnInfo *>(rbuf.data);
-        auto key = ConnInfo::BuildKey(*info);
-        auto conn = ConnOfKey(key);
+        ConnInfo *info = static_cast<ConnInfo *>(rbuf.data);    // use EncHead::ConnKey();
+        assert(info);
+        assert(info->head);
+
+        auto key = info->head->ConnKey();
+        auto conn = ConnOfIntKey(key);
         if (!conn) {
-            auto netconn = CreateNetConn(key, info);
-            if (netconn) {
-                AddNetConn(netconn);
+            conn = CreateNetConn(key, info);
+            if (conn) {
+                AddNetConn(conn);
             }
-            conn = netconn;
         }
 
         if (conn) {
@@ -78,24 +85,48 @@ int INetGroup::Input(ssize_t nread, const rbuf_t &rbuf) {
 void INetGroup::AddNetConn(INetConn *conn) {
     auto out = std::bind(&IConn::Output, this, _1, _2);
     auto rcv = std::bind(&IConn::OnRecv, this, _1, _2);
-    LOGD << "Add INetConn: " << conn->Key();
-    auto err = std::bind(&INetGroup::childConnErrCb, this, _1, _2);
-    conn->SetOnErrCb(err);
+    LOGD << "Add INetConn: " << conn->ToStr();
     AddConn(conn, out, rcv);
+    mConnMap.emplace(conn->IntKey(), conn);
+    assert(mConnMap.size() == Size());
+}
+
+bool INetGroup::RemoveConn(IConn *conn) {
+    bool ok = IGroup::RemoveConn(conn);
+    auto c = dynamic_cast<INetConn *>(conn);
+    bool ok2 = mConnMap.erase(c->IntKey()) != 0;
+    assert(ok == ok2);
+    assert(mConnMap.size() == Size());
+    return ok;
 }
 
 int INetGroup::Send(ssize_t nread, const rbuf_t &rbuf) {
+    return doSend(nread, rbuf, 0);
+}
+
+int INetGroup::SendNetConnReset(ssize_t nread, const rbuf_t &rbuf, IntKeyType keyOfConnToReset) {
+    return doSend(nread, rbuf, keyOfConnToReset);
+}
+
+int INetGroup::doSend(ssize_t nread, const rbuf_t &rbuf, IntKeyType keyOfConnToReset) {
     if (nread > 0) {
         while (!mConns.empty()) {
             int n = rand() % mConns.size();
             auto it = mConns.begin();
             std::advance(it, n);
             if (it->second->Alive()) {
+                if (keyOfConnToReset != 0) {
+                    INetConn *conn = dynamic_cast<INetConn *>(it->second);
+                    if (conn->IntKey() == keyOfConnToReset) {
+                        LOGW << "Don't use this conn to send reset";
+                        continue;
+                    }
+                }
                 int n = it->second->Send(nread, rbuf);   // udp or tcp conn
                 afterSend(n);
                 return n;
             }
-            LOGW << "send, conn " << it->second->Key() << " is dead. Remove it now";
+            LOGW << "send, conn " << it->second->ToStr() << " is dead. Remove it now";
             childConnErrCb(dynamic_cast<INetConn *>(it->second), -1);
         }
         LOGE << "All conns are dead!!! Wait to reconnect";
@@ -106,7 +137,7 @@ int INetGroup::Send(ssize_t nread, const rbuf_t &rbuf) {
 
 void INetGroup::childConnErrCb(INetConn *conn, int err) {
     if (conn) {
-        LOGE << "remove conn " << conn->Key() << " err: " << err;
+        LOGE << "remove conn " << conn->ToStr() << " err: " << err;
         RemoveConn(conn);     // remove it here or in handler
         auto m = mHandler->ObtainMessage(MSG_CONN_ERR, conn);
         mHandler->RemoveMessage(m);
@@ -119,7 +150,7 @@ void INetGroup::handleMessage(const Handler::Message &message) {
         case MSG_CONN_ERR: {
             auto *conn = static_cast<INetConn *>(message.obj);
             assert(conn);
-            LOGE << "closing conn: " << conn->Key();
+            LOGE << "closing conn: " << conn->ToStr();
             ConnInfo *info = nullptr;
             ConnInfo *connInfo = conn->GetInfo();
             if (connInfo->IsUdp()) {
@@ -139,34 +170,25 @@ void INetGroup::handleMessage(const Handler::Message &message) {
     }
 }
 
-// todo: server should use method do deal with wrong conn
-void INetGroup::SetNetConnErrCb(const NetConnErrCb &cb) {
-    mErrCb = cb;
-}
-
-bool INetGroup::OnConnDead(IConn *conn) {
+void INetGroup::OnConnDead(IConn *conn) {
     INetConn *c = dynamic_cast<INetConn *>(conn);
     if (c) {
         childConnErrCb(c, -1);
-        return true;
     }
-    return false;
 }
 
 void INetGroup::netConnErr(const ConnInfo &info) {
-    if (mErrCb) {
-        mErrCb(info);
+    if (mErrHandler) {
+        mErrHandler->OnNetConnErr(info, -1);
     }
 }
 
 INetConn *INetGroup::ConnOfIntKey(IntKeyType key) {
-    auto &conns = GetAllConns();
-    for (auto &e: conns) {
-        INetConn *conn = dynamic_cast<INetConn *>(e.second);
-        assert(conn);
-        if (conn->IntKey() == key) {
-            return conn;
-        }
-    }
-    return nullptr;
+    assert(mConnMap.size() == Size());
+    auto it = mConnMap.find(key);
+    return (it != mConnMap.end()) ? it->second : nullptr;
+}
+
+void INetGroup::SetNetConnErrorHandler(INetConnErrorHandler *handler) {
+    mErrHandler = handler;
 }

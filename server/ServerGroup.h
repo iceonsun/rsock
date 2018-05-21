@@ -7,24 +7,24 @@
 
 
 #include "../conn/IGroup.h"
-#include "../callbacks/ITcpObserver.h"
+#include "../src/service/INetObserver.h"
 
 struct ConnInfo;
 
-class INetManager;
+class ServerNetManager;
 
-class ServerGroup : public IGroup, public ITcpObserver {
+class ServerGroup : public IGroup, public INetObserver {
 public:
     ServerGroup(const std::string &groupId, uv_loop_t *loop, const struct sockaddr *target, IConn *btm,
-                INetManager *netManager);
+                ServerNetManager *netManager);
 
     int OnRecv(ssize_t nread, const rbuf_t &rbuf) override;
 
-    void Close() override;
+    int Close() override;
 
-    bool OnTcpFinOrRst(const TcpInfo &info) override;
+    void OnTcpFinOrRst(const TcpInfo &info) override;
 
-    const std::string ToStr() override;
+    int Init() override;
 
 private:
     IConn *newConn(const std::string &groupId, uv_loop_t *loop, const struct sockaddr *target, const ConnInfo &info);
@@ -32,7 +32,7 @@ private:
 private:
     uv_loop_t *mLoop = nullptr;
     sockaddr *mTarget = nullptr;
-    INetManager *mNetManager = nullptr;
+    ServerNetManager *mNetManager = nullptr;
 };
 
 

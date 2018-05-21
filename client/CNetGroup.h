@@ -12,9 +12,9 @@ class CNetGroup : public INetGroup {
 public:
     CNetGroup(const std::string &groupId, uv_loop_t *loop);
 
-    INetConn *CreateNetConn(const std::string &key, const ConnInfo *info) override;
+    INetConn *CreateNetConn(IntKeyType key, const ConnInfo *info) override;
 
-    void AddNetConn(INetConn *conn) override;
+    int Send(ssize_t nread, const rbuf_t &rbuf) override;
 };
 
 

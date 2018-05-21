@@ -39,7 +39,7 @@ int IGroup::Init() {
     return 0;
 }
 
-void IGroup::Close() {
+int IGroup::Close() {
     IConn::Close();
     if (mBtm) {
         mBtm->Close();
@@ -53,6 +53,7 @@ void IGroup::Close() {
         }
         mConns.clear();
     }
+    return 0;
 }
 
 bool IGroup::RemoveConn(IConn *conn) {
@@ -89,9 +90,10 @@ void IGroup::Flush(uint64_t now) {
     // remove dead conns first
     for (auto &e: fails) {
         LOGV << "conn " << e.second->ToStr() << " is dead";
-        if (!OnConnDead(e.second)) {
-            CloseConn(e.second);
-        }
+        OnConnDead(e.second);
+//        if (!OnConnDead(e.second)) {
+//            CloseConn(e.second);
+//        }
     }
 
     if (mConns.empty()) {
@@ -102,6 +104,10 @@ void IGroup::Flush(uint64_t now) {
     for (auto &e: mConns) {
         e.second->Flush(now);
     }
+}
+
+void IGroup::OnConnDead(IConn *conn) {
+    CloseConn(conn);
 }
 
 bool IGroup::Alive() {
@@ -119,7 +125,7 @@ std::map<std::string, IConn *> &IGroup::GetAllConns() {
 
 bool IGroup::CloseConn(IConn *conn) {
     if (conn) {
-        LOGD << "closing conn " << conn->Key();
+        LOGD << "closing conn " << conn->ToStr();
         assert(conn->Key() != Key());
         assert(conn == ConnOfKey(conn->Key()));
         RemoveConn(conn);
@@ -128,4 +134,8 @@ bool IGroup::CloseConn(IConn *conn) {
         return true;
     }
     return false;
+}
+
+int IGroup::Size() const {
+    return mConns.size();
 }

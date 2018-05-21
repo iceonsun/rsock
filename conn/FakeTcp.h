@@ -11,7 +11,10 @@
 
 class FakeTcp : public INetConn {
 public:
-    FakeTcp(uv_stream_t *tcp, const std::string &key);
+    /*
+     * @param info The info fetched from TcpAckPool. Don't forget to FakeTcp.seq and FakeTcp.ack with the info.
+     */
+    FakeTcp(uv_tcp_t *tcp, IntKeyType key, const TcpInfo &info);
 
     int Init() override;
 
@@ -19,11 +22,9 @@ public:
 
     int OnRecv(ssize_t nread, const rbuf_t &buf) override;
 
-    void Close() override;
+    int Close() override;
 
     ConnInfo *GetInfo() override;
-
-    bool Alive() override;
 
     void SetISN(uint32_t isn);
 
@@ -39,7 +40,6 @@ private:
 private:
     uv_stream_t *mTcp = nullptr;
     TcpInfo mInfo;
-    bool mAlive = true;
 };
 
 #endif //RSOCK_FAKETCP_H

@@ -7,16 +7,16 @@
 
 
 #include "../conn/INetGroup.h"
-class INetManager;
+class ServerNetManager;
 
 class SNetGroup : public INetGroup {
 public:
-    SNetGroup(const std::string &groupId, uv_loop_t *loop, INetManager *netManager);
+    SNetGroup(const std::string &groupId, uv_loop_t *loop, ServerNetManager *netManager);
 
-    INetConn *CreateNetConn(const std::string &key, const ConnInfo *info) override;
+    INetConn *CreateNetConn(IntKeyType key, const ConnInfo *info) override;
 
 private:
-    INetManager *mNetManager = nullptr;
+    ServerNetManager *mNetManager = nullptr;
 };
 
 

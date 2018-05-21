@@ -13,22 +13,32 @@
 #include "../net/TcpAckPool.h"
 #include "../src/sync/SyncConnFactory.h"
 #include "../src/sync/ISyncConn.h"
+#include "../cap/CapUtil.h"
+#include "../src/service/RouteService.h"
+#include "../src/singletons/ServiceManager.h"
+#include "../src/service/ServiceUtil.h"
 
 // RawConn has key of nullptr to expose errors as fast as it can if any.
-RawTcp::RawTcp(const std::string &dev, uv_loop_t *loop, TcpAckPool *ackPool, int datalinkType, bool server)
-        : IConn("RawTcp"), mDatalink(datalinkType), mLoop(loop), mDev(dev) {
+RawTcp::RawTcp(const std::string &dev, uv_loop_t *loop, TcpAckPool *ackPool, bool server)
+        : IConn("RawTcp"), mLoop(loop), mDev(dev) {
     mTcpAckPool = ackPool;
     mIsServer = server;
 }
 
 int RawTcp::Init() {
     IConn::Init();
-    char err[LIBNET_ERRBUF_SIZE] = {0};
-    mTcpNet = libnet_init(LIBNET_RAW4, mDev.c_str(), err);
+
+    ServiceUtil::GetService<RouteService *>(ServiceManager::ROUTE_SERVICE)->RegisterObserver(this);
+
+    mDatalink = CapUtil::DataLink(mDev);
+    mTcpNet = newLibnet(mDev);
     if (!mTcpNet) {
-        LOGE << "failed to init libnet: " << err;
         return -1;
+    } else {
+        LOGV << "dev: " << mDev;
     }
+    mIp4TcpTag = 0;
+    mTcpTag = 0;
 
     mSyncConn = SyncConnFactory::CreateSysSyncConn(mLoop, RawTcp::syncInput, this);
 
@@ -40,8 +50,19 @@ int RawTcp::Init() {
     return 0;
 }
 
-void RawTcp::Close() {
+libnet_t *RawTcp::newLibnet(const std::string &dev) {
+    char err[LIBNET_ERRBUF_SIZE] = {0};
+    auto l = libnet_init(LIBNET_RAW4, dev.c_str(), err);
+    if (!l) {
+        LOGE << "libnet_init failed: " << err;
+    }
+    return l;
+}
+
+int RawTcp::Close() {
     IConn::Close();
+
+    ServiceUtil::GetService<RouteService *>(ServiceManager::ROUTE_SERVICE)->UnRegisterObserver(this);
 
     if (mSyncConn) {
         mSyncConn->Close();
@@ -53,15 +74,56 @@ void RawTcp::Close() {
         libnet_destroy(mTcpNet);
         mTcpNet = nullptr;
     }
+
+    return 0;
+}
+
+void RawTcp::OnNetConnected(const std::string &ifName, const std::string &ip) {
+    LOGV << "newDev: " << ifName << ", ip: " << ip;
+    mDev = ifName;
+
+    libnet_t *l = newLibnet(ifName);
+    if (l) {
+        int link = CapUtil::DataLink(ifName);
+        if (link != mDatalink) {
+            LOGD << "datalink type changed!";
+            mDatalink = link;
+        }
+
+        if (mTcpNet) {
+            libnet_destroy(mTcpNet);
+        }
+        mTcpNet = l;
+        mIp4TcpTag = 0;
+        mTcpTag = 0;
+    }
+}
+
+void RawTcp::OnNetDisconnected() {
+    if (mTcpNet) {  // stop sending
+        libnet_destroy(mTcpNet);
+        mIp4TcpTag = 0;
+        mTcpTag = 0;
+        mTcpNet = nullptr;
+    }
 }
 
 int RawTcp::Output(ssize_t nread, const rbuf_t &rbuf) {
     if (nread >= 0) {
-        TcpInfo *info = static_cast<TcpInfo *>(rbuf.data);
-        assert(info);
+        int n = -1;
+        if (mTcpNet) {
+            TcpInfo *info = static_cast<TcpInfo *>(rbuf.data);
+            assert(info);
 
-        return SendRawTcp(mTcpNet, info->src, info->sp, info->dst, info->dp, info->seq, info->ack,
-                          reinterpret_cast<const uint8_t *>(rbuf.base), nread, mIpId++, mTcp, mIpForTcp, info->flag);
+            n = SendRawTcp(mTcpNet, info->src, info->sp, info->dst, info->dp, info->seq, info->ack,
+                           reinterpret_cast<const uint8_t *>(rbuf.base), nread, mIpId++, mTcpTag, mIp4TcpTag,
+                           info->flag);
+        }
+
+        if (!mTcpNet || n < 0) {
+            ServiceUtil::GetService<RouteService *>(ServiceManager::ROUTE_SERVICE)->CheckNetworkStatusDelayed();
+        }
+        return n;
     }
 
     return nread;

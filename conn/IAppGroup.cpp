@@ -4,32 +4,24 @@
 
 #include <cassert>
 #include <plog/Log.h>
-#include "IGroup.h"
 #include "IAppGroup.h"
 #include "INetGroup.h"
 #include "../bean/TcpInfo.h"
 #include "../callbacks/ConnReset.h"
 #include "../util/rhash.h"
 #include "../util/rsutil.h"
-#include "../callbacks/NetConnKeepAliveHelper.h"
-#include "../callbacks/ResetHelper.h"
+#include "../callbacks/NetConnKeepAlive.h"
+#include "../src/util/KeyGenerator.h"
+#include "../src/singletons/ConfManager.h"
+#include "../bean/RConfig.h"
 
 using namespace std::placeholders;
 
-IAppGroup::IAppGroup(const std::string &groupId, INetGroup *fakeNetGroup, IConn *btm, bool activeKeepAlive,
-                     const std::string &printableStr)
-        : IGroup(groupId, btm) {
-    mActive = activeKeepAlive;
+IAppGroup::IAppGroup(const std::string &groupId, INetGroup *fakeNetGroup, IConn *btm) : IGroup(groupId, btm) {
     mFakeNetGroup = fakeNetGroup;
     assert(mFakeNetGroup);
 
     mHead.SetIdBuf(Str2IdBuf(groupId));
-
-    if (printableStr.empty()) {
-        mPrintableStr = groupId;
-    } else {
-        mPrintableStr = printableStr + ", groupId: " + groupId;
-    }
 }
 
 int IAppGroup::Init() {
@@ -48,29 +40,31 @@ int IAppGroup::Init() {
     auto rcv = std::bind(&IConn::OnRecv, this, _1, _2);
     mFakeNetGroup->SetOnRecvCb(rcv);
 
-    mResetHelper = new ResetHelper(this);
+    mResetHelper = new ConnReset(this);
 
-    mKeepAliveHelper = new NetConnKeepAliveHelper(this, mFakeNetGroup->GetLoop(), mActive);
-    return 0;
+    mKeepAlive = new NetConnKeepAlive(this, mResetHelper,
+                                      ConfManager::GetInstance()->Conf().param.keepAliveIntervalSec * 1000);
+    return mKeepAlive->Init();
 }
 
-void IAppGroup::Close() {
+int IAppGroup::Close() {
     IGroup::Close();
     if (mFakeNetGroup) {
         mFakeNetGroup->Close();
         delete mFakeNetGroup;
         mFakeNetGroup = nullptr;
     }
-    if (mKeepAliveHelper) {
-        mKeepAliveHelper->Close();
-        delete mKeepAliveHelper;
-        mKeepAliveHelper = nullptr;
+    if (mKeepAlive) {
+        mKeepAlive->Close();
+        delete mKeepAlive;
+        mKeepAlive = nullptr;
     }
     if (mResetHelper) {
         mResetHelper->Close();
         delete mResetHelper;
         mResetHelper = nullptr;
     }
+    return 0;
 }
 
 int IAppGroup::Send(ssize_t nread, const rbuf_t &rbuf) {
@@ -88,13 +82,13 @@ int IAppGroup::Input(ssize_t nread, const rbuf_t &rbuf) {
         if (n > 0) {
             afterInput(n);
         } else if (INetGroup::ERR_NO_CONN == n) {
-            sendNetConnRst(*info, head->ConnKey());
+            mResetHelper->SendNetConnRst(*info, head->ConnKey());
         }
         return n;
     } else if (EncHead::IsRstFlag(head->Cmd())) {
-        return mResetHelper->GetReset()->Input(head->Cmd(), nread, rbuf);
+        return mResetHelper->Input(head->Cmd(), nread, rbuf);
     } else if (EncHead::IsKeepAliveFlag(head->Cmd())) {
-        return mKeepAliveHelper->GetIKeepAlive()->Input(head->Cmd(), nread, rbuf);
+        return mKeepAlive->Input(head->Cmd(), nread, rbuf);
     } else {
         LOGD << "unrecognized cmd: " << head->Cmd();
     }
@@ -106,8 +100,19 @@ void IAppGroup::Flush(uint64_t now) {
     mFakeNetGroup->Flush(now);
 }
 
-bool IAppGroup::OnTcpFinOrRst(const TcpInfo &info) {
-    return onSelfNetConnRst(info);
+bool IAppGroup::ProcessTcpFinOrRst(const TcpInfo &info) {
+    auto key = KeyGenerator::KeyForConnInfo(info);
+    auto conn = mFakeNetGroup->ConnOfIntKey(key);
+    INetConn *netConn = dynamic_cast<INetConn *>(conn);
+    // still in container.
+    // conn state:
+    //          1. dead, in container, this will process it;
+    //          2. dead, not in container: been processed in INetGroup.Send
+    if (netConn) {
+        auto intKey = netConn->IntKey();
+        return mResetHelper->OnRecvNetConnRst(info, intKey) == 0;
+    }
+    return false;
 }
 
 //bool IAppGroup::OnUdpRst(const ConnInfo &info) {
@@ -115,51 +120,14 @@ bool IAppGroup::OnTcpFinOrRst(const TcpInfo &info) {
 //}
 
 bool IAppGroup::Alive() {
-    return mFakeNetGroup->Alive() && IGroup::Alive();  // if no data flows it'll report dead
-}
-
-bool IAppGroup::onSelfNetConnRst(const ConnInfo &info) {
-    auto key = ConnInfo::BuildKey(info);
-    auto conn = mFakeNetGroup->ConnOfKey(key);
-    if (conn) {
-        LOGV << "Close conn " << key;
-        mFakeNetGroup->CloseConn(conn);
-        return true;
+    if (Size()) {
+        return mFakeNetGroup->Alive() && IGroup::Alive();  // if no data flows it'll report dead
     }
-    return false;
+    return mFakeNetGroup->Alive();
 }
 
 int IAppGroup::SendConvRst(uint32_t conv) {
-    return mResetHelper->GetReset()->SendConvRst(conv);
-}
-
-int IAppGroup::sendNetConnRst(const ConnInfo &src, IntKeyType key) {
-    return mResetHelper->GetReset()->SendNetConnRst(src, key);
-}
-
-int IAppGroup::onPeerNetConnRst(const ConnInfo &src, uint32_t key) {
-    auto conn = mFakeNetGroup->ConnOfIntKey(key);
-    if (conn) {
-        mFakeNetGroup->CloseConn(conn);
-        return 0;
-    } else {
-        LOGD << "receive rst, but not conn for intKey: " << key;
-    }
-    return -1;
-}
-
-int IAppGroup::onPeerConvRst(const ConnInfo &src, uint32_t rstConv) {
-    auto key = ConnInfo::BuildConvKey(src.dst, rstConv);
-    auto conn = ConnOfKey(key);
-    if (conn) {
-        CloseConn(conn);
-        return 0;
-    }
-    return -1;
-}
-
-const std::string IAppGroup::ToStr() {
-    return mPrintableStr;
+    return mResetHelper->SendConvRst(conv);
 }
 
 int IAppGroup::doSendCmd(uint8_t cmd, ssize_t nread, const rbuf_t &rbuf) {
@@ -170,12 +138,10 @@ int IAppGroup::doSendCmd(uint8_t cmd, ssize_t nread, const rbuf_t &rbuf) {
     return n;
 }
 
-int IAppGroup::onNetconnDead(uint32_t key) {
-    auto conn = mFakeNetGroup->ConnOfIntKey(key);
-    if (conn) {
-        mFakeNetGroup->OnConnDead(conn);
-    }
-    return 0;
+int IAppGroup::SendNetConnReset(ssize_t nread, const rbuf_t &rbuf, IntKeyType keyOfConnToReset) {
+    mHead.SetCmd(EncHead::TYPE_NETCONN_RST);
+    const rbuf_t buf = new_buf(nread, rbuf, &mHead);
+    int n = mFakeNetGroup->SendNetConnReset(nread, buf, keyOfConnToReset);
+    mHead.SetCmd(EncHead::TYPE_DATA);
+    return n;
 }
-
-

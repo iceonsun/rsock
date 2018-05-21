@@ -15,27 +15,37 @@ class IGroup : public IConn {
 public:
     explicit IGroup(const std::string &groupId, IConn *btm);
 
-    IConn *ConnOfKey(const std::string &key) override;
+    virtual IConn *ConnOfKey(const std::string &key);
 
-    void AddConn(IConn *conn, const IConnCb &outCb, const IConnCb &recvCb) override;
+    virtual void AddConn(IConn *conn, const IConnCb &outCb, const IConnCb &recvCb);
 
     // will not close conn or delete conn
-    bool RemoveConn(IConn *conn) override;
+    virtual bool RemoveConn(IConn *conn);
+
+    /*
+     * Detect error during flush.
+     * Close the conn by default
+     */
+    virtual void OnConnDead(IConn *conn);
+
+    /*
+     * Remove and then close the conn.
+     */
+    virtual bool CloseConn(IConn *conn);
 
     int Init() override;
 
-    void Close() override;
+    int Close() override;
 
     void Flush(uint64_t now) override;
 
     std::map<std::string, IConn *> &GetAllConns();
 
+    int Size() const;
+
     // if false, parent will continue to process. if true, parent will not process
-    virtual bool OnConnDead(IConn *conn) { return false; }
 
     bool Alive() override;
-
-    bool CloseConn(IConn *conn) override;
 
 protected:
     std::map<std::string, IConn *> mConns;
