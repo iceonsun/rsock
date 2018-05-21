@@ -8,7 +8,6 @@
 #include "IGroup.h"
 #include "../callbacks/ITcpObserver.h"
 #include "../bean/EncHead.h"
-#include "../callbacks/INetConnKeepAlive.h"
 #include "../callbacks/IReset.h"
 
 class INetGroup;
@@ -16,6 +15,8 @@ class INetGroup;
 class INetConn;
 
 struct ConnInfo;
+
+class INetConnKeepAlive;
 
 
 class IAppGroup : public IGroup, public ITcpObserver {
@@ -70,7 +71,7 @@ private:
     bool mActive = true;
     std::string mPrintableStr;
     IReset::IRestHelper *mResetHelper = nullptr;
-    INetConnKeepAlive::INetConnAliveHelper *mKeepAliveHelper = nullptr;
+    INetConnKeepAlive  *mKeepAlive = nullptr;
     INetGroup *mFakeNetGroup = nullptr;
 };
 

@@ -14,27 +14,6 @@ struct ConnInfo;
 
 class INetConnKeepAlive {
 public:
-    class INetConnAliveHelper {
-    public:
-        virtual ~INetConnAliveHelper() = default;
-
-        virtual void Close() = 0;
-
-        virtual int OnSendResponse(uint8_t cmd, ssize_t nread, const rbuf_t &rbuf) = 0;
-
-        virtual int OnRecvResponse(IntKeyType connKey) = 0;
-
-        virtual int OnSendRequest(uint8_t cmd, ssize_t nread, const rbuf_t &rbuf) = 0;
-
-        virtual INetConn *ConnOfIntKey(IntKeyType connKey) = 0;
-
-        virtual int SendNetConnRst(const ConnInfo &src, IntKeyType connKey) = 0;
-
-        virtual INetConnKeepAlive *GetIKeepAlive() const = 0;
-
-        virtual int RemoveRequest(IntKeyType connKey) = 0;
-    };
-
     using IntConnKeyType = uint32_t;
 
     virtual ~INetConnKeepAlive() = default;
@@ -49,7 +28,7 @@ public:
 
     virtual void Close() = 0;
 
-
+    virtual int OnRecvResponse(IntKeyType connKey) = 0;
 };
 
 #endif //RSOCK_IKEEPALIVE_H

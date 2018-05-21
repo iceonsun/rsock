@@ -11,8 +11,8 @@
 #include "../callbacks/ConnReset.h"
 #include "../util/rhash.h"
 #include "../util/rsutil.h"
-#include "../callbacks/NetConnKeepAliveHelper.h"
 #include "../callbacks/ResetHelper.h"
+#include "../callbacks/NetConnKeepAlive.h"
 
 using namespace std::placeholders;
 
@@ -50,7 +50,7 @@ int IAppGroup::Init() {
 
     mResetHelper = new ResetHelper(this);
 
-    mKeepAliveHelper = new NetConnKeepAliveHelper(this, mFakeNetGroup->GetLoop(), mActive);
+    mKeepAlive = new NetConnKeepAlive(this, mFakeNetGroup->GetLoop(), mActive);
     return 0;
 }
 
@@ -61,10 +61,10 @@ void IAppGroup::Close() {
         delete mFakeNetGroup;
         mFakeNetGroup = nullptr;
     }
-    if (mKeepAliveHelper) {
-        mKeepAliveHelper->Close();
-        delete mKeepAliveHelper;
-        mKeepAliveHelper = nullptr;
+    if (mKeepAlive) {
+        mKeepAlive->Close();
+        delete mKeepAlive;
+        mKeepAlive = nullptr;
     }
     if (mResetHelper) {
         mResetHelper->Close();
@@ -94,7 +94,7 @@ int IAppGroup::Input(ssize_t nread, const rbuf_t &rbuf) {
     } else if (EncHead::IsRstFlag(head->Cmd())) {
         return mResetHelper->GetReset()->Input(head->Cmd(), nread, rbuf);
     } else if (EncHead::IsKeepAliveFlag(head->Cmd())) {
-        return mKeepAliveHelper->GetIKeepAlive()->Input(head->Cmd(), nread, rbuf);
+        return mKeepAlive->Input(head->Cmd(), nread, rbuf);
     } else {
         LOGD << "unrecognized cmd: " << head->Cmd();
     }
