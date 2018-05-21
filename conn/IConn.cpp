@@ -49,10 +49,8 @@ int IConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
 }
 
 IConn::~IConn() {
-#ifndef RSOCK_NNDEBUG
-    assert(mOutputCb == nullptr);
+    assert(mOutputCb == nullptr);   // must call Close() manually
     assert(mOnRecvCb == nullptr);
-#endif
 }
 
 void IConn::DataStat::Flush() {
