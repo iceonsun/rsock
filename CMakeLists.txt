@@ -11,7 +11,7 @@ include_directories(./src/os/include)
 set(SOURCE_FILES
         src/rcommon.c src/ISockApp.cpp
         bean/RConfig.cpp bean/ConnInfo.cpp bean/TcpInfo.cpp bean/EncHead.cpp
-        callbacks/ITcpObserver.h callbacks/ITcpInformer.cpp callbacks/RConnReset.cpp callbacks/INetConnKeepAlive.h callbacks/NetConnKeepAlive.h
+        callbacks/ITcpInformer.cpp callbacks/RConnReset.cpp callbacks/INetConnKeepAlive.h
         callbacks/IReset.h callbacks/NetConnKeepAlive.cpp callbacks/ConnReset.cpp
         util/enc.c util/rsutil.cpp util/rhash.cpp util/RTimer.cpp util/TextUtils.h util/RPortList.cpp
         util/PortPair.cpp util/Handler.cpp util/ShotHandler.cpp util/UvUtil.cpp
@@ -23,7 +23,7 @@ set(SOURCE_FILES
         net/ServerNetManager.cpp
         src/sync/SyncConnFactory.cpp src/sync/LoopSreamSyncConn.cpp src/sync/ISyncConn.cpp src/sync/UdpSyncConn.cpp
         src/sync/TcpStreamSyncConn.cpp src/sync/IPacketSyncConn.cpp
-        callbacks/ResetHelper.cpp)
+        )
 
 # platform dependent dir		
 SET(ROS_DIR src/os/unix)

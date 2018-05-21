@@ -11,7 +11,6 @@
 #include "../callbacks/ConnReset.h"
 #include "../util/rhash.h"
 #include "../util/rsutil.h"
-#include "../callbacks/ResetHelper.h"
 #include "../callbacks/NetConnKeepAlive.h"
 
 using namespace std::placeholders;
@@ -48,7 +47,7 @@ int IAppGroup::Init() {
     auto rcv = std::bind(&IConn::OnRecv, this, _1, _2);
     mFakeNetGroup->SetOnRecvCb(rcv);
 
-    mResetHelper = new ResetHelper(this);
+    mResetHelper = new ConnReset(this);
 
     mKeepAlive = new NetConnKeepAlive(this, mFakeNetGroup->GetLoop(), mActive);
     return 0;
@@ -92,7 +91,7 @@ int IAppGroup::Input(ssize_t nread, const rbuf_t &rbuf) {
         }
         return n;
     } else if (EncHead::IsRstFlag(head->Cmd())) {
-        return mResetHelper->GetReset()->Input(head->Cmd(), nread, rbuf);
+        return mResetHelper->Input(head->Cmd(), nread, rbuf);
     } else if (EncHead::IsKeepAliveFlag(head->Cmd())) {
         return mKeepAlive->Input(head->Cmd(), nread, rbuf);
     } else {
@@ -130,11 +129,11 @@ bool IAppGroup::onSelfNetConnRst(const ConnInfo &info) {
 }
 
 int IAppGroup::SendConvRst(uint32_t conv) {
-    return mResetHelper->GetReset()->SendConvRst(conv);
+    return mResetHelper->SendConvRst(conv);
 }
 
 int IAppGroup::sendNetConnRst(const ConnInfo &src, IntKeyType key) {
-    return mResetHelper->GetReset()->SendNetConnRst(src, key);
+    return mResetHelper->SendNetConnRst(src, key);
 }
 
 int IAppGroup::onPeerNetConnRst(const ConnInfo &src, uint32_t key) {

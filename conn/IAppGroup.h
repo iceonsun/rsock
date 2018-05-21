@@ -5,24 +5,23 @@
 #ifndef RSOCK_IAPPCONN_H
 #define RSOCK_IAPPCONN_H
 
+#include <rscomm.h>
 #include "IGroup.h"
 #include "../callbacks/ITcpObserver.h"
 #include "../bean/EncHead.h"
-#include "../callbacks/IReset.h"
 
 class INetGroup;
 
 class INetConn;
 
-struct ConnInfo;
-
 class INetConnKeepAlive;
 
+class IReset;
+
+struct ConnInfo;
 
 class IAppGroup : public IGroup, public ITcpObserver {
 public:
-    using IntKeyType = uint32_t;
-
     IAppGroup(const std::string &groupId, INetGroup *fakeNetGroup, IConn *btm, bool activeKeepAlive,
               const std::string &printableStr = "");
 
@@ -70,8 +69,8 @@ protected:
 private:
     bool mActive = true;
     std::string mPrintableStr;
-    IReset::IRestHelper *mResetHelper = nullptr;
-    INetConnKeepAlive  *mKeepAlive = nullptr;
+    IReset *mResetHelper = nullptr;
+    INetConnKeepAlive *mKeepAlive = nullptr;
     INetGroup *mFakeNetGroup = nullptr;
 };
 

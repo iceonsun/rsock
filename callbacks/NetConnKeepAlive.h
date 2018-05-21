@@ -18,9 +18,9 @@ public:
 
     int Input(uint8_t cmd, ssize_t nread, const rbuf_t &rbuf) override;
 
-    int SendResponse(IntConnKeyType connKey) override;
+    int SendResponse(IntKeyType connKey) override;
 
-    int SendRequest(IntConnKeyType connKey) override;
+    int SendRequest(IntKeyType connKey) override;
 
     void Close() override;
 

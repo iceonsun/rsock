@@ -8,6 +8,8 @@
 #include <functional>
 #include "IReset.h"
 
+class IAppGroup;
+
 struct ConnInfo;
 struct rbuf_t;
 
@@ -15,7 +17,7 @@ class ConnReset : public IReset {
 public:
     using IntKeyType = uint32_t;
 
-    explicit ConnReset(IRestHelper *resetHelper);
+    explicit ConnReset(IAppGroup *appGroup);
 
     int SendNetConnRst(const ConnInfo &src, IntKeyType key) override;
 
@@ -25,8 +27,11 @@ public:
 
     void Close() override;
 
+protected:
+    int onSendNetConnReset(uint8_t cmd, const ConnInfo &src, ssize_t nread, const rbuf_t &rbuf);
+
 private:
-    IRestHelper *mHelper = nullptr;
+    IAppGroup *mAppGroup = nullptr;
 };
 
 

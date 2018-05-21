@@ -21,8 +21,8 @@ NetConnKeepAlive::NetConnKeepAlive(IAppGroup *group, uv_loop_t *loop, bool activ
 
 int NetConnKeepAlive::Input(uint8_t cmd, ssize_t nread, const rbuf_t &rbuf) {
     LOGV << "cmd: " << (int) (cmd);
-    if (nread >= sizeof(IntConnKeyType)) {
-        IntConnKeyType connKey = 0;
+    if (nread >= sizeof(IntKeyType)) {
+        IntKeyType connKey = 0;
         decode_uint32(&connKey, rbuf.base);
         if (cmd == EncHead::TYPE_KEEP_ALIVE_REQ) {
             if (mAppGroup->GetNetGroup()->ConnOfIntKey(connKey)) {
@@ -37,13 +37,13 @@ int NetConnKeepAlive::Input(uint8_t cmd, ssize_t nread, const rbuf_t &rbuf) {
             OnRecvResponse(connKey);
         }
     } else {
-        LOGW << "nread < sizeof(IntConnKeyType)";
+        LOGW << "nread < sizeof(IntKeyType)";
     }
 
     return nread;
 }
 
-int NetConnKeepAlive::SendResponse(IntConnKeyType connKey) {
+int NetConnKeepAlive::SendResponse(IntKeyType connKey) {
     LOGV << "connKey: " << connKey;
     char base[32] = {0};
     auto p = encode_uint32(connKey, base);
@@ -60,7 +60,7 @@ void NetConnKeepAlive::Close() {
     }
 }
 
-int NetConnKeepAlive::SendRequest(INetConnKeepAlive::IntConnKeyType connKey) {
+int NetConnKeepAlive::SendRequest(IntKeyType connKey) {
     LOGV << "keepAlive, connKey: " << connKey;
 
     char base[32] = {0};

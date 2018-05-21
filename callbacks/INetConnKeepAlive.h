@@ -14,15 +14,13 @@ struct ConnInfo;
 
 class INetConnKeepAlive {
 public:
-    using IntConnKeyType = uint32_t;
-
     virtual ~INetConnKeepAlive() = default;
 
     virtual int Input(uint8_t cmd, ssize_t nread, const rbuf_t &rbuf) = 0;
 
-    virtual int SendResponse(IntConnKeyType connKey) = 0;
+    virtual int SendResponse(IntKeyType connKey) = 0;
 
-    virtual int SendRequest(IntConnKeyType connKey) = 0;
+    virtual int SendRequest(IntKeyType connKey) = 0;
 
 //    virtual int InputResponse(ssize_t nread, const rbuf_t &rbuf) = 0;
 
