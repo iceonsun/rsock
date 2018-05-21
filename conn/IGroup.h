@@ -15,12 +15,12 @@ class IGroup : public IConn {
 public:
     explicit IGroup(const std::string &groupId, IConn *btm);
 
-    virtual IConn *ConnOfKey(const std::string &key);
+    IConn *ConnOfKey(const std::string &key) override;
 
-    virtual void AddConn(IConn *conn, const IConnCb &outCb, const IConnCb &recvCb);
+    void AddConn(IConn *conn, const IConnCb &outCb, const IConnCb &recvCb) override;
 
     // will not close conn or delete conn
-    virtual bool RemoveConn(IConn *conn);
+    bool RemoveConn(IConn *conn) override;
 
     int Init() override;
 
@@ -35,7 +35,7 @@ public:
 
     bool Alive() override;
 
-    virtual bool CloseConn(IConn *conn);
+    bool CloseConn(IConn *conn) override;
 
 protected:
     std::map<std::string, IConn *> mConns;

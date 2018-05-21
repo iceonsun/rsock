@@ -45,6 +45,15 @@ public:
 
     virtual bool Alive() { return mStat.Alive(); }
 
+    // empty implementation. for IGroup
+    virtual void AddConn(IConn *conn, const IConnCb &outCb, const IConnCb &recvCb) {}
+
+    virtual bool RemoveConn(IConn *conn) { return false; }
+
+    virtual bool CloseConn(IConn *conn) { return false; }
+
+    virtual IConn *ConnOfKey(const std::string &key) { return nullptr; }
+
     IConn &operator=(const IConn &) = delete;
 
 protected:
