@@ -8,15 +8,16 @@
 struct sockaddr;
 struct sockaddr_in;
 
-#include <vector>
-#include "../conn/IConn.h"
-#include "../bean/EncHead.h"
 #include <rscomm.h>
+#include "../conn/IConn.h"
+
 
 // todo: add unix sock support
 class SConn : public IConn {
 public:
     explicit SConn(const std::string &key, uv_loop_t *loop, const SA *target, uint32_t conv);
+
+    int Init() override;
 
     void Close() override;
 

@@ -3,15 +3,24 @@
 //
 
 #include <cassert>
+#include <sstream>
 #include "INetConn.h"
 #include "../bean/ConnInfo.h"
 #include "../util/rsutil.h"
 
 INetConn::INetConn(const std::string &key) : IConn(key) {
+    mIntKey = std::stoul(key);
+    assert(mIntKey != 0);
+}
+
+int INetConn::Init() {
+    IConn::Init();
+
+    SetPrintableStr(BuildPrintableStr(*GetInfo()));
+    return 0;
 }
 
 int INetConn::Output(ssize_t nread, const rbuf_t &rbuf) {
-    assert(mIntKey);
     EncHead *hd = static_cast<EncHead *>(rbuf.data);
     assert(hd);
     auto info = GetInfo();
@@ -22,12 +31,10 @@ int INetConn::Output(ssize_t nread, const rbuf_t &rbuf) {
 }
 
 int INetConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
-    assert(mIntKey);
     ConnInfo *info = static_cast<ConnInfo *>(rbuf.data);
     assert(info);
     EncHead *hd = info->head;
     assert(hd);
-    assert(hd->ConnKey() == IntKey());
     return IConn::OnRecv(nread, rbuf);
 }
 
@@ -46,18 +53,32 @@ void INetConn::Close() {
     mErrCb = nullptr;
 }
 
-IntKeyType INetConn::HashKey(const ConnInfo &info) {
+const std::string INetConn::BuildPrintableStr(const ConnInfo &info) {
+    std::ostringstream out;
+    if (info.IsUdp()) {
+        out << "udp:";
+    } else {
+        out << "tcp:";
+    }
+    out << InAddr2Ip(info.src) << ":" << info.sp << "-";
+    out << InAddr2Ip(info.dst) << ":" << info.dp;
+    return out.str();
+}
+
+const std::string INetConn::BuildKey(const ConnInfo &info) {
     IntKeyType key = info.sp << 1;
     if (info.IsUdp()) {
         key |= 0x1;
     }
-    return static_cast<IntKeyType>(key);
+
+    return std::to_string(static_cast<IntKeyType>(key));
 }
 
-IntKeyType INetConn::IntKey() {
+const std::string INetConn::BuildKey(IntKeyType key) {
+    return std::to_string(key);
+}
+
+IntKeyType INetConn::IntKey() const {
     return mIntKey;
 }
 
-void INetConn::SetIntKey(IntKeyType intKey) {
-    mIntKey = intKey;
-}

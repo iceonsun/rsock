@@ -4,7 +4,6 @@
 
 #include <cassert>
 #include <plog/Log.h>
-#include "IGroup.h"
 #include "IAppGroup.h"
 #include "INetGroup.h"
 #include "../bean/TcpInfo.h"
@@ -15,20 +14,13 @@
 
 using namespace std::placeholders;
 
-IAppGroup::IAppGroup(const std::string &groupId, INetGroup *fakeNetGroup, IConn *btm, bool activeKeepAlive,
-                     const std::string &printableStr)
+IAppGroup::IAppGroup(const std::string &groupId, INetGroup *fakeNetGroup, IConn *btm, bool activeKeepAlive)
         : IGroup(groupId, btm) {
     mActive = activeKeepAlive;
     mFakeNetGroup = fakeNetGroup;
     assert(mFakeNetGroup);
 
     mHead.SetIdBuf(Str2IdBuf(groupId));
-
-    if (printableStr.empty()) {
-        mPrintableStr = groupId;
-    } else {
-        mPrintableStr = printableStr + ", groupId: " + groupId;
-    }
 }
 
 int IAppGroup::Init() {
@@ -106,7 +98,7 @@ void IAppGroup::Flush(uint64_t now) {
 }
 
 bool IAppGroup::OnTcpFinOrRst(const TcpInfo &info) {
-    auto key = ConnInfo::BuildKey(info);
+    auto key = INetConn::BuildKey(info);
     auto conn = mFakeNetGroup->ConnOfKey(key);
     if (conn) {
         INetConn *netConn = dynamic_cast<INetConn *>(conn);
@@ -127,10 +119,6 @@ bool IAppGroup::Alive() {
 
 int IAppGroup::SendConvRst(uint32_t conv) {
     return mResetHelper->SendConvRst(conv);
-}
-
-const std::string IAppGroup::ToStr() {
-    return mPrintableStr;
 }
 
 int IAppGroup::doSendCmd(uint8_t cmd, ssize_t nread, const rbuf_t &rbuf) {

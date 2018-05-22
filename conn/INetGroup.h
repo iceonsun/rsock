@@ -40,7 +40,7 @@ public:
     // flush detect error
     bool OnConnDead(IConn *conn) override;
 
-    INetConn *ConnOfIntKey(IntKeyType key);
+    IConn *ConnOfIntKey(IntKeyType key);
 
     uv_loop_t *GetLoop() const { return mLoop; }
 

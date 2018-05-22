@@ -50,7 +50,7 @@ IConn *CSockApp::CreateBridgeConn(RConfig &conf, IConn *btm, uv_loop_t *loop, IN
         for (auto &e: conns) {
             auto *conn = dynamic_cast<IBtmConn *>(e.second);
             auto info = conn->GetInfo();
-            auto key = ConnInfo::BuildKey(*info);
+            auto key = INetConn::BuildKey(*info);
             INetConn *c = nullptr;
             if (conn->IsUdp()) {
                 c = new FakeUdp(key, *info);

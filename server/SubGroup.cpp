@@ -13,8 +13,8 @@
 using namespace std::placeholders;
 
 SubGroup::SubGroup(const std::string &groupId, uv_loop_t *loop, const struct sockaddr *target, INetGroup *fakeNetGroup,
-                   IConn *btm, const std::string &printableStr)
-        : IAppGroup(groupId, fakeNetGroup, btm, false, printableStr) {
+                   IConn *btm)
+        : IAppGroup(groupId, fakeNetGroup, btm, false) {
     mLoop = loop;
     mTarget = new_addr(target);
 }

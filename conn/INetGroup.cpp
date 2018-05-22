@@ -52,7 +52,7 @@ void INetGroup::Close() {
 int INetGroup::Input(ssize_t nread, const rbuf_t &rbuf) {
     if (nread > 0) {
         ConnInfo *info = static_cast<ConnInfo *>(rbuf.data);
-        auto key = ConnInfo::BuildKey(*info);
+        auto key = INetConn::BuildKey(*info);
         auto conn = ConnOfKey(key);
         if (!conn) {
             auto netconn = CreateNetConn(key, info);
@@ -159,14 +159,6 @@ void INetGroup::netConnErr(const ConnInfo &info) {
     }
 }
 
-INetConn *INetGroup::ConnOfIntKey(IntKeyType key) {
-    auto &conns = GetAllConns();
-    for (auto &e: conns) {
-        INetConn *conn = dynamic_cast<INetConn *>(e.second);
-        assert(conn);
-        if (conn->IntKey() == key) {
-            return conn;
-        }
-    }
-    return nullptr;
+IConn *INetGroup::ConnOfIntKey(IntKeyType key) {
+    return ConnOfKey(INetConn::BuildKey(key));
 }

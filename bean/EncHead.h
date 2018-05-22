@@ -26,7 +26,7 @@ private:
     uint8_t mCmd = TYPE_DATA;
     IdBufType mIdBuf{{0}};
     uint32_t mConv = 0;
-    uint32_t mConnKey = 0;
+    uint32_t mConnKey = 0;  // represents inetconn
     uint8_t resereved = 0;
     // }
 

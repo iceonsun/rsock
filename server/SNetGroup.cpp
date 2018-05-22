@@ -31,7 +31,6 @@ INetConn *SNetGroup::CreateNetConn(const std::string &key, const ConnInfo *info)
             delete c;
             return nullptr;
         }
-        c->SetIntKey(hd->ConnKey());
         return c;
     }
 

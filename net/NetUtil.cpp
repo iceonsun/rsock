@@ -51,14 +51,14 @@ FakeTcp *NetUtil::CreateTcpConn(uv_loop_t *loop, const ConnInfo &info) {
     TcpInfo realInfo;
     GetTcpInfo(realInfo, tcp);
 
-    FakeTcp *conn = new FakeTcp(reinterpret_cast<uv_stream_t *>(tcp), ConnInfo::BuildKey(realInfo));
+    FakeTcp *conn = new FakeTcp(reinterpret_cast<uv_stream_t *>(tcp), INetConn::BuildKey(realInfo));
     return conn;
 }
 
 FakeTcp *NetUtil::CreateTcpConn(uv_tcp_t *tcp) {
     TcpInfo realInfo;
     GetTcpInfo(realInfo, tcp);
-    FakeTcp *conn = new FakeTcp(reinterpret_cast<uv_stream_t *>(tcp), ConnInfo::BuildKey(realInfo));
+    FakeTcp *conn = new FakeTcp(reinterpret_cast<uv_stream_t *>(tcp), INetConn::BuildKey(realInfo));
     return conn;
 }
 

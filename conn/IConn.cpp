@@ -5,8 +5,12 @@
 #include <cassert>
 #include "IConn.h"
 
-IConn::IConn(const std::string &key) {
+IConn::IConn(const std::string &key): IConn(key, key) {
+}
+
+IConn::IConn(const std::string &key, const std::string &printableStr) {
     mKey = key;
+    mPrintableStr = printableStr;
 }
 
 int IConn::Init() {

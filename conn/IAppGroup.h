@@ -22,8 +22,7 @@ struct ConnInfo;
 
 class IAppGroup : public IGroup, public ITcpObserver {
 public:
-    IAppGroup(const std::string &groupId, INetGroup *fakeNetGroup, IConn *btm, bool activeKeepAlive,
-              const std::string &printableStr = "");
+    IAppGroup(const std::string &groupId, INetGroup *fakeNetGroup, IConn *btm, bool activeKeepAlive);
 
     int Init() override;
 
@@ -47,8 +46,6 @@ public:
 
     virtual int SendConvRst(uint32_t conv);
 
-    const std::string ToStr() override;
-
     virtual int doSendCmd(uint8_t cmd, ssize_t nread, const rbuf_t &rbuf);
 
     virtual int RawOutput(ssize_t nread, const rbuf_t &rbuf);
@@ -58,7 +55,6 @@ protected:
 
 private:
     bool mActive = true;
-    std::string mPrintableStr;
     IReset *mResetHelper = nullptr;
     INetConnKeepAlive *mKeepAlive = nullptr;
     INetGroup *mFakeNetGroup = nullptr;

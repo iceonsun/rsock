@@ -4,25 +4,11 @@
 
 #include <sstream>
 #include <cassert>
-#include "os.h"
 #include "ConnInfo.h"
 #include "../util/enc.h"
 #include "../util/rsutil.h"
 #include <algorithm>
 #include <rscomm.h>
-
-// cannot use conv as part of key!!!
-std::string ConnInfo::BuildKey(const ConnInfo &info) {
-    std::ostringstream out;
-    if (info.IsUdp()) {
-        out << "udp:";
-    } else {
-        out << "tcp:";
-    }
-    out << InAddr2Ip(info.src) << ":" << info.sp << "-";
-    out << InAddr2Ip(info.dst) << ":" << info.dp;
-    return out.str();
-}
 
 std::string ConnInfo::KeyForUdpBtm(uint32_t src, uint16_t sp) {
     std::ostringstream out;
@@ -56,20 +42,6 @@ const char *ConnInfo::Decode(const char *buf, int len) {
     p = decode_uint16(&sp, p);
     p = decode_uint16(&dp, p);
     return p;
-}
-
-// use port
-std::string ConnInfo::BuildAddrKey(const struct sockaddr *addr) {
-    if (addr->sa_family == AF_INET) {
-        struct sockaddr_in *addr4 = (struct sockaddr_in *) addr;
-        std::ostringstream out;
-        out << InAddr2Ip(addr4->sin_addr) << ":" << ntohs(addr4->sin_port);
-        return out.str();
-    } else if (addr->sa_family == AF_UNIX) {
-        struct sockaddr_un *un = (struct sockaddr_un *) addr;
-        return un->sun_path;
-    }
-    return "";
 }
 
 std::string ConnInfo::ToStr() const {

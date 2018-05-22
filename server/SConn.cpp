@@ -8,7 +8,7 @@
 
 #include "SConn.h"
 #include "../util/rsutil.h"
-#include "os.h"
+#include "../conn/CConn.h"
 
 SConn::SConn(const std::string &key, uv_loop_t *loop, const SA *target, uint32_t conv) : IConn(key) {
     assert(target->sa_family == AF_INET);
@@ -17,6 +17,14 @@ SConn::SConn(const std::string &key, uv_loop_t *loop, const SA *target, uint32_t
     mUdp = om_new_udp(loop, this, udpRecvCb);
 
     mConv = conv;
+}
+
+int SConn::Init() {
+    IConn::Init();
+
+    SetPrintableStr(CConn::BuildPrintableStr((SA *) mSelfAddr));
+
+    return 0;
 }
 
 void SConn::Close() {
@@ -85,9 +93,6 @@ void SConn::sendCb(uv_udp_send_t *req, int status) {
     if (status) {
 //        todo: add err processing
         LOGE << "udp send error, err " << status << ": " << uv_strerror(status);
-#ifndef NNDEBUG
-        assert(0);
-#endif
     }
 
     free_rudp_send(udp);

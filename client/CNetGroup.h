@@ -13,8 +13,6 @@ public:
     CNetGroup(const std::string &groupId, uv_loop_t *loop);
 
     INetConn *CreateNetConn(const std::string &key, const ConnInfo *info) override;
-
-    void AddNetConn(INetConn *conn) override;
 };
 
 

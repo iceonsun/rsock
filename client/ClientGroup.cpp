@@ -6,7 +6,7 @@
 
 #include "plog/Log.h"
 
-#include "CConn.h"
+#include "../conn/CConn.h"
 #include "ClientGroup.h"
 #include "../util/rsutil.h"
 #include "../bean/ConnInfo.h"
@@ -16,7 +16,7 @@ using namespace std::placeholders;
 
 ClientGroup::ClientGroup(const std::string &groupId, const std::string &listenUnPath, const std::string &listenUdpIp,
                          uint16_t listenUdpPort, uv_loop_t *loop, INetGroup *fakeGroup, IConn *btm)
-        : IAppGroup(groupId, fakeGroup, btm, true, "ClientGroup") {
+        : IAppGroup(groupId, fakeGroup, btm, true) {
     assert(fakeGroup != nullptr);
     if (!listenUdpIp.empty()) {
         mUdpAddr = new_addr4(listenUdpIp.c_str(), listenUdpPort);
@@ -28,6 +28,7 @@ ClientGroup::ClientGroup(const std::string &groupId, const std::string &listenUn
     }
 
     mLoop = loop;
+    SetPrintableStr("ClientGroup");
 }
 
 int ClientGroup::Init() {
@@ -185,7 +186,7 @@ void ClientGroup::Close() {
 }
 
 void ClientGroup::onLocalRecv(ssize_t nread, const char *base, const struct sockaddr *addr) {
-    auto key = ConnInfo::BuildAddrKey(addr);
+    auto key = CConn::BuildKey(addr);
     auto conn = ConnOfKey(key);
     if (!conn) {
         conn = newConn(key, addr, ++mConvCounter);
@@ -229,6 +230,3 @@ int ClientGroup::cconSend(ssize_t nread, const rbuf_t &rbuf) {
 }
 // todo: override Alive to enable auto restart
 
-const std::string ClientGroup::ToStr() {
-    return IConn::ToStr();
-}

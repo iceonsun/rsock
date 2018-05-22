@@ -19,6 +19,8 @@ public:
 
     using ErrCb = std::function<void(INetConn *, int err)>; // todo: consider using connkey as first parameter
 
+    int Init() override;
+
     void Close() override;
 
     virtual bool IsUdp() = 0;
@@ -30,13 +32,15 @@ public:
 
     void SetOnErrCb(const ErrCb &cb);
 
-    virtual IntKeyType IntKey();;
-
-    static IntKeyType HashKey(const ConnInfo &info);
-    
     int OnRecv(ssize_t nread, const rbuf_t &rbuf) override;
 
-    void SetIntKey(IntKeyType intKey);
+    static const std::string BuildPrintableStr(const ConnInfo &info);
+
+    static const std::string BuildKey(const ConnInfo &info);
+
+    static const std::string BuildKey(IntKeyType key);
+
+    IntKeyType IntKey() const;
 
 protected:
     virtual void OnNetConnErr(INetConn *conn, int err);

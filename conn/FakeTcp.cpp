@@ -15,7 +15,7 @@ FakeTcp::FakeTcp(uv_stream_t *tcp, const std::string &key) : INetConn(key) {
 
     GetTcpInfo(mInfo, reinterpret_cast<uv_tcp_t *>(mTcp));
 
-    assert(ConnInfo::BuildKey(mInfo) == key);
+    assert(INetConn::BuildKey(mInfo) == key);
 }
 
 int FakeTcp::Init() {

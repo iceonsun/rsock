@@ -19,6 +19,7 @@ ServerGroup::ServerGroup(const std::string &groupId, uv_loop_t *loop, const stru
     mLoop = loop;
     mTarget = new_addr(target);
     mNetManager = netManager;
+    SetPrintableStr("ServerGroup");
 }
 
 void ServerGroup::Close() {
@@ -53,7 +54,8 @@ int ServerGroup::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
 IConn *ServerGroup::newConn(const std::string &groupId, uv_loop_t *loop, const struct sockaddr *target,
                             const ConnInfo &info) {
     auto fakenet = new SNetGroup(groupId, loop, mNetManager);
-    auto conn = new SubGroup(groupId, loop, target, fakenet, nullptr, GetDstAddrStr(info));
+    auto conn = new SubGroup(groupId, loop, target, fakenet, nullptr);
+    conn->SetPrintableStr(GetDstAddrStr(info));
     LOGD << "new group: " << GetDstAddrStr(info) << ", groupId: " << groupId;
     if (conn->Init()) {
         conn->Close();
@@ -81,8 +83,4 @@ bool ServerGroup::OnTcpFinOrRst(const TcpInfo &info) {
         }
     }
     return false;
-}
-
-const std::string ServerGroup::ToStr() {
-    return "ServerGroup";
 }

@@ -19,6 +19,7 @@ set(SOURCE_FILES
         thirdparty/md5.c thirdparty/json11.cpp
         conn/INetConn.cpp conn/BtmUdpConn.cpp conn/FakeTcp.cpp conn/INetGroup.cpp conn/IGroup.cpp conn/FakeUdp.cpp
         conn/IConn.cpp conn/RConn.cpp conn/RawTcp.cpp conn/IAppGroup.cpp conn/IBtmConn.cpp conn/DefaultFakeConn.cpp
+        conn/CConn.cpp
         net/NetUtil.cpp net/ClientNetManager.cpp net/TcpAckPool.cpp net/TcpListenPool.cpp net/INetManager.cpp
         net/ServerNetManager.cpp
         src/sync/SyncConnFactory.cpp src/sync/LoopSreamSyncConn.cpp src/sync/ISyncConn.cpp src/sync/UdpSyncConn.cpp
@@ -48,7 +49,7 @@ MESSAGE(STATUS "source files: ${SOURCE_FILES}")
 
 set(SVR_SOURCE_FILES ${SOURCE_FILES} server/SConn.cpp server/SSockApp.cpp server/ssock.cpp server/SNetGroup.cpp
         server/ServerGroup.cpp server/SubGroup.cpp)
-set(CLI_SOURCE_FILES ${SOURCE_FILES} client/CConn.cpp client/csock.cpp client/CSockApp.cpp client/ClientGroup.cpp
+set(CLI_SOURCE_FILES ${SOURCE_FILES} client/csock.cpp client/CSockApp.cpp client/ClientGroup.cpp
         client/CNetGroup.cpp)
 
 ##### release {

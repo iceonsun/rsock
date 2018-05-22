@@ -17,6 +17,8 @@ public:
 
     explicit IConn(const std::string &key);
 
+    IConn(const std::string &key, const std::string &printableStr);
+
     virtual ~IConn();
 
     virtual void Close();
@@ -35,10 +37,10 @@ public:
 
     void SetOnRecvCb(const IConnCb &cb) { mOnRecvCb = cb; };
 
-    virtual const std::string &Key() { return mKey; }
+    virtual const std::string Key() const { return mKey; }
 
     // if return reference, it may crush if subclass return string on allocated stack
-    virtual const std::string ToStr() { return mKey; }
+    virtual const std::string ToStr() const { return mPrintableStr; }
 
     // if no data send/input since last check, return true.
     virtual void Flush(uint64_t now) { mStat.Flush(); };
@@ -53,6 +55,8 @@ public:
     virtual bool CloseConn(IConn *conn) { return false; }
 
     virtual IConn *ConnOfKey(const std::string &key) { return nullptr; }
+
+    void SetPrintableStr(const std::string &str) { mPrintableStr = str; }
 
     IConn &operator=(const IConn &) = delete;
 
@@ -87,6 +91,7 @@ private:
     IConnCb mOnRecvCb = nullptr;
 
     std::string mKey;
+    std::string mPrintableStr;
 };
 
 

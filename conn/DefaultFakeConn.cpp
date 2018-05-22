@@ -18,10 +18,6 @@ ConnInfo *DefaultFakeConn::GetInfo() {
     return nullptr;
 }
 
-IntKeyType DefaultFakeConn::IntKey() {
-    return 0;
-}
-
 int DefaultFakeConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
     return IConn::OnRecv(nread, rbuf);
 }
