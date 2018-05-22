@@ -49,19 +49,9 @@ public:
 
     const std::string ToStr() override;
 
-//protected:
-    virtual int sendNetConnRst(const ConnInfo &src, IntKeyType key);
-
-    virtual int onPeerNetConnRst(const ConnInfo &src, uint32_t key);
-
-    virtual int onPeerConvRst(const ConnInfo &src, uint32_t rstConv);
-
-    virtual bool onSelfNetConnRst(const ConnInfo &info);
-
     virtual int doSendCmd(uint8_t cmd, ssize_t nread, const rbuf_t &rbuf);
 
-    virtual int onNetconnDead(uint32_t key);
-
+    virtual int RawOutput(ssize_t nread, const rbuf_t &rbuf);
 
 protected:
     EncHead mHead;

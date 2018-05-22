@@ -11,6 +11,7 @@
 #include "../bean/EncHead.h"
 #include "../bean/TcpInfo.h"
 #include "../conn/IAppGroup.h"
+#include "../conn/INetGroup.h"
 
 ConnReset::ConnReset(IAppGroup *appGroup) {
     mAppGroup = appGroup;
@@ -26,8 +27,8 @@ int ConnReset::SendNetConnRst(const ConnInfo &src, IntKeyType key) {
     char *p = base;
     p = encode_uint32(key, p);
     // it will be wrong to decode dst and dp, because dst and dp are from nat not from client.
-    const rbuf_t buf = new_buf((p - base), base, nullptr);
-    return onSendNetConnReset(EncHead::TYPE_NETCONN_RST, src, buf.len, buf);
+    auto rbuf = new_buf((p - base), base, (void *) &src);
+    return mAppGroup->RawOutput(rbuf.len, rbuf);   // directly send
 }
 
 int ConnReset::SendConvRst(uint32_t conv) {
@@ -44,11 +45,11 @@ int ConnReset::Input(uint8_t cmd, ssize_t nread, const rbuf_t &rbuf) {
     const char *base = rbuf.base;
     ConnInfo *info = static_cast<ConnInfo *>(rbuf.data);
     if (EncHead::TYPE_CONV_RST == cmd) {
-        uint32_t conv = 0;
-        const char *p = decode_uint32(&conv, base);
-        LOGD << "conv: " << conv;
-        if (p) {
-            return mAppGroup->onPeerConvRst(*info, conv);
+        if (nread >= sizeof(uint32_t)) {
+            uint32_t conv = 0;
+            const char *p = decode_uint32(&conv, base);
+            LOGD << "conv: " << conv;
+            return OnRecvConvRst(*info, conv);
         }
         return -1;
     } else if (EncHead::TYPE_NETCONN_RST == cmd) {
@@ -56,8 +57,8 @@ int ConnReset::Input(uint8_t cmd, ssize_t nread, const rbuf_t &rbuf) {
             IntKeyType key;
             auto p = base;
             p = decode_uint32(&key, p);
-            LOGD << "intKey: " << key;
-            return mAppGroup->onPeerNetConnRst(*info, key);
+            LOGD << "receive TYPE_NETCONN_RST from peer, intKey: " << key;
+            return OnRecvNetConnRst(*info, key);
         }
         return -1;
     }
@@ -65,11 +66,26 @@ int ConnReset::Input(uint8_t cmd, ssize_t nread, const rbuf_t &rbuf) {
     return -1;
 }
 
-// todo: add rawoutput to appgroup. to replace directly send
-int ConnReset::onSendNetConnReset(uint8_t cmd, const ConnInfo &src, ssize_t nread, const rbuf_t &rbuf) {
-    if (cmd == EncHead::TYPE_NETCONN_RST) {
-        auto rbuf2 = new_buf(0, "", (void *) &src);
-        mAppGroup->Output(rbuf2.len, rbuf2);   // directly send
+int ConnReset::OnRecvConvRst(const ConnInfo &src, uint32_t rstConv) {
+    auto key = ConnInfo::BuildConvKey(src.dst, rstConv);
+    auto conn = mAppGroup->ConnOfKey(key);
+    if (conn) {
+        mAppGroup->CloseConn(conn);
+        return 0;
+    } else {
+        LOGD << "receive conv rst, not no conn for conv conn: " << key;
     }
-    return mAppGroup->doSendCmd(cmd, nread, rbuf);
+    return -1;
+}
+
+int ConnReset::OnRecvNetConnRst(const ConnInfo &src, uint32_t key) {
+    auto netGroup = mAppGroup->GetNetGroup();
+    auto conn = netGroup->ConnOfIntKey(key);
+    if (conn) {
+        netGroup->CloseConn(conn);
+        return 0;
+    } else {
+        LOGD << "receive rst, but not conn for intKey: " << key;
+    }
+    return -1;
 }

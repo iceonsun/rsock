@@ -11,9 +11,11 @@
 #include "../conn/INetConn.h"
 #include "../conn/IAppGroup.h"
 #include "../conn/INetGroup.h"
+#include "IReset.h"
 
-NetConnKeepAlive::NetConnKeepAlive(IAppGroup *group, uv_loop_t *loop, bool active) {
-    mAppGroup = group;
+NetConnKeepAlive::NetConnKeepAlive(IAppGroup *group, uv_loop_t *loop, bool active, IReset *reset) {
+    mAppGroup = group;  // todo: refactor mAppGroup. use an interface instead
+    mReset = reset;
     if (active) {
         setupTimer(loop);
     }
@@ -30,7 +32,7 @@ int NetConnKeepAlive::Input(uint8_t cmd, ssize_t nread, const rbuf_t &rbuf) {
             } else {
                 LOGD << "no such conn " << connKey << ", send rst";
                 ConnInfo *info = static_cast<ConnInfo *>(rbuf.data);
-                mAppGroup->sendNetConnRst(*info, connKey);
+                mReset->SendNetConnRst(*info, connKey);
             }
         } else if (cmd == EncHead::TYPE_KEEP_ALIVE_RESP) {
             LOGV << "receive response: " << connKey;
@@ -109,12 +111,21 @@ void NetConnKeepAlive::onFlush() {
     for (auto &e: aCopy) {
         if (e.second >= MAX_RETRY) {        // keep alive timeout
             LOGE << "keepalive timeout, key: " << e.first;
-            mAppGroup->onNetconnDead(e.first);
             removeRequest(e.first);
+
+            onNetConnDead(e.first);
         }
     }
 }
 
 int NetConnKeepAlive::removeRequest(IntKeyType connKey) {
     return mReqMap.erase(connKey);
+}
+
+void NetConnKeepAlive::onNetConnDead(IntKeyType keyType) {
+    auto netGroup = mAppGroup->GetNetGroup();
+    auto conn = netGroup->ConnOfIntKey(keyType);
+    if (conn) {
+        netGroup->OnConnDead(conn);
+    }
 }

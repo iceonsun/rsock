@@ -27,8 +27,9 @@ public:
 
     void Close() override;
 
-protected:
-    int onSendNetConnReset(uint8_t cmd, const ConnInfo &src, ssize_t nread, const rbuf_t &rbuf);
+    int OnRecvNetConnRst(const ConnInfo &src, uint32_t key) override;
+
+    int OnRecvConvRst(const ConnInfo &src, uint32_t rstConv) override;
 
 private:
     IAppGroup *mAppGroup = nullptr;

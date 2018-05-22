@@ -3,7 +3,6 @@
 //
 
 #include "CNetGroup.h"
-#include "../bean/ConnInfo.h"
 
 CNetGroup::CNetGroup(const std::string &groupId, uv_loop_t *loop) : INetGroup(groupId, loop) {}
 

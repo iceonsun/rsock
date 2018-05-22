@@ -22,6 +22,9 @@ public:
 
     virtual int SendNetConnRst(const ConnInfo &src, IntKeyType key) = 0;
 
+    virtual int OnRecvNetConnRst(const ConnInfo &src, uint32_t key) = 0;
+
+    virtual int OnRecvConvRst(const ConnInfo &src, uint32_t rstConv) = 0;
 };
 
 #endif //RSOCK_IRESET_H

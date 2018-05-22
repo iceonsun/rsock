@@ -49,7 +49,7 @@ int IAppGroup::Init() {
 
     mResetHelper = new ConnReset(this);
 
-    mKeepAlive = new NetConnKeepAlive(this, mFakeNetGroup->GetLoop(), mActive);
+    mKeepAlive = new NetConnKeepAlive(this, mFakeNetGroup->GetLoop(), mActive, mResetHelper);
     return 0;
 }
 
@@ -87,7 +87,7 @@ int IAppGroup::Input(ssize_t nread, const rbuf_t &rbuf) {
         if (n > 0) {
             afterInput(n);
         } else if (INetGroup::ERR_NO_CONN == n) {
-            sendNetConnRst(*info, head->ConnKey());
+            mResetHelper->SendNetConnRst(*info, head->ConnKey());
         }
         return n;
     } else if (EncHead::IsRstFlag(head->Cmd())) {
@@ -106,7 +106,15 @@ void IAppGroup::Flush(uint64_t now) {
 }
 
 bool IAppGroup::OnTcpFinOrRst(const TcpInfo &info) {
-    return onSelfNetConnRst(info);
+    auto key = ConnInfo::BuildKey(info);
+    auto conn = mFakeNetGroup->ConnOfKey(key);
+    if (conn) {
+        INetConn *netConn = dynamic_cast<INetConn *>(conn);
+        assert(netConn);
+        auto intKey = netConn->IntKey();
+        return mResetHelper->OnRecvNetConnRst(info, intKey) == 0;
+    }
+    return false;
 }
 
 //bool IAppGroup::OnUdpRst(const ConnInfo &info) {
@@ -117,44 +125,8 @@ bool IAppGroup::Alive() {
     return mFakeNetGroup->Alive() && IGroup::Alive();  // if no data flows it'll report dead
 }
 
-bool IAppGroup::onSelfNetConnRst(const ConnInfo &info) {
-    auto key = ConnInfo::BuildKey(info);
-    auto conn = mFakeNetGroup->ConnOfKey(key);
-    if (conn) {
-        LOGV << "Close conn " << key;
-        mFakeNetGroup->CloseConn(conn);
-        return true;
-    }
-    return false;
-}
-
 int IAppGroup::SendConvRst(uint32_t conv) {
     return mResetHelper->SendConvRst(conv);
-}
-
-int IAppGroup::sendNetConnRst(const ConnInfo &src, IntKeyType key) {
-    return mResetHelper->SendNetConnRst(src, key);
-}
-
-int IAppGroup::onPeerNetConnRst(const ConnInfo &src, uint32_t key) {
-    auto conn = mFakeNetGroup->ConnOfIntKey(key);
-    if (conn) {
-        mFakeNetGroup->CloseConn(conn);
-        return 0;
-    } else {
-        LOGD << "receive rst, but not conn for intKey: " << key;
-    }
-    return -1;
-}
-
-int IAppGroup::onPeerConvRst(const ConnInfo &src, uint32_t rstConv) {
-    auto key = ConnInfo::BuildConvKey(src.dst, rstConv);
-    auto conn = ConnOfKey(key);
-    if (conn) {
-        CloseConn(conn);
-        return 0;
-    }
-    return -1;
 }
 
 const std::string IAppGroup::ToStr() {
@@ -169,12 +141,6 @@ int IAppGroup::doSendCmd(uint8_t cmd, ssize_t nread, const rbuf_t &rbuf) {
     return n;
 }
 
-int IAppGroup::onNetconnDead(uint32_t key) {
-    auto conn = mFakeNetGroup->ConnOfIntKey(key);
-    if (conn) {
-        mFakeNetGroup->OnConnDead(conn);
-    }
-    return 0;
+int IAppGroup::RawOutput(ssize_t nread, const rbuf_t &rbuf) {
+    return Output(nread, rbuf);
 }
-
-

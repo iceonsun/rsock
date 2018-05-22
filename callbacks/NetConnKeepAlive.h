@@ -10,11 +10,13 @@
 
 class IAppGroup;
 
+class IReset;
+
 class NetConnKeepAlive : public INetConnKeepAlive {
 public:
     // be same as EncHead
 
-    explicit NetConnKeepAlive(IAppGroup *group, uv_loop_t *loop, bool active);
+    explicit NetConnKeepAlive(IAppGroup *group, uv_loop_t *loop, bool active, IReset *reset);
 
     int Input(uint8_t cmd, ssize_t nread, const rbuf_t &rbuf) override;
 
@@ -33,6 +35,8 @@ private:
 
     void setupTimer(uv_loop_t *loop);
 
+    void onNetConnDead(IntKeyType key);
+
     static void timer_cb(uv_timer_t *timer);
 
 private:
@@ -44,6 +48,7 @@ private:
     IAppGroup *mAppGroup = nullptr;
     uv_timer_t *mFlushTimer = nullptr;
     std::map<IntKeyType, int> mReqMap;
+    IReset *mReset = nullptr;
 };
 
 

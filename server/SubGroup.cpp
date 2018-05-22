@@ -34,6 +34,7 @@ int SubGroup::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
         EncHead *head = info->head;
         assert(head);
 
+        // todo: client and server: BuildConvKey() has different values
         auto key = ConnInfo::BuildConvKey(info->dst, head->Conv());
         auto conn = ConnOfKey(key);
         if (!conn) {
