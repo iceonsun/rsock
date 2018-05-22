@@ -19,20 +19,20 @@ std::string ConnInfo::BuildKey(const ConnInfo &info) {
     } else {
         out << "tcp:";
     }
-    out << InAddr2Ip({info.src}) << ":" << info.sp << "-";
-    out << InAddr2Ip({info.dst}) << ":" << info.dp;
+    out << InAddr2Ip(info.src) << ":" << info.sp << "-";
+    out << InAddr2Ip(info.dst) << ":" << info.dp;
     return out.str();
 }
 
 std::string ConnInfo::KeyForUdpBtm(uint32_t src, uint16_t sp) {
     std::ostringstream out;
-    out << "udp:" << InAddr2Ip({src}) << ":" << sp;
+    out << "udp:" << InAddr2Ip(src) << ":" << sp;
     return out.str();
 }
 
 std::string ConnInfo::BuildConvKey(uint32_t dst, uint32_t conv) {
     std::ostringstream out;
-    out << "conv:" << InAddr2Ip({dst}) << ":" << conv;
+    out << "conv:" << InAddr2Ip(dst) << ":" << conv;
     return out.str();
 }
 
@@ -75,8 +75,8 @@ std::string ConnInfo::BuildAddrKey(const struct sockaddr *addr) {
 std::string ConnInfo::ToStr() const {
     std::ostringstream out;
     out << (IsUdp() ? "udp" : "tcp") << ":";
-    out << "src:" << InAddr2Ip({src}) << ", sp:" << sp;
-    out << ", dst:" << InAddr2Ip({dst}) << ", dp: " << dp;
+    out << "src:" << InAddr2Ip(src) << ", sp:" << sp;
+    out << ", dst:" << InAddr2Ip(dst) << ", dp: " << dp;
     return out.str();
 }
 
