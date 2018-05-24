@@ -16,6 +16,8 @@ class INetConnKeepAlive {
 public:
     virtual ~INetConnKeepAlive() = default;
 
+    virtual int Init() = 0;
+
     virtual int Input(uint8_t cmd, ssize_t nread, const rbuf_t &rbuf) = 0;
 
     virtual int SendResponse(IntKeyType connKey) = 0;
@@ -24,7 +26,7 @@ public:
 
 //    virtual int InputResponse(ssize_t nread, const rbuf_t &rbuf) = 0;
 
-    virtual void Close() = 0;
+    virtual int Close() = 0;
 
     virtual int OnRecvResponse(IntKeyType connKey) = 0;
 };

@@ -119,7 +119,7 @@ std::map<std::string, IConn *> &IGroup::GetAllConns() {
 
 bool IGroup::CloseConn(IConn *conn) {
     if (conn) {
-        LOGD << "closing conn " << conn->Key();
+        LOGD << "closing conn " << conn->ToStr();
         assert(conn->Key() != Key());
         assert(conn == ConnOfKey(conn->Key()));
         RemoveConn(conn);

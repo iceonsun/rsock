@@ -22,13 +22,13 @@ public:
 
     explicit ClientNetManager(uv_loop_t *loop, TcpAckPool *ackPool);
 
-    void Close() override;
+    int Close() override;
 
     INetConn *DialTcpSync(const ConnInfo &info);
     
     int DialTcpAsync(const ConnInfo &info, const NetDialCb &cb);
 
-    void Flush(uint64_t now) override;
+    void OnFlush(uint64_t now) override;
 
 private:
     struct DialHelper {

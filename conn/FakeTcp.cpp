@@ -65,14 +65,14 @@ void FakeTcp::read_cb(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
     // this may never receive any packets.
     if (nread < 0 && nread != UV_ECANCELED) {
         FakeTcp *conn = static_cast<FakeTcp *>(stream->data);
-        LOGE << "conn " << conn->Key() << " err: " << uv_strerror(nread);
+        LOGE << "conn " << conn->ToStr() << " err: " << uv_strerror(nread);
         conn->onTcpError(conn, nread);
     }
     free(buf->base);
 }
 
 void FakeTcp::onTcpError(FakeTcp *conn, int err) {
-    LOGE << "conn " << conn->Key() << ", err: " << err;
+    LOGE << "conn " << conn->ToStr() << ", err: " << err;
     mAlive = false;
     OnNetConnErr(conn, err);
 }

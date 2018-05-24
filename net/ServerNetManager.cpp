@@ -29,17 +29,17 @@ void ServerNetManager::OnNewConnection(uv_tcp_t *tcp) {
     TcpInfo info;
     if (0 == GetTcpInfo(info, tcp)) {
         auto c = NetUtil::CreateTcpConn(tcp);
-        auto key = c->Key();
         if (add2PoolAutoClose(c)) {
-            LOGD << "no tcp record in pool for conn " << key;
+            LOGD << "no tcp record in pool for conn " << c->ToStr();
         }
     } else {    // get information failed
         uv_close(reinterpret_cast<uv_handle_t *>(tcp), close_cb);
     }
 }
 
-void ServerNetManager::Close() {
+int ServerNetManager::Close() {
     INetManager::Close();
     mListenPool.Close();
     mListenPool.SetNewConnCb(nullptr);
+    return 0;
 }

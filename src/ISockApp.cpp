@@ -14,13 +14,14 @@
 #include "plog/Appenders/ConsoleAppender.h"
 #include "FdUtil.h"
 #include "ProcUtil.h"
-#include "../util/RTimer.h"
 #include "../conn/IBtmConn.h"
 #include "../net/INetManager.h"
 #include "../net/TcpAckPool.h"
 #include "../cap/RCap.h"
 #include "../conn/RConn.h"
 #include "../util/UvUtil.h"
+#include "app/AppTimer.h"
+#include "service/ServiceManager.h"
 
 ISockApp::ISockApp(bool is_server) : mServer(is_server) {
 }
@@ -50,6 +51,16 @@ int ISockApp::Init() {
     return doInit();
 }
 
+int ISockApp::InitServices() {
+    assert(mLoop);
+    auto manager = ServiceManager::GetInstance(mLoop);
+    if (!manager || manager->Init()) {
+        LOGE << "failed to init ServiceManager manager";
+        return -1;
+    }
+    return 0;
+}
+
 int ISockApp::doInit() {
     assert(mConf.Inited());
     if (makeDaemon(mConf.isDaemon)) {
@@ -60,10 +71,16 @@ int ISockApp::doInit() {
 
     int nret = initLog();
     if (nret) {
-        fprintf(stderr, "failed to init logger, nret: %d\n", nret);
+        fprintf(stdout, "failed to init logger, nret: %d\n", nret);
         return -1;
     }
     LOGD << "conf: " << mConf.to_json().dump();
+
+    nret = InitServices();
+    if (nret) {
+        fprintf(stdout, "failed to init services: %d\n", nret);
+        return nret;
+    }
 
     mAckPool = new TcpAckPool(mLoop, mConf.param.conn_duration_sec * 1000);
 
@@ -73,7 +90,6 @@ int ISockApp::doInit() {
         return -1;
     }
     assert(mNetManager);
-    mTimer = new RTimer(mLoop);
     mCap = CreateCap(mConf);
     if (!mCap || mCap->Init()) {
         LOGE << "pcap init failed";
@@ -146,7 +162,7 @@ void ISockApp::Close() {
     destroySignals();
 
     if (mTimer) {
-        mTimer->Stop();
+        mTimer->Close();
         delete mTimer;
         mTimer = nullptr;
     }
@@ -185,6 +201,8 @@ void ISockApp::Close() {
         mAckPool = nullptr;
     }
 
+    ServiceManager::DestroyInstance();
+
     if (mLoop) {
         UvUtil::stop_and_close_loop_fully(mLoop);
         free(mLoop);
@@ -194,9 +212,15 @@ void ISockApp::Close() {
     os_clean();
 }
 
-void ISockApp::StartTimer(uint32_t timeout_ms, uint32_t repeat_ms) {
-    auto fn = std::bind(&ISockApp::Flush, this, std::placeholders::_1);
-    mTimer->Start(timeout_ms, repeat_ms, fn);
+int ISockApp::StartTimer(uint32_t timeout_ms, uint32_t repeat_ms) {
+    if (!mTimer) {
+        mTimer = new AppTimer(repeat_ms, timeout_ms, this);
+        int nret = mTimer->Init();
+        return nret;
+    }
+    return -1;
+//    auto fn = std::bind(&ISockApp::Flush, this, std::placeholders::_1);
+//    mTimer->Start(timeout_ms, repeat_ms, fn);
 }
 
 int ISockApp::makeDaemon(bool d) {

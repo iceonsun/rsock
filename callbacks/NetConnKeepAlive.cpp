@@ -12,13 +12,19 @@
 #include "../conn/IAppGroup.h"
 #include "../conn/INetGroup.h"
 #include "IReset.h"
+#include "../src/service/TimerServiceUtil.h"
 
-NetConnKeepAlive::NetConnKeepAlive(IAppGroup *group, uv_loop_t *loop, bool active, IReset *reset) {
+NetConnKeepAlive::NetConnKeepAlive(IAppGroup *group, bool active, IReset *reset) {
     mAppGroup = group;  // todo: refactor mAppGroup. use an interface instead
     mReset = reset;
-    if (active) {
-        setupTimer(loop);
+    mActive = active;
+}
+
+int NetConnKeepAlive::Init() {
+    if (mActive) {
+        return TimerServiceUtil::Register(this, FIRST_FLUSH_DELAY);
     }
+    return 0;
 }
 
 int NetConnKeepAlive::Input(uint8_t cmd, ssize_t nread, const rbuf_t &rbuf) {
@@ -54,12 +60,11 @@ int NetConnKeepAlive::SendResponse(IntKeyType connKey) {
     return mAppGroup->doSendCmd(EncHead::TYPE_KEEP_ALIVE_RESP, buf.len, buf);
 }
 
-void NetConnKeepAlive::Close() {
-    if (mFlushTimer) {
-        uv_timer_stop(mFlushTimer);
-        uv_close(reinterpret_cast<uv_handle_t *>(mFlushTimer), close_cb);
-        mFlushTimer = nullptr;
+int NetConnKeepAlive::Close() {
+    if (mActive) {
+        return TimerServiceUtil::UnRegister(this);
     }
+    return 0;
 }
 
 int NetConnKeepAlive::SendRequest(IntKeyType connKey) {
@@ -76,21 +81,7 @@ int NetConnKeepAlive::OnRecvResponse(IntKeyType connKey) {
     return removeRequest(connKey);
 }
 
-void NetConnKeepAlive::setupTimer(uv_loop_t *loop) {
-    if (!mFlushTimer) {
-        mFlushTimer = static_cast<uv_timer_t *>(malloc(sizeof(uv_timer_t)));
-        uv_timer_init(loop, mFlushTimer);
-        mFlushTimer->data = this;
-        uv_timer_start(mFlushTimer, timer_cb, FIRST_FLUSH_DELAY, FLUSH_INTERVAL);
-    }
-}
-
-void NetConnKeepAlive::timer_cb(uv_timer_t *timer) {
-    NetConnKeepAlive *helper = static_cast<NetConnKeepAlive *>(timer->data);
-    helper->onFlush();
-}
-
-void NetConnKeepAlive::onFlush() {
+void NetConnKeepAlive::OnFlush(uint64_t timestamp) {
     auto conns = mAppGroup->NetGroup()->GetAllConns();
     for (auto &e: conns) {
         auto *conn = dynamic_cast<INetConn *>(e.second);
@@ -128,4 +119,11 @@ void NetConnKeepAlive::onNetConnDead(IntKeyType keyType) {
     if (conn) {
         netGroup->OnConnDead(conn);
     }
+}
+
+uint64_t NetConnKeepAlive::Interval() const {
+    if (mActive) {
+        return FLUSH_INTERVAL;
+    }
+    return 0;
 }

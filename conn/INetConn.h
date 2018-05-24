@@ -45,6 +45,9 @@ public:
 protected:
     virtual void OnNetConnErr(INetConn *conn, int err);
 
+    static const IntKeyType INVALID_KEY = 0x1;
+    static const std::string INVALID_KEY_STR;
+
 private:
     ErrCb mErrCb = nullptr;
     IntKeyType mIntKey = 0;

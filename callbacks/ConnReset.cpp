@@ -78,6 +78,7 @@ int ConnReset::OnRecvConvRst(const ConnInfo &src, uint32_t rstConv) {
     return -1;
 }
 
+// TODO: here has bug. if keepalive packet reaches server before data does, the server will send rst. and this conn will be closed and no more connected.
 int ConnReset::OnRecvNetConnRst(const ConnInfo &src, uint32_t key) {
     auto netGroup = mAppGroup->GetNetGroup();
     auto conn = netGroup->ConnOfIntKey(key);

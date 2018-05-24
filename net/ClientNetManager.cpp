@@ -19,7 +19,7 @@ ClientNetManager::ClientNetManager(uv_loop_t *loop, TcpAckPool *ackPool)
         : INetManager(loop, ackPool), MAX_RETRY(INT_MAX) {
 }
 
-void ClientNetManager::Close() {
+int ClientNetManager::Close() {
     INetManager::Close();
 
     for (auto &e: mPending) {
@@ -32,6 +32,7 @@ void ClientNetManager::Close() {
         }
     }
     mPending.clear();
+    return 0;
 }
 
 INetConn *ClientNetManager::DialTcpSync(const ConnInfo &info) {
@@ -118,8 +119,8 @@ void ClientNetManager::connectCb(uv_connect_t *req, int status) {
     free(req);
 }
 
-void ClientNetManager::Flush(uint64_t now) {
-    INetManager::Flush(now);
+void ClientNetManager::OnFlush(uint64_t now) {
+    INetManager::OnFlush(now);
     flushPending(now);
 }
 

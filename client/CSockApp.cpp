@@ -83,7 +83,7 @@ IConn *CSockApp::CreateBridgeConn(RConfig &conf, IConn *btm, uv_loop_t *loop, IN
                 if (0 == c->Init()) {
                     group->AddNetConn(c);
                 } else {
-                    LOGE << "connection" << c->Key() << " init failed";
+                    LOGE << "connection" << c->ToStr() << " init failed";
                     c->Close();
                     delete c;
                 }

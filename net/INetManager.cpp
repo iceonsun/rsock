@@ -9,6 +9,7 @@
 #include "../conn/FakeTcp.h"
 #include "NetUtil.h"
 #include "../conn/BtmUdpConn.h"
+#include "../src/service/TimerServiceUtil.h"
 
 INetManager::INetManager(uv_loop_t *loop, TcpAckPool *ackPool) : POOL_PERSIST_MS(ackPool->PersistMs()) {
     mLoop = loop;
@@ -29,9 +30,9 @@ int INetManager::Add2Pool(INetConn *conn, bool closeIfFail) {
         assert(info);
 
         TcpInfo tcpInfo = *info;
-        auto key = conn->Key();
+        auto keyStr = conn->ToStr();
         if (mTcpAckPool->Wait2Info(tcpInfo, BLOCK_WAIT_MS)) {    // get ack info from pool
-            LOGV << "Connection  " << c->Key() << " add to pool";
+            LOGV << "Connection  " << c->ToStr() << " add to pool";
             // during tcp 3-way handshake. client will receive pkt with SYN set. server will receive pkt with SYN && ACK set.
             // seq and ack for both side will remain
 
@@ -46,7 +47,7 @@ int INetManager::Add2Pool(INetConn *conn, bool closeIfFail) {
             c->Close();
             delete c;
         }
-        LOGW << "conn " << key << " has no record in pool, info: " << tcpInfo.ToStr();
+        LOGW << "conn " << keyStr << " has no record in pool, info: " << tcpInfo.ToStr();
         mTcpAckPool->RemoveInfo(tcpInfo);    // remove record if any
         return -1;
     }
@@ -63,7 +64,11 @@ INetConn *INetManager::TransferConn(const std::string &key) {
     return conn;
 }
 
-void INetManager::Close() {
+int INetManager::Init() {
+    return TimerServiceUtil::Register(this);
+}
+
+int INetManager::Close() {
     for (auto &e: mPool) {
         if (e.second.conn) {
             e.second.conn->Close();
@@ -71,44 +76,19 @@ void INetManager::Close() {
             e.second.conn = nullptr;
         }
     }
-    destroyTimer();
+
+    int nret = TimerServiceUtil::UnRegister(this);
+
     mTcpAckPool = nullptr;
+    return nret;
 }
 
-int INetManager::Init() {
-    setupTimer();
-
-    return 0;
-}
-
-void INetManager::timerCb(uv_timer_t *handle) {
-    INetManager *manager = static_cast<INetManager *>(handle->data);
-    manager->Flush(uv_now(manager->mLoop));
-}
-
-void INetManager::setupTimer() {
-    if (!mFlushTimer) {
-        mFlushTimer = static_cast<uv_timer_t *>(malloc(sizeof(uv_timer_t)));
-        uv_timer_init(mLoop, mFlushTimer);
-        mFlushTimer->data = this;
-        uv_timer_start(mFlushTimer, timerCb, FLUSH_INTERVAL, FLUSH_INTERVAL);
-    }
-}
-
-void INetManager::destroyTimer() {
-    if (mFlushTimer) {
-        uv_timer_stop(mFlushTimer);
-        uv_close(reinterpret_cast<uv_handle_t *>(mFlushTimer), close_cb);
-        mFlushTimer = nullptr;
-    }
-}
-
-void INetManager::Flush(uint64_t now) {
+void INetManager::OnFlush(uint64_t timestamp) {
     for (auto it = mPool.begin(); it != mPool.end();) {
         auto &e = it->second;
         if (e.conn) {
-            if (now >= e.expireMs) {    // expire remove conn.
-                LOGV << "expire. closing conn " << e.conn->Key();
+            if (timestamp >= e.expireMs) {    // expire remove conn.
+                LOGV << "expire. closing conn " << e.conn->ToStr();
                 e.conn->Close();
                 delete e.conn;
                 e.conn = nullptr;
@@ -120,9 +100,13 @@ void INetManager::Flush(uint64_t now) {
         }
         it++;
     }
-    mTcpAckPool->Flush(now);
+    mTcpAckPool->Flush(timestamp);
 }
 
 IBtmConn *INetManager::BindUdp(const ConnInfo &info) {
     return NetUtil::CreateBtmUdpConn(mLoop, info);
+}
+
+uint64_t INetManager::Interval() const {
+    return FLUSH_INTERVAL;
 }

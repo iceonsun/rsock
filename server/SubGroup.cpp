@@ -61,7 +61,7 @@ IConn *SubGroup::newConn(const std::string &key, uint32_t conv) {
     auto out = std::bind(&SubGroup::sconnSend, this, _1, _2);
     AddConn(conn, out, nullptr);
 
-    LOGD << "new SConn, key: " << conn->Key();
+    LOGD << "new SConn, key: " << conn->ToStr();
 
     return conn;
 }

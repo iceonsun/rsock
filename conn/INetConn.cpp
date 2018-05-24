@@ -8,6 +8,8 @@
 #include "../bean/ConnInfo.h"
 #include "../util/rsutil.h"
 
+const std::string INetConn::INVALID_KEY_STR = std::to_string(INetConn::INVALID_KEY);
+
 INetConn::INetConn(const std::string &key) : IConn(key) {
     mIntKey = std::stoul(key);
     assert(mIntKey != 0);
@@ -16,7 +18,9 @@ INetConn::INetConn(const std::string &key) : IConn(key) {
 int INetConn::Init() {
     IConn::Init();
 
-    SetPrintableStr(BuildPrintableStr(*GetInfo()));
+    if (GetInfo()) {
+        SetPrintableStr(BuildPrintableStr(*GetInfo()));
+    }
     return 0;
 }
 

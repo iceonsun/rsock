@@ -29,6 +29,8 @@ class RCap;
 
 class RConn;
 
+class AppTimer;
+
 class ISockApp : public ITcpObserver {
 public:
     explicit ISockApp(bool is_server);
@@ -39,6 +41,7 @@ public:
 
     virtual int Init();
 
+
     virtual int Start();
 
     virtual void Close();
@@ -47,7 +50,7 @@ public:
 
     virtual RCap *CreateCap(RConfig &conf) = 0;
 
-    virtual void StartTimer(uint32_t timeout_ms, uint32_t repeat_ms);
+    virtual int StartTimer(uint32_t timeout_ms, uint32_t repeat_ms);
 
     virtual RConn *CreateBtmConn(RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool, int datalink) = 0;
 
@@ -68,6 +71,7 @@ public:
 protected:
     std::vector<IBtmConn *> bindUdpConns(uint32_t src, const std::vector<uint16_t> &ports, uint32_t dst,
                                          const std::vector<uint16_t> &svr_ports);
+    virtual int InitServices();
 
     virtual void onExitSignal();
 
@@ -81,6 +85,7 @@ protected:
 
     // todo: use uv siginit
     static const int SIG_EXIT = 0;
+
 private:
     int doInit();
 
@@ -96,7 +101,7 @@ private:
     plog::IAppender *mConsoleAppender = nullptr;
 
     uv_loop_t *mLoop = nullptr;
-    RTimer *mTimer = nullptr;
+    AppTimer *mTimer = nullptr;
     bool mServer;
     RCap *mCap = nullptr;
     IConn *mBridge = nullptr;

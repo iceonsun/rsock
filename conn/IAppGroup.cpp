@@ -41,8 +41,8 @@ int IAppGroup::Init() {
 
     mResetHelper = new ConnReset(this);
 
-    mKeepAlive = new NetConnKeepAlive(this, mFakeNetGroup->GetLoop(), mActive, mResetHelper);
-    return 0;
+    mKeepAlive = new NetConnKeepAlive(this, mActive, mResetHelper);
+    return mKeepAlive->Init();
 }
 
 void IAppGroup::Close() {

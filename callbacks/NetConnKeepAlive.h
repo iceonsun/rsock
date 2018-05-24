@@ -7,16 +7,17 @@
 
 #include <map>
 #include "INetConnKeepAlive.h"
+#include "../src/service/ITimerObserver.h"
 
 class IAppGroup;
 
 class IReset;
 
-class NetConnKeepAlive : public INetConnKeepAlive {
+class NetConnKeepAlive : public INetConnKeepAlive, public ITimerObserver {
 public:
     // be same as EncHead
 
-    explicit NetConnKeepAlive(IAppGroup *group, uv_loop_t *loop, bool active, IReset *reset);
+    explicit NetConnKeepAlive(IAppGroup *group, bool active, IReset *reset);
 
     int Input(uint8_t cmd, ssize_t nread, const rbuf_t &rbuf) override;
 
@@ -24,20 +25,20 @@ public:
 
     int SendRequest(IntKeyType connKey) override;
 
-    void Close() override;
+    int Close() override;
 
     int OnRecvResponse(IntKeyType connKey) override;
+
+    int Init() override;
+
+    void OnFlush(uint64_t timestamp) override;
+
+    uint64_t Interval() const override;
 
 private:
     int removeRequest(IntKeyType connKey);
 
-    void onFlush();
-
-    void setupTimer(uv_loop_t *loop);
-
     void onNetConnDead(IntKeyType key);
-
-    static void timer_cb(uv_timer_t *timer);
 
 private:
     const int MAX_RETRY = 3;
@@ -46,9 +47,9 @@ private:
     // result server reset sent to client, because server doesn't have record
     const uint32_t FIRST_FLUSH_DELAY = 30000;   // same with RConfig.keepAlive
     IAppGroup *mAppGroup = nullptr;
-    uv_timer_t *mFlushTimer = nullptr;
     std::map<IntKeyType, int> mReqMap;
     IReset *mReset = nullptr;
+    bool mActive = false;
 };
 
 

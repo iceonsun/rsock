@@ -78,7 +78,7 @@ int INetGroup::Input(ssize_t nread, const rbuf_t &rbuf) {
 void INetGroup::AddNetConn(INetConn *conn) {
     auto out = std::bind(&IConn::Output, this, _1, _2);
     auto rcv = std::bind(&IConn::OnRecv, this, _1, _2);
-    LOGD << "Add INetConn: " << conn->Key();
+    LOGD << "Add INetConn: " << conn->ToStr();
     auto err = std::bind(&INetGroup::childConnErrCb, this, _1, _2);
     conn->SetOnErrCb(err);
     AddConn(conn, out, rcv);
@@ -95,7 +95,7 @@ int INetGroup::Send(ssize_t nread, const rbuf_t &rbuf) {
                 afterSend(n);
                 return n;
             }
-            LOGW << "send, conn " << it->second->Key() << " is dead. Remove it now";
+            LOGW << "send, conn " << it->second->ToStr() << " is dead. Remove it now";
             childConnErrCb(dynamic_cast<INetConn *>(it->second), -1);
         }
         LOGE << "All conns are dead!!! Wait to reconnect";
@@ -106,7 +106,7 @@ int INetGroup::Send(ssize_t nread, const rbuf_t &rbuf) {
 
 void INetGroup::childConnErrCb(INetConn *conn, int err) {
     if (conn) {
-        LOGE << "remove conn " << conn->Key() << " err: " << err;
+        LOGE << "remove conn " << conn->ToStr() << " err: " << err;
         RemoveConn(conn);     // remove it here or in handler
         auto m = mHandler->ObtainMessage(MSG_CONN_ERR, conn);
         mHandler->RemoveMessage(m);
@@ -119,7 +119,7 @@ void INetGroup::handleMessage(const Handler::Message &message) {
         case MSG_CONN_ERR: {
             auto *conn = static_cast<INetConn *>(message.obj);
             assert(conn);
-            LOGE << "closing conn: " << conn->Key();
+            LOGE << "closing conn: " << conn->ToStr();
             ConnInfo *info = nullptr;
             ConnInfo *connInfo = conn->GetInfo();
             if (connInfo->IsUdp()) {
@@ -153,6 +153,7 @@ bool INetGroup::OnConnDead(IConn *conn) {
     return false;
 }
 
+// todo: replace mErrCb with a method of an abstract class
 void INetGroup::netConnErr(const ConnInfo &info) {
     if (mErrCb) {
         mErrCb(info);

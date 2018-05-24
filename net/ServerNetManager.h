@@ -17,7 +17,7 @@ public:
 
     int Init() override;
 
-    void Close() override;
+    int Close() override;
 
     virtual void OnNewConnection(uv_tcp_t *tcp);
 

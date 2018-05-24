@@ -20,6 +20,8 @@ public:
     ConnInfo *GetInfo() override;
 
     int OnRecv(ssize_t nread, const rbuf_t &rbuf) override;
+
+    int Init() override;
 };
 
 
