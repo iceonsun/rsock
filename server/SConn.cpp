@@ -27,7 +27,7 @@ int SConn::Init() {
     return 0;
 }
 
-void SConn::Close() {
+int SConn::Close() {
     IConn::Close();
 
     if (mTarget) {
@@ -44,6 +44,7 @@ void SConn::Close() {
         uv_close(reinterpret_cast<uv_handle_t *>(mUdp), close_cb);
         mUdp = nullptr;
     }
+    return 0;
 }
 
 void SConn::udpRecvCb(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf, const SA *addr, unsigned flags) {

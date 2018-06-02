@@ -170,6 +170,7 @@ void Handler::timer_cb(uv_timer_t *timer) {
 
 void Handler::Close() {
     RemoveAll();
+    mLoop = nullptr;
 }
 
 Handler::Task Handler::NewTask(const ITask &task) {
@@ -238,6 +239,18 @@ Handler::Message Handler::ObtainMessage(int what, void *obj) {
 Handler::Message Handler::ObtainMessage(int what, int arg1, const std::string &msg, void *obj) {
     auto m = Handler::Message(this, what, arg1, msg, obj);
     return m;
+}
+
+bool Handler::HasMessages(int what) {
+    std::lock_guard<std::mutex> lk(mMutex);
+    bool found = false;
+    for (const auto &e: mMessageList) {
+        if (e.what == what) {
+            found = true;
+            break;
+        }
+    }
+    return found;
 }
 
 bool Handler::RemoveMessage(const Message &msg) {
@@ -335,7 +348,6 @@ void Handler::destroyTimer() {
 void Handler::handle_close_cb(uv_handle_t *handle) {
     free(handle);
 }
-
 
 Handler::Task::Task(const Handler::ITask &task) : Task() {
     mTask = task;

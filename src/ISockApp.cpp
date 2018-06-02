@@ -22,6 +22,9 @@
 #include "../util/UvUtil.h"
 #include "app/AppTimer.h"
 #include "service/ServiceManager.h"
+#include "service/TimerService.h"
+#include "service/RouteService.h"
+#include "conf/ConfManager.h"
 
 ISockApp::ISockApp(bool is_server) : mServer(is_server) {
 }
@@ -32,12 +35,20 @@ int ISockApp::Parse(int argc, const char *const *argv) {
         return -1;
     }
 
-    int nret = mConf.Parse(mServer, argc, argv);
+    int nret = initConfManager();
+    if (nret) {
+        LOGE << "failed to init conf manager";
+        return nret;
+    }
+
+    auto confManager = ConfManager::GetInstance();
+    nret = confManager->Conf().Parse(mServer, argc, argv);
     return nret;
 }
 
 int ISockApp::Init() {
-    if (!mConf.Inited()) {
+    const auto confManager = ConfManager::GetInstance();
+    if (!confManager->Conf().Inited()) {
         fprintf(stderr, "configuration not inited.\n");
         assert(0);
     }
@@ -51,19 +62,36 @@ int ISockApp::Init() {
     return doInit();
 }
 
-int ISockApp::InitServices() {
-    assert(mLoop);
-    auto manager = ServiceManager::GetInstance(mLoop);
+int ISockApp::InitServices(const RConfig &conf) {
+    const auto confManager = ConfManager::GetInstance();
+    assert(confManager);
+
+    auto manager = ServiceManager::GetInstance();
+
+    if (manager) {
+        assert(mLoop);
+
+        auto *timerService = new TimerService(mLoop);
+        manager->AddService(ServiceManager::TIMER_SERVICE, timerService);
+
+        auto *routeService = new RouteService(mLoop);
+        manager->AddService(ServiceManager::ROUTE_SERVICE, routeService);
+    }
+
     if (!manager || manager->Init()) {
         LOGE << "failed to init ServiceManager manager";
         return -1;
     }
+
     return 0;
 }
 
 int ISockApp::doInit() {
-    assert(mConf.Inited());
-    if (makeDaemon(mConf.isDaemon)) {
+    auto confManager = ConfManager::GetInstance();
+    auto &conf = confManager->Conf();
+    assert(conf.Inited());
+
+    if (makeDaemon(conf.isDaemon)) {
         return -1;
     }
 
@@ -74,29 +102,29 @@ int ISockApp::doInit() {
         fprintf(stdout, "failed to init logger, nret: %d\n", nret);
         return -1;
     }
-    LOGD << "conf: " << mConf.to_json().dump();
+    LOGD << "conf: " << conf.to_json().dump();
 
-    nret = InitServices();
+    nret = InitServices(conf);
     if (nret) {
         fprintf(stdout, "failed to init services: %d\n", nret);
         return nret;
     }
 
-    mAckPool = new TcpAckPool(mLoop, mConf.param.conn_duration_sec * 1000);
+    mAckPool = new TcpAckPool(mLoop, conf.param.conn_duration_sec * 1000);
 
-    mNetManager = CreateNetManager(mConf, mLoop, mAckPool);
+    mNetManager = CreateNetManager(conf, mLoop, mAckPool);
     if (mNetManager->Init()) {
         LOGE << "NetManager init failed";
         return -1;
     }
     assert(mNetManager);
-    mCap = CreateCap(mConf);
+    mCap = CreateCap(conf);
     if (!mCap || mCap->Init()) {
         LOGE << "pcap init failed";
         return -1;
     }
 
-    mBtmConn = CreateBtmConn(mConf, mLoop, mAckPool, mCap->Datalink());
+    mBtmConn = CreateBtmConn(conf, mLoop, mAckPool);
     nret = mBtmConn->Init();
     if (nret) {
         return nret;
@@ -105,9 +133,9 @@ int ISockApp::doInit() {
     assert(mBtmConn);
     mBtmConn->Attach(this);
     // cap#Start must be called before CreateBridgeConn because create btmconn will connect tcp
-    mCapThread = mCap->Start(RConn::CapInputCb, (u_char *) (mBtmConn));
+    mCap->Start(RConn::CapInputCb, (u_char *) (mBtmConn));
 
-    mBridge = CreateBridgeConn(mConf, mBtmConn, mLoop, mNetManager);
+    mBridge = CreateBridgeConn(conf, mBtmConn, mLoop, mNetManager);
     if (!mBridge || mBridge->Init()) {
         return -1;
     }
@@ -120,20 +148,23 @@ int ISockApp::doInit() {
 }
 
 int ISockApp::initLog() {
-    if (!mConf.log_path.empty()) {
-        if (!FdUtil::FileExists(mConf.log_path.c_str())) {
-            int nret = FdUtil::CreateFile(mConf.log_path);
+    auto confManager = ConfManager::GetInstance();
+    const auto &conf = confManager->Conf();
+
+    if (!conf.log_path.empty()) {
+        if (!FdUtil::FileExists(conf.log_path.c_str())) {
+            int nret = FdUtil::CreateFile(conf.log_path);
             if (nret < 0) {
                 return nret;
             }
         }
-        mFileAppender = new plog::RollingFileAppender<plog::TxtFormatter>(mConf.log_path.c_str(), 1000000, 1);
+        mFileAppender = new plog::RollingFileAppender<plog::TxtFormatter>(conf.log_path.c_str(), 1000000, 1);
     } else {
         fprintf(stderr, "warning: log path empty\n");
     }
 
     mConsoleAppender = new plog::ConsoleAppender<plog::TxtFormatter>();
-    plog::init(mConf.log_level, mConsoleAppender);
+    plog::init(conf.log_level, mConsoleAppender);
     if (mFileAppender) {
         plog::get()->addAppender(mFileAppender);
     }
@@ -143,7 +174,9 @@ int ISockApp::initLog() {
 
 int ISockApp::Start() {
     assert(mInited);
-    StartTimer(mConf.param.conn_duration_sec * 1000, mConf.param.conn_duration_sec * 1000);
+    auto confManager = ConfManager::GetInstance();
+    const auto &conf = confManager->Conf();
+    StartTimer(conf.param.conn_duration_sec * 1000, conf.param.conn_duration_sec * 1000);
     return uv_run(mLoop, UV_RUN_DEFAULT);
 }
 
@@ -168,14 +201,9 @@ void ISockApp::Close() {
     }
 
     if (mCap) {
-        mCap->Close();
+        mCap->JoinAndClose();
         delete mCap;
         mCap = nullptr;
-    }
-
-    if (mCapThread != 0) {
-        uv_thread_join(&mCapThread);
-        mCapThread = 0;
     }
 
     if (mBtmConn) {
@@ -296,6 +324,8 @@ void ISockApp::watchExitSignals() {
 }
 
 ISockApp::~ISockApp() {
+    ConfManager::DestroyInstance();
+
     if (mFileAppender) {
         delete mFileAppender;
         mFileAppender = nullptr;
@@ -332,7 +362,8 @@ int ISockApp::checkRoot(int argc, const char *const *argv) {
                 argv[0],
                 "-h",
         };
-        mConf.Parse(mServer, sizeof(fakeargv) / sizeof(fakeargv[0]), fakeargv);
+        RConfig conf;   // print out help information
+        conf.Parse(mServer, sizeof(fakeargv) / sizeof(fakeargv[0]), fakeargv);
         return -1;
     }
     return 0;
@@ -346,4 +377,10 @@ void ISockApp::destroySignals() {
         }
         mExitSignals.clear();
     }
+}
+
+int ISockApp::initConfManager() {
+    auto confManager = ConfManager::GetInstance();
+    assert(confManager);
+    return confManager->Init();
 }

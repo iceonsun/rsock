@@ -24,9 +24,14 @@ set(SOURCE_FILES
         net/ServerNetManager.cpp
         src/sync/SyncConnFactory.cpp src/sync/LoopSreamSyncConn.cpp src/sync/ISyncConn.cpp src/sync/UdpSyncConn.cpp
         src/sync/TcpStreamSyncConn.cpp src/sync/IPacketSyncConn.cpp
-        src/service/TimerService.cpp src/service/IObserver.h src/service/IService.cpp src/service/ITimerObserver.h
-        src/service/ServiceManager.cpp src/service/TimerServiceUtil.cpp
-        src/app/AppTimer.cpp)
+        src/service/IObserver.h src/service/IService.cpp
+        src/service/ITimerObserver.h src/service/TimerService.cpp src/service/TimerServiceUtil.cpp
+        src/service/IRouteObserver.h src/service/RouteService.cpp
+        src/service/ServiceManager.cpp
+        src/app/AppTimer.cpp util/RouteUtil.cpp util/RouteUtil.h src/service/ServiceUtil.h
+        #src/service/ServiceUtil.cpp # template involved
+        src/conf/ConfManager.cpp
+        src/util/Singleton.h src/util/ICloseable.h cap/CapUtil.cpp cap/CapUtil.h)
 
 # platform dependent dir		
 SET(ROS_DIR src/os/unix)
@@ -68,7 +73,7 @@ if (NOT "${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
     add_definitions(-Wall -fvisibility=default -Werror=return-type)
 endif ()
 
-set(libs uv net)
+set(libs uv net dnet)
 if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
     set(OS_LIBS ws2_32 IPHLPAPI Psapi userenv advapi32 shell32)
     set(libs ${libs} wpcap packet ${OS_LIBS})

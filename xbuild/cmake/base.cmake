@@ -19,6 +19,7 @@ add_definitions(-DRSOCK_BUILD_TIME="${RSOCK_BUILD_TIME}")
 
 include_directories(${RSOCK_TOP_BUILD_DIR}/include/libuv)
 include_directories(${RSOCK_TOP_BUILD_DIR}/include/libnet)
+include_directories(${RSOCK_TOP_BUILD_DIR}/include/libdnet)
 if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
     include_directories(${RSOCK_TOP_BUILD_DIR}/include/winpcap)
     link_directories(${RSOCK_TOP_BUILD_DIR}/lib/Windows_x86/)   # force use 32bit

@@ -41,7 +41,6 @@ int NetConnKeepAlive::Input(uint8_t cmd, ssize_t nread, const rbuf_t &rbuf) {
                 mReset->SendNetConnRst(*info, connKey);
             }
         } else if (cmd == EncHead::TYPE_KEEP_ALIVE_RESP) {
-            LOGV << "receive response: " << connKey;
             OnRecvResponse(connKey);
         }
     } else {
@@ -78,6 +77,12 @@ int NetConnKeepAlive::SendRequest(IntKeyType connKey) {
 }
 
 int NetConnKeepAlive::OnRecvResponse(IntKeyType connKey) {
+    auto conn = mAppGroup->GetNetGroup()->ConnOfIntKey(connKey);
+    if (conn) {
+        LOGV << "receive response keepalive response for " << conn->ToStr();
+    } else {
+        LOGD << "receive invalid response";
+    }
     return removeRequest(connKey);
 }
 

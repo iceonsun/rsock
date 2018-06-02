@@ -19,7 +19,7 @@ public:
 
     int OnRecv(ssize_t nread, const rbuf_t &buf) override;
 
-    void Close() override;
+    int Close() override;
 
     ConnInfo *GetInfo() override;
 

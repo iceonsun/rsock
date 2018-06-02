@@ -19,12 +19,13 @@ SubGroup::SubGroup(const std::string &groupId, uv_loop_t *loop, const struct soc
     mTarget = new_addr(target);
 }
 
-void SubGroup::Close() {
+int SubGroup::Close() {
     IAppGroup::Close();
     if (mTarget) {
         free(mTarget);
         mTarget = nullptr;
     }
+    return 0;
 }
 
 int SubGroup::OnRecv(ssize_t nread, const rbuf_t &rbuf) {

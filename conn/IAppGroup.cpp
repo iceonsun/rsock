@@ -45,7 +45,7 @@ int IAppGroup::Init() {
     return mKeepAlive->Init();
 }
 
-void IAppGroup::Close() {
+int IAppGroup::Close() {
     IGroup::Close();
     if (mFakeNetGroup) {
         mFakeNetGroup->Close();
@@ -62,6 +62,7 @@ void IAppGroup::Close() {
         delete mResetHelper;
         mResetHelper = nullptr;
     }
+    return 0;
 }
 
 int IAppGroup::Send(ssize_t nread, const rbuf_t &rbuf) {

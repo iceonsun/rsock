@@ -28,7 +28,7 @@ public:
 
     int Send(ssize_t nread, const rbuf_t &rbuf) override;
 
-    void Close() override;
+    int Close() override;
 
     virtual INetConn *CreateNetConn(const std::string &key, const ConnInfo *info) = 0;
 

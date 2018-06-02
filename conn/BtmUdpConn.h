@@ -18,7 +18,7 @@ public:
 
     int Init() override;
 
-    void Close() override;
+    int Close() override;
 
     bool IsUdp() override;
 

@@ -13,6 +13,7 @@
 #include <cstdint>
 #include "rscomm.h"
 #include "IConn.h"
+#include "../src/service/IRouteObserver.h"
 
 struct TcpInfo;
 
@@ -20,13 +21,13 @@ class TcpAckPool;
 
 class ISyncConn;
 
-class RawTcp : public IConn {
+class RawTcp : public IConn, public IRouteObserver {
 public:
     const static int TTL_OUT = OM_TTL_OUT;
 
-    RawTcp(const std::string &dev, uv_loop_t *loop, TcpAckPool *ackPool, int datalinkType, bool server);
+    RawTcp(const std::string &dev, uv_loop_t *loop, TcpAckPool *ackPool, bool server);
 
-    void Close() override;
+    int Close() override;
 
     static int SendRawTcp(libnet_t *libnet, uint32_t src, uint16_t sp, uint32_t dst, uint16_t dp, uint32_t seq,
                           uint32_t ack, const uint8_t *payload, uint16_t payload_s, uint16_t ip_id, libnet_ptag_t &tcp,
@@ -40,6 +41,10 @@ public:
 
     int Init() override;
 
+    void OnNetConnected(const std::string &ifName, const std::string &ip) override;
+
+    void OnNetDisconnected() override;
+
 protected:
     using CMD_TYPE = uint8_t;
 
@@ -52,20 +57,23 @@ private:
     static int SendRawUdp(libnet_t *libnet, uint32_t src, uint16_t sp, uint32_t dst, uint16_t dp, const uint8_t *payload,
                           uint16_t payload_len, uint16_t ip_id, libnet_ptag_t &udp, libnet_ptag_t &ip);
 
+    libnet_t* newLibnet(const std::string &dev);
+
     static const CMD_TYPE CMD_TCP = 1;
 
     // mulithread. const var
-    const int mDatalink = DLT_EN10MB;   // default ethernet
+    // only DLT_EN10MB and DLT_NULL is supported
+    int mDatalink = DLT_EN10MB;   // default ethernet
+
+    TcpAckPool *mTcpAckPool = nullptr;
+    uv_loop_t *mLoop = nullptr;
 
     uint16_t mIpId = 0;
 
-    TcpAckPool *mTcpAckPool = nullptr;
     libnet_t *mTcpNet = nullptr;
-
-    uv_loop_t *mLoop = nullptr;
-    libnet_ptag_t mTcp = 0;
-    libnet_ptag_t mIpForTcp = 0;
-    const std::string mDev;
+    libnet_ptag_t mTcpTag = 0;
+    libnet_ptag_t mIp4TcpTag = 0;
+    std::string mDev;
     bool mIsServer = false;
 
 	ISyncConn *mSyncConn = nullptr;

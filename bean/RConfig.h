@@ -15,6 +15,9 @@
 #include "plog/Severity.h"
 
 struct RConfig {
+    RConfig() = default;
+
+    RConfig(const RConfig &) = default;
 
     struct RParam {
         std::string dev;
@@ -47,6 +50,8 @@ struct RConfig {
         int keepAliveInterval = 5;  // default 5s, 3 times
 
         const std::string version = RSOCK_BUILD_TIME;
+
+        RParam &operator=(const RParam &) = default;
     };
 
     // if turned to debug, speed of rsock will be very slow on macOS.
@@ -74,7 +79,7 @@ public:
     int Parse(bool is_server, int argc, const char *const *argv);
 
     // if caller called Config#Parse() or call SetInited manually, this method will return true
-    bool Inited();
+    bool Inited() const;
 
     void SetInited(bool init);
 
@@ -83,6 +88,7 @@ public:
     static void CheckValidation(const RConfig &c);
 
     static std::string BuildExampleString();
+
 private:
     static void parseJsonFile(RConfig &conf, const std::string &fName, std::string &err);
 

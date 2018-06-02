@@ -17,11 +17,6 @@ TimerService::TimerService(uv_loop_t *loop, TimerService::Precision precision) {
     mPrecision = precision;
 }
 
-int TimerService::Init() {
-    IService::Init();
-    return 0;
-}
-
 int TimerService::Close() {
     int nret = IService::Close();
 
@@ -86,9 +81,8 @@ void TimerService::destroyTimer() {
 
 void TimerService::onFlush() {
     decltype(mExpireMap) aCopy;
-    auto it = mExpireMap.begin();
 
-    for (; it != mExpireMap.end();) {
+    for (auto it = mExpireMap.begin(); it != mExpireMap.end();) {
         uint64_t now = rsk_now_ms();
         if (now >= it->first) {
             it->second->OnFlush(now);

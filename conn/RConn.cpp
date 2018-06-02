@@ -16,9 +16,9 @@ using namespace std::placeholders;
 // todo: this will change if add some other headers
 const int RConn::HEAD_SIZE = EncHead::GetMinEncSize() + HASH_BUF_SIZE;
 
-RConn::RConn(const std::string &hashKey, const std::string &dev, uv_loop_t *loop, TcpAckPool *ackPool, int datalink,
+RConn::RConn(const std::string &hashKey, const std::string &dev, uv_loop_t *loop, TcpAckPool *ackPool,
              bool isServer) : IGroup("RConn", nullptr), mHashKey(hashKey) {
-    mRawTcp = new RawTcp(dev, loop, ackPool, datalink, isServer);
+    mRawTcp = new RawTcp(dev, loop, ackPool, isServer);
     mReset = new RConnReset(this);
 }
 
@@ -37,7 +37,7 @@ int RConn::Init() {
 	return 0;
 }
 
-void RConn::Close() {
+int RConn::Close() {
     IGroup::Close();
     if (mReset) {
         mReset->Close();
@@ -50,6 +50,7 @@ void RConn::Close() {
         delete mRawTcp;
         mRawTcp = nullptr;
     }
+    return 0;
 }
 
 void RConn::AddUdpConn(IBtmConn *conn) {

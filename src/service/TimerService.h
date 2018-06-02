@@ -27,8 +27,6 @@ public:
 
     TimerService(uv_loop_t *loop, Precision precision);
 
-    int Init() override;
-
     int Close() override;
 
     /*
@@ -51,6 +49,7 @@ protected:
     void onFlush();
 
 private:
+
     uint64_t nextExpireTs(uint64_t start);
 
     static void timerCb(uv_timer_t *timer);

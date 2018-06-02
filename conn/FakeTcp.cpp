@@ -26,13 +26,14 @@ int FakeTcp::Init() {
     return uv_read_start(mTcp, alloc_buf, read_cb);
 }
 
-void FakeTcp::Close() {
+int FakeTcp::Close() {
     INetConn::Close();
     if (mTcp) {
         uv_close(reinterpret_cast<uv_handle_t *>(mTcp), close_cb);
         mTcp = nullptr;
     }
     mAlive = false;
+    return 0;
 }
 
 int FakeTcp::Output(ssize_t nread, const rbuf_t &rbuf) {

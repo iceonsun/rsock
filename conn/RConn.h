@@ -24,8 +24,8 @@ class RConn : public IGroup, public ITcpInformer {
 public:
 //    using INetReset = std::function<void(ssize_t nread, const rbuf_t &rbuf)>;
 
-    RConn(const std::string &hashKey, const std::string &dev, uv_loop_t *loop, TcpAckPool *ackPool, int datalink,
-          bool isServer);
+    RConn(const std::string &hashKey, const std::string &dev, uv_loop_t *loop, TcpAckPool *ackPool,
+              bool isServer);
 
     static const int HEAD_SIZE;
 
@@ -41,7 +41,7 @@ public:
 
     int Init() override;
 
-    void Close() override;
+    int Close() override;
 
     static void CapInputCb(u_char *args, const pcap_pkthdr *hdr, const u_char *packet);
 

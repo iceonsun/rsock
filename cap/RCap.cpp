@@ -8,6 +8,8 @@
 #include "plog/Log.h"
 #include "RCap.h"
 #include "os.h"
+#include "../src/service/ServiceUtil.h"
+#include "../src/service/RouteService.h"
 
 
 RCap::RCap(const std::string &dev, const std::string &selfIp, const RPortList &selfPorts, const RPortList &srcPorts,
@@ -39,6 +41,13 @@ int RCap::initDevAndIp() {
 
 int RCap::Init() {
     assert(mInited == false);
+    int nret = doInit();
+    mInited = true;
+    ServiceUtil::GetService<RouteService*>(ServiceManager::ROUTE_SERVICE)->RegisterObserver(this);
+    return nret;
+}
+
+int RCap::doInit() {
     int nret = 0;
     if (mDstIp.empty()) {
         nret = initDevAndIp();
@@ -94,8 +103,24 @@ int RCap::Init() {
         LOGE << "init failed: " << pcap_geterr(mCap);
         return nret;
     }
-    mInited = true;
     return 0;
+}
+
+
+void RCap::OnNetConnected(const std::string &ifName, const std::string &ip) {
+    mDev = ifName;
+    mDstIp = "";
+
+    if (mCap) { // todo: break pcap_loop. restart thread
+        pcap_close(mCap);
+        mCap = nullptr;
+    }
+
+    doInit();
+}
+
+void RCap::OnNetDisconnected() {
+    // don't stop receive
 }
 
 void RCap::Run(pcap_handler handler, u_char *args) {
@@ -107,12 +132,14 @@ void RCap::Run(pcap_handler handler, u_char *args) {
 }
 
 uv_thread_t RCap::Start(pcap_handler handler, u_char *args) {
+    assert(mCapThread == 0);
     uv_thread_t thread;
     CapThreadArgs *threadArgs = new CapThreadArgs();
     threadArgs->instance = this;
     threadArgs->handler = handler;
     threadArgs->args = args;
     uv_thread_create(&thread, threadCb, threadArgs);
+    mCapThread = thread;
     return thread;
 }
 
@@ -133,6 +160,7 @@ int RCap::Close() {
         pcap_close(mCap);
         mCap = nullptr;
     }
+    ServiceUtil::GetService<RouteService*>(ServiceManager::ROUTE_SERVICE)->UnRegisterObserver(this);
     mHandler = nullptr;
     mDone = true;
     return 0;
@@ -163,4 +191,19 @@ void RCap::threadCb(void *threadArg) {
     RCap *cap = args->instance;
     delete args;
     cap->Run(handler, arg);
+}
+
+int RCap::JoinAndClose() {
+    if (0 != mCapThread) {
+        if (uv_thread_self() == mCapThread) {
+            LOGE << "can't join on self thread!";
+            assert(0);
+        }
+        LOGD << "closing pcap";
+        Close();
+        LOGD << "join on pcap thread";
+        uv_thread_join(&mCapThread);
+        mCapThread = 0;
+    }
+    return 0;
 }

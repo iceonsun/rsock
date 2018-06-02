@@ -15,13 +15,13 @@
 
 SSockApp::SSockApp() : ISockApp(true) {}
 
-RCap *SSockApp::CreateCap(RConfig &conf) {
+RCap *SSockApp::CreateCap(const RConfig &conf) {
     return new RCap(conf.param.dev, conf.param.selfCapIp, conf.param.capPorts, {}, "", conf.param.cap_timeout, true);
 }
 
-RConn *SSockApp::CreateBtmConn(RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool, int datalink) {
+RConn *SSockApp::CreateBtmConn(RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool) {
     // note: tcp is listened in ServerNetManager
-    RConn *rconn = new RConn(conf.param.hashKey, conf.param.dev, loop, ackPool, datalink, true);
+    RConn *rconn = new RConn(conf.param.hashKey, conf.param.dev, loop, ackPool, true);
     // listen udp directly if enabled
     if (conf.param.type & OM_PIPE_UDP) {
         auto ports = conf.param.capPorts.GetRawList();
@@ -43,7 +43,7 @@ IConn *SSockApp::CreateBridgeConn(RConfig &conf, IConn *btm, uv_loop_t *loop, IN
     return new ServerGroup(IdBuf2Str(conf.param.id), loop, (const SA *) (&target), btm, netManager);
 }
 
-INetManager *SSockApp::CreateNetManager(RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool) {
+INetManager *SSockApp::CreateNetManager(const RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool) {
     auto portList = conf.param.capPorts;
     if (! (conf.param.type & OM_PIPE_TCP)) {
         portList = {};

@@ -17,7 +17,7 @@ int TimerServiceUtil::Register(ITimerObserver *observer) {
 }
 
 int TimerServiceUtil::Register(ITimerObserver *observer, uint64_t delay) {
-    auto manager = ServiceManager::GetInstance(nullptr);
+    auto manager = ServiceManager::GetInstance();
     LOGE_IF(manager == nullptr) << "manager null";
     assert(manager);
     auto *service = dynamic_cast<TimerService *>(manager->GetService(ServiceManager::TIMER_SERVICE));
@@ -25,7 +25,7 @@ int TimerServiceUtil::Register(ITimerObserver *observer, uint64_t delay) {
 }
 
 int TimerServiceUtil::UnRegister(ITimerObserver *observer) {
-    auto manager = ServiceManager::GetInstance(nullptr);
+    auto manager = ServiceManager::GetInstance();
     LOGE_IF(manager == nullptr) << "manager null";
     assert(manager);
     auto *service = dynamic_cast<TimerService *>(manager->GetService(ServiceManager::TIMER_SERVICE));

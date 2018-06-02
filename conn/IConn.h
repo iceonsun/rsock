@@ -21,7 +21,7 @@ public:
 
     virtual ~IConn();
 
-    virtual void Close();
+    virtual int Close();
 
     virtual int Init();
 

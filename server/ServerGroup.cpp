@@ -22,12 +22,13 @@ ServerGroup::ServerGroup(const std::string &groupId, uv_loop_t *loop, const stru
     SetPrintableStr("ServerGroup");
 }
 
-void ServerGroup::Close() {
+int ServerGroup::Close() {
     IGroup::Close();
     if (mTarget) {
         free(mTarget);
         mTarget = nullptr;
     }
+    return 0;
 }
 
 int ServerGroup::OnRecv(ssize_t nread, const rbuf_t &rbuf) {

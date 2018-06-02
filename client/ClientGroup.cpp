@@ -159,7 +159,7 @@ void ClientGroup::pollCb(uv_poll_t *handle, int status, int events) {
     }
 }
 
-void ClientGroup::Close() {
+int ClientGroup::Close() {
     IAppGroup::Close();
 
     if (mUdp) {
@@ -183,6 +183,7 @@ void ClientGroup::Close() {
         free(mUnAddr);
         mUnAddr = nullptr;
     }
+    return 0;
 }
 
 void ClientGroup::onLocalRecv(ssize_t nread, const char *base, const struct sockaddr *addr) {

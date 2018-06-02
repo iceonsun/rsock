@@ -21,7 +21,7 @@ public:
 
     int Init() override;
 
-    void Close() override;
+    int Close() override;
 
     virtual bool IsUdp() = 0;
 

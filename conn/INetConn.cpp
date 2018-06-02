@@ -52,9 +52,10 @@ void INetConn::OnNetConnErr(INetConn *conn, int err) {
     }
 }
 
-void INetConn::Close() {
+int INetConn::Close() {
     IConn::Close();
     mErrCb = nullptr;
+    return 0;
 }
 
 const std::string INetConn::BuildPrintableStr(const ConnInfo &info) {

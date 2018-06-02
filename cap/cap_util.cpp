@@ -184,28 +184,3 @@ bool DevIpMatch(const std::string &dev, const std::string &ip) {
 uint32_t NetIntOfIp(const char *ip) {
 	return (uint32_t) inet_addr(ip);
 }
-
-int firstDev(char *dev) {
-    pcap_if_t *dev_list = nullptr;
-    char err[PCAP_ERRBUF_SIZE] = {0};
-    int nret = pcap_findalldevs(&dev_list, err);
-    if (0 == nret) {
-        memcpy(dev, dev_list->name, strlen(dev_list->name));
-    }
-    if (dev_list) {
-        pcap_freealldevs(dev_list);
-    }
-    return nret;
-}
-
-int DefaultDev(std::string &dev) {
-    char err[PCAP_ERRBUF_SIZE] = {0};
-    char devBuf[BUFSIZ] = {0};
-    int nret = firstDev(devBuf);
-    if (nret) {
-        fprintf(stdout, "failed to find suitable dev: %s\n", err);
-        return -1;
-    }
-    dev = std::string(devBuf);
-    return nret;
-}

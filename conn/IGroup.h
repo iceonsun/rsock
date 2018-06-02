@@ -24,7 +24,7 @@ public:
 
     int Init() override;
 
-    void Close() override;
+    int Close() override;
 
     void Flush(uint64_t now) override;
 

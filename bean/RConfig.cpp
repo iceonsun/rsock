@@ -15,6 +15,7 @@
 #include "../util/rhash.h"
 #include "FdUtil.h"
 #include "../cap/cap_util.h"
+#include "../util/RouteUtil.h"
 
 using namespace args;
 using namespace json11;
@@ -87,7 +88,7 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
                 param.dev = dev.Get();
             } else {
                 if (!selfCapIp) {
-                    int nret = DefaultDev(param.dev);
+                    int nret = RouteUtil::GetWanInfo(param.dev, param.selfCapIp);
                     if (nret || param.dev.empty()) {
                         throw args::Error("unable to find default device");
                     }
@@ -418,7 +419,7 @@ std::string RConfig::strOfType(int type) {
     }
 }
 
-bool RConfig::Inited() {
+bool RConfig::Inited() const {
     return mInited;
 }
 

@@ -6,7 +6,7 @@
 #define RSOCK_ISERVICE_H
 
 #include <string>
-#include <set>
+#include <vector>
 
 class IObserver;
 
@@ -26,8 +26,31 @@ public:
 
     virtual bool ContainsObserver(IObserver *observer);
 
+    class IIterator {
+    public:
+        virtual IObserver *Next() = 0;
+
+        virtual bool HasNext() = 0;
+    };
+
+    virtual IIterator *NewIterator();
+
 private:
-    std::set<IObserver *> mObserver;
+    class Iterator : public IIterator {
+    public:
+        explicit Iterator(IService *service);
+
+        IObserver *Next() override;
+
+        bool HasNext() override;
+
+    private:
+        IService *mService = nullptr;
+        std::vector<IObserver *>::iterator mIterator;
+    };
+
+private:
+    std::vector<IObserver *> mObserver; // use vector to main register order.
     bool mInited = false;
 };
 

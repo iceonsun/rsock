@@ -88,12 +88,13 @@ int BtmUdpConn::Output(ssize_t nread, const rbuf_t &rbuf) {
     return nread;
 }
 
-void BtmUdpConn::Close() {
+int BtmUdpConn::Close() {
     IBtmConn::Close();
     if (mUdp) {
         uv_close(reinterpret_cast<uv_handle_t *>(mUdp), close_cb);
         mUdp = nullptr;
     }
+    return 0;
 }
 
 void BtmUdpConn::udpRecv(ssize_t nread, const uv_buf_t *buf, const struct sockaddr *addr) {

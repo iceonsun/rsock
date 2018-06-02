@@ -15,7 +15,7 @@ public:
 
     int Init() override;
 
-    void Close() override;
+    int Close() override;
 
     uint32_t Conv();
 

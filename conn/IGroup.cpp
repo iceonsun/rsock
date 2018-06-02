@@ -39,7 +39,7 @@ int IGroup::Init() {
     return 0;
 }
 
-void IGroup::Close() {
+int IGroup::Close() {
     IConn::Close();
     if (mBtm) {
         mBtm->Close();
@@ -53,6 +53,7 @@ void IGroup::Close() {
         }
         mConns.clear();
     }
+    return 0;
 }
 
 bool IGroup::RemoveConn(IConn *conn) {

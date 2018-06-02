@@ -19,7 +19,7 @@ public:
 
     int Init() override;
 
-    void Close() override;
+    int Close() override;
 
     // to target
     int OnRecv(ssize_t nread, const rbuf_t &rbuf) override;

@@ -13,12 +13,13 @@ CConn::CConn(const std::string &key, const SA *addr, uint32_t conv) : IConn(key)
     mConv = conv;
 }
 
-void CConn::Close() {
+int CConn::Close() {
     IConn::Close();
     if (mAddr) {
         free(mAddr);
         mAddr = nullptr;
     }
+    return 0;
 }
 
 uint32_t CConn::Conv() {

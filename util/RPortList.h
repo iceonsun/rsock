@@ -24,7 +24,7 @@ public:
 
     RPortList(const std::initializer_list<PortPair> &list);
 
-	// if named with AddPort16, the method will collide a macro on windows
+    // if named with AddPort16, the method will collide a macro on windows
     virtual void AddPort16(uint16_t port);
 
     // start < end
@@ -42,10 +42,10 @@ public:
 
     static bool FromString(RPortList &list, const std::string &str);
 
-	RPortList& operator=(const RPortList &) = default;
+    RPortList &operator=(const RPortList &) = default;
 
 private:
-    inline bool valid();
+    inline bool valid() const;
 
     inline void invalidState();
 

@@ -15,13 +15,13 @@
 
 CSockApp::CSockApp() : ISockApp(false) {}
 
-RCap *CSockApp::CreateCap(RConfig &conf) {
+RCap *CSockApp::CreateCap(const RConfig &conf) {
     return new RCap(conf.param.dev, conf.param.selfCapIp, {}, conf.param.capPorts,
                     conf.param.targetIp, conf.param.cap_timeout, false);
 }
 
-RConn *CSockApp::CreateBtmConn(RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool, int datalink) {
-    auto *rconn = new RConn(conf.param.hashKey, conf.param.dev, loop, ackPool, datalink, false);
+RConn *CSockApp::CreateBtmConn(RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool) {
+    auto *rconn = new RConn(conf.param.hashKey, conf.param.dev, loop, ackPool, false);
 
     // add udp btm conn to RConn if udp enabled
     if (conf.param.type & OM_PIPE_UDP) {
@@ -103,7 +103,7 @@ IConn *CSockApp::CreateBridgeConn(RConfig &conf, IConn *btm, uv_loop_t *loop, IN
                            conf.param.localUdpPort, loop, group, btm);
 }
 
-INetManager *CSockApp::CreateNetManager(RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool) {
+INetManager *CSockApp::CreateNetManager(const RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool) {
     return new ClientNetManager(loop, ackPool);
 }
 

@@ -38,7 +38,7 @@ int INetGroup::Init() {
     return 0;
 }
 
-void INetGroup::Close() {
+int INetGroup::Close() {
     IGroup::Close();
     mErrCb = nullptr;
     mHandler = nullptr; // handler will automatically remove all pending messages and tasks
@@ -47,6 +47,7 @@ void INetGroup::Close() {
         delete mDefaultFakeConn;
         mDefaultFakeConn = nullptr;
     }
+    return 0;
 }
 
 int INetGroup::Input(ssize_t nread, const rbuf_t &rbuf) {

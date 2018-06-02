@@ -5,8 +5,6 @@
 #ifndef RSOCK_IOBSERVER_H
 #define RSOCK_IOBSERVER_H
 
-class IService;
-
 class IObserver {
 public:
 

@@ -19,9 +19,10 @@ int IConn::Init() {
     return 0;
 }
 
-void IConn::Close() {
+int IConn::Close() {
     mOnRecvCb = nullptr;
     mOutputCb = nullptr;
+    return 0;
 }
 
 int IConn::Send(ssize_t nread, const rbuf_t &rbuf) {

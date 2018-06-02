@@ -41,22 +41,21 @@ public:
 
     virtual int Init();
 
-
     virtual int Start();
 
     virtual void Close();
 
     virtual void Flush(void *arg);
 
-    virtual RCap *CreateCap(RConfig &conf) = 0;
+    virtual RCap *CreateCap(const RConfig &conf) = 0;
 
     virtual int StartTimer(uint32_t timeout_ms, uint32_t repeat_ms);
 
-    virtual RConn *CreateBtmConn(RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool, int datalink) = 0;
+    virtual RConn *CreateBtmConn(RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool) = 0;
 
     virtual IConn *CreateBridgeConn(RConfig &conf, IConn *btm, uv_loop_t *loop, INetManager *netManager) = 0;
 
-    virtual INetManager *CreateNetManager(RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool) = 0;
+    virtual INetManager *CreateNetManager(const RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool) = 0;
 
     INetManager *GetNetManager() const { return mNetManager; }
 
@@ -71,7 +70,10 @@ public:
 protected:
     std::vector<IBtmConn *> bindUdpConns(uint32_t src, const std::vector<uint16_t> &ports, uint32_t dst,
                                          const std::vector<uint16_t> &svr_ports);
-    virtual int InitServices();
+
+    virtual int initConfManager();
+
+    virtual int InitServices(const RConfig &conf);
 
     virtual void onExitSignal();
 
@@ -82,9 +84,6 @@ protected:
     virtual int newLoop();
 
     static void close_signal_handler(uv_signal_t *handle, int signum);
-
-    // todo: use uv siginit
-    static const int SIG_EXIT = 0;
 
 private:
     int doInit();
@@ -106,13 +105,11 @@ private:
     RCap *mCap = nullptr;
     IConn *mBridge = nullptr;
     RConn *mBtmConn = nullptr;
-    RConfig mConf;
     bool mInited = false;
     INetManager *mNetManager = nullptr;
     TcpAckPool *mAckPool = nullptr;
     std::vector<uv_signal_t *> mExitSignals;
     bool mClosing = false;
-    uv_thread_t mCapThread = 0;
 };
 
 #endif //RSOCK_ISOCKAPP_H
