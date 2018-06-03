@@ -28,7 +28,7 @@ RawTcp::RawTcp(const std::string &dev, uv_loop_t *loop, TcpAckPool *ackPool, boo
 int RawTcp::Init() {
     IConn::Init();
 
-    ServiceUtil::GetService<RouteService*>(ServiceManager::ROUTE_SERVICE)->RegisterObserver(this);
+    ServiceUtil::GetService<RouteService *>(ServiceManager::ROUTE_SERVICE)->RegisterObserver(this);
 
     mDatalink = CapUtil::DataLink(mDev);
     mTcpNet = newLibnet(mDev);
@@ -60,7 +60,7 @@ libnet_t *RawTcp::newLibnet(const std::string &dev) {
 int RawTcp::Close() {
     IConn::Close();
 
-    ServiceUtil::GetService<RouteService*>(ServiceManager::ROUTE_SERVICE)->UnRegisterObserver(this);
+    ServiceUtil::GetService<RouteService *>(ServiceManager::ROUTE_SERVICE)->UnRegisterObserver(this);
 
     if (mSyncConn) {
         mSyncConn->Close();
@@ -108,17 +108,20 @@ void RawTcp::OnNetDisconnected() {
 
 int RawTcp::Output(ssize_t nread, const rbuf_t &rbuf) {
     if (nread >= 0) {
-        if (!mTcpNet) {
-            LOGV << "TcpNet null";
-            return -1;
+        int n = -1;
+        if (mTcpNet) {
+            TcpInfo *info = static_cast<TcpInfo *>(rbuf.data);
+            assert(info);
+
+            n = SendRawTcp(mTcpNet, info->src, info->sp, info->dst, info->dp, info->seq, info->ack,
+                           reinterpret_cast<const uint8_t *>(rbuf.base), nread, mIpId++, mTcpTag, mIp4TcpTag,
+                           info->flag);
         }
 
-        TcpInfo *info = static_cast<TcpInfo *>(rbuf.data);
-        assert(info);
-
-        return SendRawTcp(mTcpNet, info->src, info->sp, info->dst, info->dp, info->seq, info->ack,
-                          reinterpret_cast<const uint8_t *>(rbuf.base), nread, mIpId++, mTcpTag, mIp4TcpTag,
-                          info->flag);
+        if (!mTcpNet || n < 0) {
+            ServiceUtil::GetService<RouteService *>(ServiceManager::ROUTE_SERVICE)->CheckNetworkStatusDelayed();
+        }
+        return n;
     }
 
     return nread;

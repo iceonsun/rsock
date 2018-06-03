@@ -11,7 +11,7 @@
 const std::string INetConn::INVALID_KEY_STR = std::to_string(INetConn::INVALID_KEY);
 
 INetConn::INetConn(const std::string &key) : IConn(key) {
-    mIntKey = std::stoul(key);
+    mIntKey = std::stoul(key);  // todo: bug!! 生成key的策略要变
     assert(mIntKey != 0);
 }
 

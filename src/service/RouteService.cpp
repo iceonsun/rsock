@@ -65,7 +65,7 @@ void RouteService::handleMessage(const Handler::Message &m) {
 
 void RouteService::doubleIntervalSec() {
     mCheckIntervalSec *= 2;
-    if (mCheckIntervalSec > 32) {
+    if (mCheckIntervalSec > 16) {   // better retry strategy
         mCheckIntervalSec = 1;
     }
 }

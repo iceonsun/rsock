@@ -53,7 +53,7 @@ typedef struct sockaddr_in SA4;
 
 //#define OM_ACKPOOL_FLUSH_SEC 5
 
-using IntKeyType = uint32_t;
+using IntKeyType = uint32_t;    // change to 64bit
 
 #ifdef __cplusplus
 }

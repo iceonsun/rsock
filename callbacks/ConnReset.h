@@ -15,8 +15,6 @@ struct rbuf_t;
 
 class ConnReset : public IReset {
 public:
-    using IntKeyType = uint32_t;
-
     explicit ConnReset(IAppGroup *appGroup);
 
     int SendNetConnRst(const ConnInfo &src, IntKeyType key) override;

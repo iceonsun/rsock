@@ -14,13 +14,25 @@
 #include "../conn/BtmUdpConn.h"
 #include "../conn/FakeTcp.h"
 #include "TcpAckPool.h"
+#include "../src/service/ServiceUtil.h"
+#include "../src/service/RouteService.h"
 
 ClientNetManager::ClientNetManager(uv_loop_t *loop, TcpAckPool *ackPool)
         : INetManager(loop, ackPool), MAX_RETRY(INT_MAX) {
 }
 
+int ClientNetManager::Init() {
+    int nret = INetManager::Init();
+    if (nret) {
+        return nret;
+    }
+    return ServiceUtil::GetService<RouteService *>(ServiceManager::ROUTE_SERVICE)->RegisterObserver(this);
+}
+
 int ClientNetManager::Close() {
     INetManager::Close();
+
+    int nret = ServiceUtil::GetService<RouteService *>(ServiceManager::ROUTE_SERVICE)->UnRegisterObserver(this);
 
     for (auto &e: mPending) {
         if (e.req) {
@@ -32,7 +44,7 @@ int ClientNetManager::Close() {
         }
     }
     mPending.clear();
-    return 0;
+    return nret;
 }
 
 INetConn *ClientNetManager::DialTcpSync(const ConnInfo &info) {
@@ -61,6 +73,10 @@ int ClientNetManager::DialTcpAsync(const ConnInfo &info, const ClientNetManager:
 }
 
 void ClientNetManager::flushPending(uint64_t now) {
+    if (mNetworkAlive) {   // if dead network. don't send tcp request
+        return;
+    }
+
     for (auto it = mPending.begin(); it != mPending.end();) {
         DialHelper &helper = *it;
         if (helper.nRetry <= 0) {           // failure
@@ -135,3 +151,12 @@ void ClientNetManager::DialHelper::dialFailed(uint64_t now) {
         LOGD << "will connect " << (durationMs / 1000) << " seconds later: " << info.ToStr();
     }
 }
+
+void ClientNetManager::OnNetConnected(const std::string &ifName, const std::string &ip) {
+    mNetworkAlive = true;
+}
+
+void ClientNetManager::OnNetDisconnected() {
+    mNetworkAlive = false;
+}
+

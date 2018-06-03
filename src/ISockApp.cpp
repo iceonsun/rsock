@@ -25,6 +25,8 @@
 #include "service/TimerService.h"
 #include "service/RouteService.h"
 #include "conf/ConfManager.h"
+#include "../bean/RConfig.h"
+
 
 ISockApp::ISockApp(bool is_server) : mServer(is_server) {
 }
@@ -124,7 +126,7 @@ int ISockApp::doInit() {
         return -1;
     }
 
-    mBtmConn = CreateBtmConn(conf, mLoop, mAckPool);
+    mBtmConn = CreateBtmConn(conf, mLoop, mAckPool);    // todo: AckPool, NetManager singleton.
     nret = mBtmConn->Init();
     if (nret) {
         return nret;
@@ -201,7 +203,7 @@ void ISockApp::Close() {
     }
 
     if (mCap) {
-        mCap->JoinAndClose();
+        mCap->WaitAndClose();
         delete mCap;
         mCap = nullptr;
     }
@@ -247,8 +249,6 @@ int ISockApp::StartTimer(uint32_t timeout_ms, uint32_t repeat_ms) {
         return nret;
     }
     return -1;
-//    auto fn = std::bind(&ISockApp::Flush, this, std::placeholders::_1);
-//    mTimer->Start(timeout_ms, repeat_ms, fn);
 }
 
 int ISockApp::makeDaemon(bool d) {

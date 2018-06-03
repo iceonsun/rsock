@@ -28,7 +28,7 @@ uint8_t EncHead::GetMinEncSize() {
            + sizeof(uint8_t)         // cmd
            + ID_BUF_SIZE             // id_buf
            + sizeof(uint32_t)        // conv
-           + sizeof(IntConnKeyType)  // netConnKey
+           + sizeof(IntKeyType)  // netConnKey
            + sizeof(uint8_t)         // resereved
             ;
 
@@ -46,7 +46,7 @@ const char *EncHead::DecodeBuf(EncHead &e, const char *p, int buf_len) {
         std::copy(p, p + e.mIdBuf.size(), e.mIdBuf.begin());
         p += e.mIdBuf.size();
         p = decode_uint32(&e.mConv, p);
-        p = decode_uint32(&e.mConnKey, p);
+        p = decode_uint32(&e.mConnKey, p);  // caution here. mConnKey must be right type
         p = decode_uint8(&e.resereved, p);
         return old + e.len;
     }

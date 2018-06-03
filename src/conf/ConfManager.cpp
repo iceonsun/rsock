@@ -5,7 +5,6 @@
 #include "ConfManager.h"
 #include "../../bean/RConfig.h"
 
-
 int ConfManager::Init() {
     assert(mConf);
     return 0;

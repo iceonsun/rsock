@@ -6,6 +6,7 @@
 #define RSOCK_ENCHEAD_H
 
 #include <cstdint>
+#include <rscomm.h>
 #include "rstype.h"
 
 struct EncHead {
@@ -18,15 +19,13 @@ public:
         TYPE_KEEP_ALIVE_RESP = 4,
     };
 
-    using IntConnKeyType = uint32_t;
-
 private:
     // fields that are gonna encoded. {
     uint8_t len = EncHead::GetMinEncSize(); // head len
     uint8_t mCmd = TYPE_DATA;
     IdBufType mIdBuf{{0}};
     uint32_t mConv = 0;
-    uint32_t mConnKey = 0;  // represents inetconn
+    IntKeyType mConnKey = 0;  // represents inetconn
     uint8_t resereved = 0;
     // }
 
@@ -54,9 +53,9 @@ public:
 
     void SetConv(uint32_t conv) { mConv = conv; }
 
-    void SetConnKey(IntConnKeyType key) { mConnKey = key; }
+    void SetConnKey(IntKeyType key) { mConnKey = key; }
 
-    IntConnKeyType ConnKey() { return mConnKey; }
+    IntKeyType ConnKey() { return mConnKey; }
 
     static bool IsRstFlag(uint8_t cmd) { return cmd == TYPE_CONV_RST || cmd == TYPE_NETCONN_RST; }
 

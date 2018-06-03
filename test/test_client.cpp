@@ -13,9 +13,10 @@ int main(int argc, char **argv) {
 
     char *fakearg[] = {
             argv[0],
-            "--dev=" DEV,
+//            "--dev=" DEV,
             "--ludp=127.0.0.1:30000",
             "--taddr=" TIP,
+            "-v",
     };
 
     return csock_main(sizeof(fakearg) / sizeof(fakearg[0]), fakearg);

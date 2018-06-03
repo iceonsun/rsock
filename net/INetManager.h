@@ -10,7 +10,6 @@
 #include <chrono>
 
 #include "uv.h"
-#include "../src/service/ITimerObserver.h"
 
 class INetConn;
 
@@ -20,15 +19,19 @@ class TcpAckPool;
 
 struct ConnInfo;
 
-class INetManager : public ITimerObserver {
+class NetManagerTimer;
+
+class INetManager {
 public:
     explicit INetManager(uv_loop_t *loop, TcpAckPool *ackPool);
 
+    virtual ~INetManager() = default;
+
     virtual int Add2Pool(INetConn *conn, bool closeIfFail);
 
-    int Init() override;
+    virtual int Init();
 
-    int Close() override;
+    virtual int Close();
 
     INetConn *TransferConn(const std::string &key);
 
@@ -36,9 +39,7 @@ public:
 
     IBtmConn *BindUdp(const ConnInfo &info);
 
-    void OnFlush(uint64_t timestamp) override;
-
-    uint64_t Interval() const override;
+    virtual void OnFlush(uint64_t timestamp);
 
 protected:
     virtual int add2PoolAutoClose(INetConn *conn);
@@ -65,7 +66,7 @@ private:
     const uint64_t FLUSH_INTERVAL = 1000;   // 1s
     const uint64_t POOL_PERSIST_MS = 30000; // 30s
     std::map<std::string, ConnHelper> mPool;
-//    uv_timer_t *mFlushTimer = nullptr;
+    NetManagerTimer *mTimer = nullptr;
 
 };
 

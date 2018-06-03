@@ -32,7 +32,7 @@ public:
     int Close() override;
 
     // wait thread to close
-    virtual int JoinAndClose();
+    virtual int WaitAndClose();
 
     // run in a seperate thread.
     uv_thread_t Start(pcap_handler handler, u_char *args);
@@ -59,6 +59,8 @@ private:
     int initDevAndIp();
 
     int doInit();
+
+    void joinPcapThread();
 
 private:
     std::string mSrcIp;

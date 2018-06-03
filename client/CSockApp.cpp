@@ -12,6 +12,7 @@
 #include "../net/ClientNetManager.h"
 #include "../cap/RCap.h"
 #include "../conn/FakeUdp.h"
+#include "../bean/RConfig.h"
 
 CSockApp::CSockApp() : ISockApp(false) {}
 

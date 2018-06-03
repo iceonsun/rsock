@@ -48,6 +48,11 @@ int RCap::Init() {
 }
 
 int RCap::doInit() {
+    if (mCap) {
+        LOGV << "cap not null";
+        return -1;
+    }
+
     int nret = 0;
     if (mDstIp.empty()) {
         nret = initDevAndIp();
@@ -111,12 +116,17 @@ void RCap::OnNetConnected(const std::string &ifName, const std::string &ip) {
     mDev = ifName;
     mDstIp = "";
 
-    if (mCap) { // todo: break pcap_loop. restart thread
+    if (mCap) {     // todo: break pcap_loop. restart thread
+        pcap_breakloop(mCap);
+        joinPcapThread();
         pcap_close(mCap);
         mCap = nullptr;
     }
 
-    doInit();
+    int n = doInit();
+    if (0 == n) {
+        Start(mHandler, mArgs);
+    }
 }
 
 void RCap::OnNetDisconnected() {
@@ -193,17 +203,21 @@ void RCap::threadCb(void *threadArg) {
     cap->Run(handler, arg);
 }
 
-int RCap::JoinAndClose() {
+int RCap::WaitAndClose() {
+    Close();
+    joinPcapThread();
+    return 0;
+}
+
+void RCap::joinPcapThread() {
     if (0 != mCapThread) {
         if (uv_thread_self() == mCapThread) {
             LOGE << "can't join on self thread!";
             assert(0);
         }
-        LOGD << "closing pcap";
-        Close();
+
         LOGD << "join on pcap thread";
         uv_thread_join(&mCapThread);
         mCapThread = 0;
     }
-    return 0;
 }

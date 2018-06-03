@@ -15,13 +15,13 @@ set(SOURCE_FILES
         callbacks/IReset.h callbacks/NetConnKeepAlive.cpp callbacks/ConnReset.cpp
         util/enc.c util/rsutil.cpp util/rhash.cpp util/TextUtils.h util/RPortList.cpp
         util/PortPair.cpp util/Handler.cpp util/ShotHandler.cpp util/UvUtil.cpp
-        cap/cap_util.cpp cap/RCap.cpp
+        cap/cap_util.cpp cap/RCap.cpp cap/CapUtil.cpp
         thirdparty/md5.c thirdparty/json11.cpp
         conn/INetConn.cpp conn/BtmUdpConn.cpp conn/FakeTcp.cpp conn/INetGroup.cpp conn/IGroup.cpp conn/FakeUdp.cpp
         conn/IConn.cpp conn/RConn.cpp conn/RawTcp.cpp conn/IAppGroup.cpp conn/IBtmConn.cpp conn/DefaultFakeConn.cpp
         conn/CConn.cpp
         net/NetUtil.cpp net/ClientNetManager.cpp net/TcpAckPool.cpp net/TcpListenPool.cpp net/INetManager.cpp
-        net/ServerNetManager.cpp
+        net/ServerNetManager.cpp net/NetManagerTimer.cpp
         src/sync/SyncConnFactory.cpp src/sync/LoopSreamSyncConn.cpp src/sync/ISyncConn.cpp src/sync/UdpSyncConn.cpp
         src/sync/TcpStreamSyncConn.cpp src/sync/IPacketSyncConn.cpp
         src/service/IObserver.h src/service/IService.cpp
@@ -31,7 +31,7 @@ set(SOURCE_FILES
         src/app/AppTimer.cpp util/RouteUtil.cpp util/RouteUtil.h src/service/ServiceUtil.h
         #src/service/ServiceUtil.cpp # template involved
         src/conf/ConfManager.cpp
-        src/util/Singleton.h src/util/ICloseable.h cap/CapUtil.cpp cap/CapUtil.h)
+        src/util/Singleton.h src/util/ICloseable.h)
 
 # platform dependent dir		
 SET(ROS_DIR src/os/unix)

@@ -34,7 +34,6 @@ std::mutex Singleton<T>::sMutex;
 template<typename T>
 T *Singleton<T>::sInstance = nullptr;
 
-
 template<typename T>
 bool Singleton<T>::sDestroyed;
 

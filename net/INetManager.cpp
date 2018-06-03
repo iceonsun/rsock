@@ -9,7 +9,7 @@
 #include "../conn/FakeTcp.h"
 #include "NetUtil.h"
 #include "../conn/BtmUdpConn.h"
-#include "../src/service/TimerServiceUtil.h"
+#include "NetManagerTimer.h"
 
 INetManager::INetManager(uv_loop_t *loop, TcpAckPool *ackPool) : POOL_PERSIST_MS(ackPool->PersistMs()) {
     mLoop = loop;
@@ -65,10 +65,17 @@ INetConn *INetManager::TransferConn(const std::string &key) {
 }
 
 int INetManager::Init() {
-    return TimerServiceUtil::Register(this);
+    mTimer = new NetManagerTimer(this, FLUSH_INTERVAL);
+    return mTimer->Init();
 }
 
 int INetManager::Close() {
+    if (mTimer) {
+        mTimer->Close();
+        delete mTimer;
+        mTimer = nullptr;
+    }
+
     for (auto &e: mPool) {
         if (e.second.conn) {
             e.second.conn->Close();
@@ -77,10 +84,8 @@ int INetManager::Close() {
         }
     }
 
-    int nret = TimerServiceUtil::UnRegister(this);
-
     mTcpAckPool = nullptr;
-    return nret;
+    return 0;
 }
 
 void INetManager::OnFlush(uint64_t timestamp) {
@@ -105,8 +110,4 @@ void INetManager::OnFlush(uint64_t timestamp) {
 
 IBtmConn *INetManager::BindUdp(const ConnInfo &info) {
     return NetUtil::CreateBtmUdpConn(mLoop, info);
-}
-
-uint64_t INetManager::Interval() const {
-    return FLUSH_INTERVAL;
 }

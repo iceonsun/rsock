@@ -12,6 +12,7 @@
 #include "../bean/TcpInfo.h"
 #include "../cap/RCap.h"
 #include "../conn/INetConn.h"
+#include "../bean/RConfig.h"
 
 SSockApp::SSockApp() : ISockApp(true) {}
 
@@ -39,13 +40,13 @@ IConn *SSockApp::CreateBridgeConn(RConfig &conf, IConn *btm, uv_loop_t *loop, IN
     SA4 target = {0};
     target.sin_family = AF_INET;
     target.sin_port = htons(conf.param.targetPort);
-	target.sin_addr.s_addr = inet_addr(conf.param.targetIp.c_str());    
+    target.sin_addr.s_addr = inet_addr(conf.param.targetIp.c_str());
     return new ServerGroup(IdBuf2Str(conf.param.id), loop, (const SA *) (&target), btm, netManager);
 }
 
 INetManager *SSockApp::CreateNetManager(const RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool) {
     auto portList = conf.param.capPorts;
-    if (! (conf.param.type & OM_PIPE_TCP)) {
+    if (!(conf.param.type & OM_PIPE_TCP)) {
         portList = {};
     }
     return new ServerNetManager(loop, portList, conf.param.selfCapIp, ackPool);
