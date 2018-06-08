@@ -3,14 +3,14 @@
 //
 
 #include <plog/Log.h>
-#include "LoopSreamSyncConn.h"
+#include "LoopStreamSyncConn.h"
 #include "../../util/UvUtil.h"
 
-LoopSreamSyncConn::LoopSreamSyncConn(uv_loop_t *loop, const Callback cb, void *obj)
+LoopStreamSyncConn::LoopStreamSyncConn(uv_loop_t *loop, const Callback cb, void *obj)
         : TcpStreamSyncConn(loop, cb, obj) {
 }
 
-int LoopSreamSyncConn::Init() {
+int LoopStreamSyncConn::Init() {
     int nret = TcpStreamSyncConn::Init();
     if (nret) {
         return nret;
@@ -48,7 +48,7 @@ int LoopSreamSyncConn::Init() {
     return 0;
 }
 
-void LoopSreamSyncConn::Close() {
+void LoopStreamSyncConn::Close() {
     if (mThread != 0) {
         uv_thread_join(&mThread);
         mThread = 0;
@@ -62,7 +62,7 @@ void LoopSreamSyncConn::Close() {
     TcpStreamSyncConn::Close();
 }
 
-int LoopSreamSyncConn::doSend(const char *buf, int nread) {
+int LoopStreamSyncConn::doSend(const char *buf, int nread) {
     if (nread > 0 && mWriteLoop) {
         rwrite_req_t *req = static_cast<rwrite_req_t *>(malloc(sizeof(rwrite_req_t)));
         char *base = (char*) malloc(nread);
@@ -73,14 +73,14 @@ int LoopSreamSyncConn::doSend(const char *buf, int nread) {
     return nread;
 }
 
-void LoopSreamSyncConn::writeCb(uv_write_t *req, int status) {
+void LoopStreamSyncConn::writeCb(uv_write_t *req, int status) {
     if (status) {
         LOGE << "writeFailed: " << uv_strerror(status);
     }
     free_rwrite_req(reinterpret_cast<rwrite_req_t *>(req));
 }
 
-void LoopSreamSyncConn::threadCb(void *arg) {
+void LoopStreamSyncConn::threadCb(void *arg) {
     uv_loop_t *loop = static_cast<uv_loop_t *>(arg);
     if (loop) {
         uv_run(loop, UV_RUN_DEFAULT);

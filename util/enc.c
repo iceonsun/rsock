@@ -2,7 +2,22 @@
 // Created on 10/30/17.
 //
 
+#include <MacTypes.h>
+#include <assert.h>
 #include "enc.h"
+
+
+char *big_endian_to_little_n(uint64_t i, char *p, int size) {
+    assert((size % 8) == 0);
+    assert(size <= sizeof(uint64_t));
+
+    int n = size / 8;
+    for (int j = 0; j < n; j++) {
+        *(p + j) = (char) (i & 0xff);
+        i >>= 8;
+    }
+    return p + size;
+}
 
 void big_endian_to_little(uint32_t i, char *p) {
     // convert to little endian.
@@ -17,7 +32,7 @@ char *encode_uint32(uint32_t i, char *p) {
         *(uint32_t *) p = i;
     } else {
         // convert to little endian.
-        big_endian_to_little(i, p);
+        big_endian_to_little_n(i, p, sizeof(i));
     }
     return p + 4;
 }
@@ -26,8 +41,7 @@ char *encode_uint16(uint16_t i, char *p) {
     if (is_little_endian()) {
         *(uint16_t *) p = i;
     } else {
-        p[0] = (char) (i & 0xff);
-        p[1] = (char) (i >> 8 & 0xff);
+        big_endian_to_little_n(i, p, sizeof(i));
     }
     return p + 2;
 }
@@ -74,4 +88,25 @@ int8_t is_little_endian() {
         char c[2];
     } u = {0x100};
     return u.c[1] == 0x01;
+}
+
+const char *decode_uint64(uint64_t *i, const char *p) {
+    if (is_little_endian()) {
+        *i = ((uint64_t *) p)[0];
+    } else {
+        char *ptr = (char *) i;
+        for (int j = 0; j < sizeof(uint64_t); j++) {
+            *(ptr + j) = *(p + (sizeof(uint64_t) - j - 1));
+        }
+    }
+    return p + sizeof(uint64_t);
+}
+
+char *encode_uint64(uint64_t i, char *p) {
+    if (is_little_endian()) {
+        *(uint64_t *) p = i;
+    } else {
+        big_endian_to_little_n(i, p, sizeof(i));
+    }
+    return p + sizeof(uint64_t);
 }

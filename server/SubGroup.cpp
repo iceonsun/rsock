@@ -9,12 +9,12 @@
 #include "SConn.h"
 #include "../conn/INetGroup.h"
 #include "../util/rsutil.h"
+#include "../src/util/KeyGenerator.h"
 
 using namespace std::placeholders;
 
 SubGroup::SubGroup(const std::string &groupId, uv_loop_t *loop, const struct sockaddr *target, INetGroup *fakeNetGroup,
-                   IConn *btm)
-        : IAppGroup(groupId, fakeNetGroup, btm, false) {
+                   IConn *btm) : IAppGroup(groupId, fakeNetGroup, btm, false) {
     mLoop = loop;
     mTarget = new_addr(target);
 }
@@ -36,7 +36,7 @@ int SubGroup::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
         assert(head);
 
         // todo: client and server: BuildConvKey() has different values
-        auto key = ConnInfo::BuildConvKey(info->dst, head->Conv());
+        auto key = KeyGenerator::BuildConvKey(info->dst, head->Conv());
         auto conn = ConnOfKey(key);
         if (!conn) {
             conn = newConn(key, head->Conv());

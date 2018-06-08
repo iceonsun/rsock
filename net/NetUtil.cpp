@@ -10,6 +10,7 @@
 #include "NetUtil.h"
 #include "../util/rsutil.h"
 #include "os_util.h"
+#include "../src/util/KeyGenerator.h"
 
 BtmUdpConn *NetUtil::CreateBtmUdpConn(uv_loop_t *loop, const ConnInfo &info) {
     SA4 addr = {0};
@@ -27,7 +28,7 @@ BtmUdpConn *NetUtil::CreateBtmUdpConn(uv_loop_t *loop, const ConnInfo &info) {
     }
     ConnInfo selfInfo(info);
     GetUdpSelfInfo(selfInfo, udp);
-    BtmUdpConn *btm = new BtmUdpConn(ConnInfo::KeyForUdpBtm(selfInfo.src, selfInfo.sp), udp, selfInfo);
+    BtmUdpConn *btm = new BtmUdpConn(KeyGenerator::StrForIntKey(KeyGenerator::KeyForConnInfo(selfInfo)), udp, selfInfo);
     return btm;
 }
 
@@ -43,7 +44,7 @@ FakeTcp *NetUtil::CreateTcpConn(uv_loop_t *loop, const ConnInfo &info) {
     int nret = uv_tcp_open(tcp, sock);
     if (nret) {
         free(tcp);
-		CloseSocket(sock);        
+        CloseSocket(sock);
         LOGE << "uv_tcp_open failed: " << uv_strerror(nret);
         return nullptr;
     }
@@ -51,14 +52,14 @@ FakeTcp *NetUtil::CreateTcpConn(uv_loop_t *loop, const ConnInfo &info) {
     TcpInfo realInfo;
     GetTcpInfo(realInfo, tcp);
 
-    FakeTcp *conn = new FakeTcp(reinterpret_cast<uv_stream_t *>(tcp), INetConn::BuildKey(realInfo));
+    FakeTcp *conn = new FakeTcp(reinterpret_cast<uv_stream_t *>(tcp), KeyGenerator::KeyForConnInfo(realInfo));
     return conn;
 }
 
 FakeTcp *NetUtil::CreateTcpConn(uv_tcp_t *tcp) {
     TcpInfo realInfo;
     GetTcpInfo(realInfo, tcp);
-    FakeTcp *conn = new FakeTcp(reinterpret_cast<uv_stream_t *>(tcp), INetConn::BuildKey(realInfo));
+    FakeTcp *conn = new FakeTcp(reinterpret_cast<uv_stream_t *>(tcp), KeyGenerator::KeyForConnInfo(realInfo));
     return conn;
 }
 
@@ -96,7 +97,7 @@ int NetUtil::createTcpSock(const SA4 *target, const SA4 *self) {
     int sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (self && self->sin_port) {
         int optval = 1;
-        int nret = setsockopt(sock, SOL_SOCKET, SO_REUSEADDR,(SOCKOPT_VAL_TYPE) &optval, sizeof(optval));
+        int nret = setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (SOCKOPT_VAL_TYPE) &optval, sizeof(optval));
         if (nret) {
             LOGE << "setsockopt failed: " << strerror(errno);
             return nret;
@@ -110,8 +111,8 @@ int NetUtil::createTcpSock(const SA4 *target, const SA4 *self) {
 
     int nret = connect(sock, (const SA *) (target), sizeof(SA4));
     if (nret) {
-        LOGE << "connect " << Addr2Str((SA*)target) << " failed: " << strerror(errno);
-		CloseSocket(sock);        
+        LOGE << "connect " << Addr2Str((SA *) target) << " failed: " << strerror(errno);
+        CloseSocket(sock);
         return nret;
     }
     return sock;

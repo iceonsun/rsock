@@ -11,7 +11,7 @@
 
 class FakeTcp : public INetConn {
 public:
-    FakeTcp(uv_stream_t *tcp, const std::string &key);
+    FakeTcp(uv_stream_t *tcp, IntKeyType key);
 
     int Init() override;
 

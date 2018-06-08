@@ -5,7 +5,6 @@
 #include <cassert>
 #include <plog/Log.h>
 #include "NetConnKeepAlive.h"
-#include "../util/enc.h"
 #include "../util/rsutil.h"
 #include "../bean/EncHead.h"
 #include "../conn/INetConn.h"
@@ -13,6 +12,7 @@
 #include "../conn/INetGroup.h"
 #include "IReset.h"
 #include "../src/service/TimerServiceUtil.h"
+#include "../src/util/KeyGenerator.h"
 
 NetConnKeepAlive::NetConnKeepAlive(IAppGroup *group, bool active, IReset *reset) {
     mAppGroup = group;  // todo: refactor mAppGroup. use an interface instead
@@ -29,9 +29,8 @@ int NetConnKeepAlive::Init() {
 
 int NetConnKeepAlive::Input(uint8_t cmd, ssize_t nread, const rbuf_t &rbuf) {
     LOGV << "cmd: " << (int) (cmd);
-    if (nread >= sizeof(IntKeyType)) {
-        IntKeyType connKey = 0;
-        decode_uint32(&connKey, rbuf.base);
+    IntKeyType connKey = 0;
+    if (KeyGenerator::DecodeKeySafe(nread, rbuf.base, &connKey) > 0) {
         if (cmd == EncHead::TYPE_KEEP_ALIVE_REQ) {
             if (mAppGroup->GetNetGroup()->ConnOfIntKey(connKey)) {
                 SendResponse(connKey);
@@ -53,7 +52,7 @@ int NetConnKeepAlive::Input(uint8_t cmd, ssize_t nread, const rbuf_t &rbuf) {
 int NetConnKeepAlive::SendResponse(IntKeyType connKey) {
     LOGV << "connKey: " << connKey;
     char base[32] = {0};
-    auto p = encode_uint32(connKey, base);
+    auto p = KeyGenerator::EncodeKey(base, connKey);
     auto buf = new_buf(p - base, base, nullptr);
 
     return mAppGroup->doSendCmd(EncHead::TYPE_KEEP_ALIVE_RESP, buf.len, buf);
@@ -70,7 +69,7 @@ int NetConnKeepAlive::SendRequest(IntKeyType connKey) {
     LOGV << "keepAlive, connKey: " << connKey;
 
     char base[32] = {0};
-    auto p = encode_uint32(connKey, base);
+    auto p = KeyGenerator::EncodeKey(base, connKey);
     auto buf = new_buf(p - base, base, nullptr);
 
     return mAppGroup->doSendCmd(EncHead::TYPE_KEEP_ALIVE_REQ, buf.len, buf);

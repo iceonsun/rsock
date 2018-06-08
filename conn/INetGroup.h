@@ -30,7 +30,7 @@ public:
 
     int Close() override;
 
-    virtual INetConn *CreateNetConn(const std::string &key, const ConnInfo *info) = 0;
+    virtual INetConn *CreateNetConn(IntKeyType key, const ConnInfo *info) = 0;
 
     //can only add fakeconn
     virtual void AddNetConn(INetConn *conn);
@@ -45,6 +45,7 @@ public:
     uv_loop_t *GetLoop() const { return mLoop; }
 
 private:
+    using IGroup::ConnOfKey;
     using IGroup::AddConn;
 
     inline void netConnErr(const ConnInfo &info);

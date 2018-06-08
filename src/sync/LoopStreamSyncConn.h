@@ -8,9 +8,9 @@
 
 #include "TcpStreamSyncConn.h"
 
-class LoopSreamSyncConn : public TcpStreamSyncConn {
+class LoopStreamSyncConn : public TcpStreamSyncConn {
 public:
-    LoopSreamSyncConn(uv_loop_t *loop, const Callback cb, void *obj);
+    LoopStreamSyncConn(uv_loop_t *loop, const Callback cb, void *obj);
 
     int Init() override;
 

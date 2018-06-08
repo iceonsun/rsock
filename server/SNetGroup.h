@@ -13,7 +13,7 @@ class SNetGroup : public INetGroup {
 public:
     SNetGroup(const std::string &groupId, uv_loop_t *loop, INetManager *netManager);
 
-    INetConn *CreateNetConn(const std::string &key, const ConnInfo *info) override;
+    INetConn *CreateNetConn(IntKeyType key, const ConnInfo *info) override;
 
 private:
     INetManager *mNetManager = nullptr;

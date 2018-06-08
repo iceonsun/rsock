@@ -7,15 +7,16 @@
 #include "FakeTcp.h"
 #include "RConn.h"
 #include "../util/rsutil.h"
+#include "../src/util/KeyGenerator.h"
 
 // If send 1 bytes for a specific interval to check if alive. This will severely slow down speed
-FakeTcp::FakeTcp(uv_stream_t *tcp, const std::string &key) : INetConn(key) {
+FakeTcp::FakeTcp(uv_stream_t *tcp, IntKeyType key) : INetConn(key) {
     mTcp = tcp;
     assert(mTcp);
 
     GetTcpInfo(mInfo, reinterpret_cast<uv_tcp_t *>(mTcp));
 
-    assert(INetConn::BuildKey(mInfo) == key);
+    assert(KeyGenerator::KeyForTcp(mInfo) == key);
 }
 
 int FakeTcp::Init() {

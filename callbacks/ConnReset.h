@@ -25,7 +25,7 @@ public:
 
     void Close() override;
 
-    int OnRecvNetConnRst(const ConnInfo &src, uint32_t key) override;
+    int OnRecvNetConnRst(const ConnInfo &src, IntKeyType key) override;
 
     int OnRecvConvRst(const ConnInfo &src, uint32_t rstConv) override;
 

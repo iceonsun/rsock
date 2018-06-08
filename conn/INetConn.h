@@ -14,8 +14,9 @@ struct ConnInfo;
 
 class INetConn : public IConn {
 public:
+    explicit INetConn(IntKeyType key);
 
-    explicit INetConn(const std::string &key);
+//    explicit INetConn(const std::string &key);
 
     using ErrCb = std::function<void(INetConn *, int err)>; // todo: consider using connkey as first parameter
 
@@ -36,21 +37,14 @@ public:
 
     static const std::string BuildPrintableStr(const ConnInfo &info);
 
-    static const std::string BuildKey(const ConnInfo &info);
-
-    static const std::string BuildKey(IntKeyType key);
-
     IntKeyType IntKey() const;
 
 protected:
     virtual void OnNetConnErr(INetConn *conn, int err);
 
-    static const IntKeyType INVALID_KEY = 0x1;
-    static const std::string INVALID_KEY_STR;
-
 private:
     ErrCb mErrCb = nullptr;
-    IntKeyType mIntKey = 0;
+    const IntKeyType mIntKey = 0;
 };
 
 #endif //RSOCK_INETCONN_H

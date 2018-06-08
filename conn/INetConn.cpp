@@ -7,13 +7,15 @@
 #include "INetConn.h"
 #include "../bean/ConnInfo.h"
 #include "../util/rsutil.h"
+#include "../src/util/KeyGenerator.h"
 
-const std::string INetConn::INVALID_KEY_STR = std::to_string(INetConn::INVALID_KEY);
-
-INetConn::INetConn(const std::string &key) : IConn(key) {
-    mIntKey = std::stoul(key);  // todo: bug!! 生成key的策略要变
-    assert(mIntKey != 0);
+INetConn::INetConn(IntKeyType key) : IConn(KeyGenerator::StrForIntKey(key)), mIntKey(key) {
 }
+
+//INetConn::INetConn(const std::string &key) : IConn(key) {
+//    mIntKey = std::stoul(key);  // todo: bug!! 生成key的策略要变
+//    assert(mIntKey != 0);
+//}
 
 int INetConn::Init() {
     IConn::Init();
@@ -70,20 +72,6 @@ const std::string INetConn::BuildPrintableStr(const ConnInfo &info) {
     return out.str();
 }
 
-const std::string INetConn::BuildKey(const ConnInfo &info) {
-    IntKeyType key = info.sp << 1;
-    if (info.IsUdp()) {
-        key |= 0x1;
-    }
-
-    return std::to_string(static_cast<IntKeyType>(key));
-}
-
-const std::string INetConn::BuildKey(IntKeyType key) {
-    return std::to_string(key);
-}
-
 IntKeyType INetConn::IntKey() const {
     return mIntKey;
 }
-

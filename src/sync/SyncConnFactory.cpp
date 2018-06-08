@@ -6,7 +6,7 @@
 #ifndef _WIN32
 
 #include "../os/unix/conn/UnixDgramSyncConn.h"
-#include "LoopSreamSyncConn.h"
+#include "LoopStreamSyncConn.h"
 
 #endif // !_WIN32
 
@@ -17,6 +17,6 @@ ISyncConn *SyncConnFactory::CreateSysSyncConn(struct uv_loop_s *loop, const ISyn
 #else
     //return new UdpSyncConn(loop, cb, obj);    // extremely low performance on Winddows
     return new TcpStreamSyncConn(loop, cb, obj);
-//    return new LoopSreamSyncConn(loop, cb, obj);
+//    return new LoopStreamSyncConn(loop, cb, obj);
 #endif // _WIN32
 }

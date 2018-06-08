@@ -7,6 +7,7 @@
 #include <rscomm.h>
 #include "BtmUdpConn.h"
 #include "../util/rsutil.h"
+#include "../src/util/KeyGenerator.h"
 
 //BtmUdpConn::BtmUdpConn(const std::string &key, uv_udp_t *udp) : INetConn(key) {
 //    mUdp = udp;
@@ -39,7 +40,7 @@ int BtmUdpConn::Init() {
 
     mSrcInfo.dst = mInfo.src;
     mSrcInfo.dp = mInfo.sp;
-    assert(Key() == ConnInfo::KeyForUdpBtm(mInfo.src, mInfo.sp));
+    assert(Key() == KeyGenerator::StrForIntKey(KeyGenerator::KeyForUdp(mInfo)));
 
     return uv_udp_recv_start(mUdp, alloc_buf, recv_cb);
 }

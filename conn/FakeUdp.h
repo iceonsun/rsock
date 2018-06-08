@@ -10,7 +10,7 @@
 
 class FakeUdp : public INetConn {
 public:
-    FakeUdp(const std::string &key, const ConnInfo &info);
+    FakeUdp(IntKeyType key, const ConnInfo &info);
 
     ConnInfo *GetInfo() override;
 

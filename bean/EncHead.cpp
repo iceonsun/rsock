@@ -4,6 +4,7 @@
 
 #include "EncHead.h"
 #include "../util/enc.h"
+#include "../src/util/KeyGenerator.h"
 
 char *EncHead::Enc2Buf(char *p, int buf_len) {
     if (p && buf_len >= GetSize()) {
@@ -14,7 +15,7 @@ char *EncHead::Enc2Buf(char *p, int buf_len) {
         std::copy(mIdBuf.begin(), mIdBuf.end(), p);
         p += mIdBuf.size();                         // id
         p = encode_uint32(mConv, p);                 // conv
-        p = encode_uint32(mConnKey, p);             // key
+        p = KeyGenerator::EncodeKey(p, mConnKey);    // key
         p = encode_uint8(resereved, p);             // reserved
         return old + this->len;
     }
@@ -46,7 +47,7 @@ const char *EncHead::DecodeBuf(EncHead &e, const char *p, int buf_len) {
         std::copy(p, p + e.mIdBuf.size(), e.mIdBuf.begin());
         p += e.mIdBuf.size();
         p = decode_uint32(&e.mConv, p);
-        p = decode_uint32(&e.mConnKey, p);  // caution here. mConnKey must be right type
+        p = KeyGenerator::DecodeKey(p, &e.mConnKey);    // caution here. mConnKey must be right type
         p = decode_uint8(&e.resereved, p);
         return old + e.len;
     }

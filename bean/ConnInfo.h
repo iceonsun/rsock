@@ -32,10 +32,6 @@ struct ConnInfo {
 
     const char *DecodeBase(const char *buf, int len);
 
-    static std::string KeyForUdpBtm(uint32_t src, uint16_t sp);
-
-    static std::string BuildConvKey(uint32_t dst, uint32_t conv);
-
     virtual std::string ToStr() const;
 
     ConnInfo() = default;

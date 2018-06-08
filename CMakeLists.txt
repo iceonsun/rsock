@@ -22,7 +22,7 @@ set(SOURCE_FILES
         conn/CConn.cpp
         net/NetUtil.cpp net/ClientNetManager.cpp net/TcpAckPool.cpp net/TcpListenPool.cpp net/INetManager.cpp
         net/ServerNetManager.cpp net/NetManagerTimer.cpp
-        src/sync/SyncConnFactory.cpp src/sync/LoopSreamSyncConn.cpp src/sync/ISyncConn.cpp src/sync/UdpSyncConn.cpp
+        src/sync/SyncConnFactory.cpp src/sync/LoopStreamSyncConn.cpp src/sync/ISyncConn.cpp src/sync/UdpSyncConn.cpp
         src/sync/TcpStreamSyncConn.cpp src/sync/IPacketSyncConn.cpp
         src/service/IObserver.h src/service/IService.cpp
         src/service/ITimerObserver.h src/service/TimerService.cpp src/service/TimerServiceUtil.cpp
@@ -31,7 +31,7 @@ set(SOURCE_FILES
         src/app/AppTimer.cpp util/RouteUtil.cpp util/RouteUtil.h src/service/ServiceUtil.h
         #src/service/ServiceUtil.cpp # template involved
         src/conf/ConfManager.cpp
-        src/util/Singleton.h src/util/ICloseable.h src/service/IBaseService.h)
+        src/util/Singleton.h src/util/ICloseable.h src/service/IBaseService.h src/util/KeyGenerator.cpp)
 
 # platform dependent dir		
 SET(ROS_DIR src/os/unix)

@@ -8,19 +8,6 @@
 #include "../util/enc.h"
 #include "../util/rsutil.h"
 #include <algorithm>
-#include <rscomm.h>
-
-std::string ConnInfo::KeyForUdpBtm(uint32_t src, uint16_t sp) {
-    std::ostringstream out;
-    out << "udp:" << InAddr2Ip(src) << ":" << sp;
-    return out.str();
-}
-
-std::string ConnInfo::BuildConvKey(uint32_t dst, uint32_t conv) {
-    std::ostringstream out;
-    out << "conv:" << InAddr2Ip(dst) << ":" << conv;
-    return out.str();
-}
 
 char *ConnInfo::Encode(char *buf, int len) const {
     if (len < sizeof(*this)) {

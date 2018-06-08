@@ -10,6 +10,7 @@
 #include "../bean/TcpInfo.h"
 #include "../bean/EncHead.h"
 #include "../callbacks/RConnReset.h"
+#include "../src/util/KeyGenerator.h"
 
 using namespace std::placeholders;
 
@@ -103,7 +104,7 @@ int RConn::Output(ssize_t nread, const rbuf_t &rbuf) {
 
         const rbuf_t buf = new_buf((p - base), base, rbuf.data);
         if (info->IsUdp()) {
-            auto key = ConnInfo::KeyForUdpBtm(info->src, info->sp);
+            auto key = KeyGenerator::StrForIntKey(KeyGenerator::KeyForConnInfo(*info));
             auto conn = ConnOfKey(key);
             if (conn) {
                 return conn->Send(buf.len, buf);

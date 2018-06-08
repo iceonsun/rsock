@@ -13,6 +13,7 @@
 #include "../cap/RCap.h"
 #include "../conn/FakeUdp.h"
 #include "../bean/RConfig.h"
+#include "../src/util/KeyGenerator.h"
 
 CSockApp::CSockApp() : ISockApp(false) {}
 
@@ -51,7 +52,7 @@ IConn *CSockApp::CreateBridgeConn(RConfig &conf, IConn *btm, uv_loop_t *loop, IN
         for (auto &e: conns) {
             auto *conn = dynamic_cast<IBtmConn *>(e.second);
             auto info = conn->GetInfo();
-            auto key = INetConn::BuildKey(*info);
+            auto key = KeyGenerator::KeyForConnInfo(*info);
             INetConn *c = nullptr;
             if (conn->IsUdp()) {
                 c = new FakeUdp(key, *info);

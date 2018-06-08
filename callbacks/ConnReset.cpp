@@ -12,6 +12,7 @@
 #include "../bean/TcpInfo.h"
 #include "../conn/IAppGroup.h"
 #include "../conn/INetGroup.h"
+#include "../src/util/KeyGenerator.h"
 
 ConnReset::ConnReset(IAppGroup *appGroup) {
     mAppGroup = appGroup;
@@ -24,11 +25,10 @@ int ConnReset::SendNetConnRst(const ConnInfo &src, IntKeyType key) {
     LOGD << "src: " << src.ToStr() << ", key: " << key;
 
     char base[OM_MAX_PKT_SIZE] = {0};
-    char *p = base;
-    p = encode_uint32(key, p);
+    char *p = KeyGenerator::EncodeKey(base, key);
     // it will be wrong to decode dst and dp, because dst and dp are from nat not from client.
     auto rbuf = new_buf((p - base), base, (void *) &src);
-    return mAppGroup->RawOutput(rbuf.len, rbuf);   // directly send
+    return mAppGroup->RawOutput(rbuf.len, rbuf);   // directly send // todo: refactor RawOutput
 }
 
 int ConnReset::SendConvRst(uint32_t conv) {
@@ -45,7 +45,7 @@ int ConnReset::Input(uint8_t cmd, ssize_t nread, const rbuf_t &rbuf) {
     const char *base = rbuf.base;
     ConnInfo *info = static_cast<ConnInfo *>(rbuf.data);
     if (EncHead::TYPE_CONV_RST == cmd) {
-        if (nread >= sizeof(uint32_t)) {
+        if (nread >= sizeof(uint32_t)) {    // conv is 32bit!!! todo: refactor
             uint32_t conv = 0;
             const char *p = decode_uint32(&conv, base);
             LOGD << "conv: " << conv;
@@ -53,10 +53,8 @@ int ConnReset::Input(uint8_t cmd, ssize_t nread, const rbuf_t &rbuf) {
         }
         return -1;
     } else if (EncHead::TYPE_NETCONN_RST == cmd) {
-        if (nread >= sizeof(IntKeyType)) {
-            IntKeyType key;
-            auto p = base;
-            p = decode_uint32(&key, p);
+        IntKeyType key;
+        if (KeyGenerator::DecodeKeySafe(nread, base, &key) > 0) {
             LOGD << "receive TYPE_NETCONN_RST from peer, intKey: " << key;
             return OnRecvNetConnRst(*info, key);
         }
@@ -67,7 +65,7 @@ int ConnReset::Input(uint8_t cmd, ssize_t nread, const rbuf_t &rbuf) {
 }
 
 int ConnReset::OnRecvConvRst(const ConnInfo &src, uint32_t rstConv) {
-    auto key = ConnInfo::BuildConvKey(src.dst, rstConv);
+    auto key = KeyGenerator::BuildConvKey(src.dst, rstConv);
     auto conn = mAppGroup->ConnOfKey(key);
     if (conn) {
         mAppGroup->CloseConn(conn);
@@ -79,7 +77,7 @@ int ConnReset::OnRecvConvRst(const ConnInfo &src, uint32_t rstConv) {
 }
 
 // TODO: here has bug. if keepalive packet reaches server before data does, the server will send rst. and this conn will be closed and no more connected.
-int ConnReset::OnRecvNetConnRst(const ConnInfo &src, uint32_t key) {
+int ConnReset::OnRecvNetConnRst(const ConnInfo &src, IntKeyType key) {
     auto netGroup = mAppGroup->GetNetGroup();
     auto conn = netGroup->ConnOfIntKey(key);
     if (conn) {

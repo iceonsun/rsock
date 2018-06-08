@@ -11,6 +11,7 @@
 #include "../util/rhash.h"
 #include "../util/rsutil.h"
 #include "../callbacks/NetConnKeepAlive.h"
+#include "../src/util/KeyGenerator.h"
 
 using namespace std::placeholders;
 
@@ -99,8 +100,8 @@ void IAppGroup::Flush(uint64_t now) {
 }
 
 bool IAppGroup::OnTcpFinOrRst(const TcpInfo &info) {
-    auto key = INetConn::BuildKey(info);
-    auto conn = mFakeNetGroup->ConnOfKey(key);
+    auto key = KeyGenerator::KeyForConnInfo(info);
+    auto conn = mFakeNetGroup->ConnOfIntKey(key);
     if (conn) {
         INetConn *netConn = dynamic_cast<INetConn *>(conn);
         assert(netConn);

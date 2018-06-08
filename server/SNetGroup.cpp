@@ -6,6 +6,7 @@
 #include "SNetGroup.h"
 #include "../conn/FakeUdp.h"
 #include "../net/INetManager.h"
+#include "../src/util/KeyGenerator.h"
 
 using namespace std::placeholders;
 
@@ -15,12 +16,12 @@ SNetGroup::SNetGroup(const std::string &groupId, uv_loop_t *loop, INetManager *n
     assert(mNetManager);
 }
 
-INetConn *SNetGroup::CreateNetConn(const std::string &key, const ConnInfo *info) {
+INetConn *SNetGroup::CreateNetConn(IntKeyType key, const ConnInfo *info) {
     INetConn *c = nullptr;
     if (info->IsUdp()) {
         c = new FakeUdp(key, *info);
     } else {
-        c = mNetManager->TransferConn(key);
+        c = mNetManager->TransferConn(KeyGenerator::StrForIntKey(key)); // todo: necessary to remove StrForIntKey
     }
 
     if (c) {

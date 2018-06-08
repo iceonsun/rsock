@@ -3,8 +3,9 @@
 //
 
 #include "DefaultFakeConn.h"
+#include "../src/util/KeyGenerator.h"
 
-DefaultFakeConn::DefaultFakeConn() : INetConn(INVALID_KEY_STR) {}
+DefaultFakeConn::DefaultFakeConn() : INetConn(KeyGenerator::INVALID_KEY) {}
 
 bool DefaultFakeConn::Alive() {
     return true;

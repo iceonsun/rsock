@@ -9,6 +9,7 @@
 #include "../bean/ConnInfo.h"
 #include "../bean/TcpInfo.h"
 #include "DefaultFakeConn.h"
+#include "../src/util/KeyGenerator.h"
 
 using namespace std::placeholders;
 
@@ -56,8 +57,8 @@ int INetGroup::Input(ssize_t nread, const rbuf_t &rbuf) {
         assert(info);
         assert(info->head);
 
-        auto key = INetConn::BuildKey(*info);
-        auto conn = ConnOfKey(key);
+        auto key = info->head->ConnKey();
+        auto conn = ConnOfIntKey(key);
         if (!conn) {
             auto netconn = CreateNetConn(key, info);
             if (netconn) {
@@ -165,5 +166,5 @@ void INetGroup::netConnErr(const ConnInfo &info) {
 }
 
 IConn *INetGroup::ConnOfIntKey(IntKeyType key) {
-    return ConnOfKey(INetConn::BuildKey(key));
+    return ConnOfKey(KeyGenerator::StrForIntKey(key));
 }
