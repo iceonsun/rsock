@@ -31,7 +31,7 @@ set(SOURCE_FILES
         src/app/AppTimer.cpp util/RouteUtil.cpp util/RouteUtil.h src/service/ServiceUtil.h
         #src/service/ServiceUtil.cpp # template involved
         src/conf/ConfManager.cpp
-        src/util/Singleton.h src/util/ICloseable.h)
+        src/util/Singleton.h src/util/ICloseable.h src/service/IBaseService.h)
 
 # platform dependent dir		
 SET(ROS_DIR src/os/unix)

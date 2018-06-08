@@ -5,7 +5,6 @@
 #ifndef RSOCK_ISERVICE_H
 #define RSOCK_ISERVICE_H
 
-#include <string>
 #include <vector>
 
 class IObserver;

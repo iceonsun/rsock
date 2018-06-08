@@ -52,7 +52,10 @@ int INetGroup::Close() {
 
 int INetGroup::Input(ssize_t nread, const rbuf_t &rbuf) {
     if (nread > 0) {
-        ConnInfo *info = static_cast<ConnInfo *>(rbuf.data);
+        ConnInfo *info = static_cast<ConnInfo *>(rbuf.data);    // use EncHead::ConnKey();
+        assert(info);
+        assert(info->head);
+
         auto key = INetConn::BuildKey(*info);
         auto conn = ConnOfKey(key);
         if (!conn) {

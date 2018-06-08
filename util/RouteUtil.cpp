@@ -73,7 +73,7 @@ int RouteUtil::getDefGateway(struct addr &gateway) {
         return -1;
     }
 
-    route_entry entry = {0};
+    route_entry entry = {{0}};
     entry.route_dst.addr_type = ADDR_TYPE_IP;
     entry.route_dst.addr_bits = 0;
 

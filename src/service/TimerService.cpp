@@ -32,7 +32,6 @@ int TimerService::RegisterObserver(ITimerObserver *observer) {
     return RegisterObserver(observer, observer->Interval());
 }
 
-
 int TimerService::RegisterObserver(ITimerObserver *observer, uint64_t delay) {
     if (!observer) {
         return -1;
@@ -44,7 +43,7 @@ int TimerService::RegisterObserver(ITimerObserver *observer, uint64_t delay) {
     }
 
     setupTimer();
-    int nret = IService::RegisterObserver(dynamic_cast<IObserver *>(observer));
+    int nret = IBaseService<ITimerObserver>::RegisterObserver(observer);
     if (!nret) {
         uint64_t now = rsk_now_ms();
         mExpireMap.emplace(nextExpireTs(now + delay), observer);
@@ -116,12 +115,12 @@ uint64_t TimerService::nextExpireTs(uint64_t start) {
     return 0;
 }
 
-int TimerService::UnRegisterObserver(IObserver *observer) {
+int TimerService::UnRegisterObserver(ITimerObserver *observer) {
     for (auto it = mExpireMap.begin(); it != mExpireMap.end(); it++) {
         if (it->second == observer) {
             mExpireMap.erase(it);
             break;
         }
     }
-    return IService::UnRegisterObserver(observer);
+    return IBaseService<ITimerObserver>::UnRegisterObserver(observer);
 }

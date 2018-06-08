@@ -19,10 +19,6 @@ int RouteService::Close() {
     return IService::Close();
 }
 
-int RouteService::RegisterObserver(IRouteObserver *observer) {
-    return IService::RegisterObserver(observer);
-}
-
 void RouteService::CheckNetworkStatusDelayed() {
     auto m = mHandler->ObtainMessage(MSG_CHECK);
     if (!mHandler->HasMessages(MSG_CHECK)) {

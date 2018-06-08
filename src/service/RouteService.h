@@ -5,22 +5,19 @@
 #ifndef RSOCK_ROUTESERVICE_H
 #define RSOCK_ROUTESERVICE_H
 
-#include <memory>
-#include "IService.h"
 #include "uv.h"
 #include "../../util/Handler.h"
+#include "IBaseService.h"
 
 class IRouteObserver;
 
 class Handler;
 
-class RouteService final : public IService {
+class RouteService final : public IBaseService<IRouteObserver> {
 public:
     explicit RouteService(uv_loop_t *loop);
 
     int Close() override;
-
-    int RegisterObserver(IRouteObserver *observer);
 
     /*
      * Check network status periodically.
@@ -43,7 +40,6 @@ private:
     void doubleIntervalSec();
 
 private:
-    using IService::RegisterObserver;
 
     Handler::SPHandler mHandler = nullptr;
 

@@ -9,11 +9,11 @@
 #include <string>
 #include <map>
 #include "uv.h"
-#include "IService.h"
+#include "IBaseService.h"
 
 class ITimerObserver;
 
-class TimerService final : public IService {
+class TimerService final : public IBaseService<ITimerObserver> {
 public:
     /*
      * The helper class to specify time precision. The default is in seconds.
@@ -32,7 +32,7 @@ public:
     /*
      * Same as RegisterObserver(ITimerObserver *, uint64_t , uint64_t ). But the delay is equal to interval.
      */
-    int RegisterObserver(ITimerObserver *observer);
+    int RegisterObserver(ITimerObserver *observer) override;
 
     /*
      * Register time observer.
@@ -43,7 +43,7 @@ public:
      */
     int RegisterObserver(ITimerObserver *observer, uint64_t delay);
 
-    int UnRegisterObserver(IObserver *observer) override;
+    int UnRegisterObserver(ITimerObserver *observer) override;
 
 protected:
     void onFlush();
@@ -57,9 +57,6 @@ private:
     void setupTimer();
 
     void destroyTimer();
-
-private:
-    using IService::RegisterObserver;
 
 private:
     uv_loop_t *mLoop = nullptr;
