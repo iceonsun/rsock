@@ -7,7 +7,6 @@
 
 #include <uv.h>
 #include <vector>
-#include "../callbacks/ITcpObserver.h"
 
 struct RConfig;
 
@@ -29,7 +28,11 @@ class RConn;
 
 class AppTimer;
 
-class ISockApp : public ITcpObserver {
+class AppNetObserver;
+
+struct TcpInfo;
+
+class ISockApp {
 public:
     explicit ISockApp(bool is_server);
 
@@ -63,7 +66,7 @@ public:
 
     bool IsClosing() { return mClosing; }
 
-    bool OnTcpFinOrRst(const TcpInfo &info) override;
+    virtual void OnTcpFinOrRst(const TcpInfo &info);
 
 protected:
     std::vector<IBtmConn *> bindUdpConns(uint32_t src, const std::vector<uint16_t> &ports, uint32_t dst,
@@ -71,7 +74,11 @@ protected:
 
     virtual int initConfManager();
 
-    virtual int InitServices(const RConfig &conf);
+    virtual int initServices(const RConfig &conf);
+
+    virtual int initObservers();
+
+    virtual void destroyObservers();
 
     virtual void onExitSignal();
 
@@ -99,6 +106,7 @@ private:
 
     uv_loop_t *mLoop = nullptr;
     AppTimer *mTimer = nullptr;
+    AppNetObserver *mNetObserver = nullptr;
     bool mServer;
     RCap *mCap = nullptr;
     IConn *mBridge = nullptr;

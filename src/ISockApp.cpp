@@ -21,11 +21,14 @@
 #include "../conn/RConn.h"
 #include "../util/UvUtil.h"
 #include "app/AppTimer.h"
+#include "app/AppNetObserver.h"
 #include "service/ServiceManager.h"
 #include "service/TimerService.h"
 #include "service/RouteService.h"
 #include "conf/ConfManager.h"
 #include "../bean/RConfig.h"
+#include "service/NetService.h"
+#include "service/ServiceUtil.h"
 
 
 ISockApp::ISockApp(bool is_server) : mServer(is_server) {
@@ -64,7 +67,7 @@ int ISockApp::Init() {
     return doInit();
 }
 
-int ISockApp::InitServices(const RConfig &conf) {
+int ISockApp::initServices(const RConfig &conf) {
     const auto confManager = ConfManager::GetInstance();
     assert(confManager);
 
@@ -78,6 +81,9 @@ int ISockApp::InitServices(const RConfig &conf) {
 
         auto *routeService = new RouteService(mLoop);
         manager->AddService(ServiceManager::ROUTE_SERVICE, routeService);
+
+        auto *netService = new NetService();
+        manager->AddService(ServiceManager::NET_SERVICE, netService);
     }
 
     if (!manager || manager->Init()) {
@@ -86,6 +92,33 @@ int ISockApp::InitServices(const RConfig &conf) {
     }
 
     return 0;
+}
+
+int ISockApp::initObservers() {
+    if (mNetObserver) {
+        mNetObserver = new AppNetObserver(this);
+        return mNetObserver->Init();
+    }
+    // mTimer is initialized in other places
+    return -1;
+}
+
+
+void ISockApp::destroyObservers() {
+    std::vector<IObserver *> observers = {
+            dynamic_cast<IObserver *>(mNetObserver),
+            dynamic_cast<IObserver *>(mTimer),
+    };
+
+    for (auto e: observers) {
+        if (e) {
+            e->Close();
+            delete e;
+        }
+    }
+    // don't forget to reset them to nullptr
+    mNetObserver = nullptr;
+    mTimer = nullptr;
 }
 
 int ISockApp::doInit() {
@@ -106,9 +139,15 @@ int ISockApp::doInit() {
     }
     LOGD << "conf: " << conf.to_json().dump();
 
-    nret = InitServices(conf);
+    nret = initServices(conf);
     if (nret) {
         fprintf(stdout, "failed to init services: %d\n", nret);
+        return nret;
+    }
+
+    nret = initObservers();
+    if (nret) {
+        fprintf(stdout, "failed to init observers: %d\n", nret);
         return nret;
     }
 
@@ -133,7 +172,6 @@ int ISockApp::doInit() {
     }
 
     assert(mBtmConn);
-    mBtmConn->Attach(this);
     // cap#Start must be called before CreateBridgeConn because create btmconn will connect tcp
     mCap->Start(RConn::CapInputCb, (u_char *) (mBtmConn));
 
@@ -196,20 +234,12 @@ void ISockApp::Close() {
     mClosing = true;
     destroySignals();
 
-    if (mTimer) {
-        mTimer->Close();
-        delete mTimer;
-        mTimer = nullptr;
-    }
+    destroyObservers();
 
     if (mCap) {
         mCap->WaitAndClose();
         delete mCap;
         mCap = nullptr;
-    }
-
-    if (mBtmConn) {
-        mBtmConn->Detach(this); // it will be closed when closing bridge
     }
 
     if (mBridge) {
@@ -336,15 +366,10 @@ ISockApp::~ISockApp() {
     }
 }
 
-bool ISockApp::OnTcpFinOrRst(const TcpInfo &info) {
-    if (!IsClosing()) { // if app is closing, don't call super class
-        auto *c = dynamic_cast<ITcpObserver *>(mBridge);
-        assert(c);
-        if (c) {
-            return c->OnTcpFinOrRst(info);
-        }
+void ISockApp::OnTcpFinOrRst(const TcpInfo &info) {
+    if (IsClosing()) { // if app is closing, tell NetService to block subsequent call
+        ServiceUtil::GetService<NetService *>(ServiceManager::NET_SERVICE)->OnAppClosing();
     }
-    return false;
 }
 
 int ISockApp::newLoop() {
@@ -384,3 +409,4 @@ int ISockApp::initConfManager() {
     assert(confManager);
     return confManager->Init();
 }
+

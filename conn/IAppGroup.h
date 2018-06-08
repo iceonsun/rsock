@@ -7,8 +7,8 @@
 
 #include <rscomm.h>
 #include "IGroup.h"
-#include "../callbacks/ITcpObserver.h"
 #include "../bean/EncHead.h"
+#include "../src/service/INetObserver.h"
 
 class INetGroup;
 
@@ -20,7 +20,7 @@ class IReset;
 
 struct ConnInfo;
 
-class IAppGroup : public IGroup, public ITcpObserver {
+class IAppGroup : public IGroup {
 public:
     IAppGroup(const std::string &groupId, INetGroup *fakeNetGroup, IConn *btm, bool activeKeepAlive);
 
@@ -38,7 +38,10 @@ public:
 
     INetGroup *NetGroup() { return mFakeNetGroup; }
 
-    bool OnTcpFinOrRst(const TcpInfo &info) override;
+    /*
+     * return true if this rst/fin information is processed by this group
+     */
+    bool OnTcpFinOrRst(const TcpInfo &info);
 
 //    bool OnUdpRst(const ConnInfo &info) override;
 

@@ -14,6 +14,7 @@ int IService::RegisterObserver(IObserver *observer) {
         mObserver.push_back(observer);
         return 0;
     }
+    assert(0);  // registered twice
     return -1;
 }
 

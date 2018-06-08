@@ -9,6 +9,7 @@
 
 const std::string ServiceManager::TIMER_SERVICE = "TimerService";
 const std::string ServiceManager::ROUTE_SERVICE = "RouteService";
+const std::string ServiceManager::NET_SERVICE = "NetService";
 
 void ServiceManager::AddService(const std::string &serviceName, IService *service) {
     auto it = mServiceMap.find(serviceName);

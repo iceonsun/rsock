@@ -11,7 +11,7 @@ include_directories(./src/os/include)
 set(SOURCE_FILES
         src/rcommon.c src/ISockApp.cpp
         bean/RConfig.cpp bean/ConnInfo.cpp bean/TcpInfo.cpp bean/EncHead.cpp
-        callbacks/ITcpInformer.cpp callbacks/RConnReset.cpp callbacks/INetConnKeepAlive.h
+        callbacks/RConnReset.cpp callbacks/INetConnKeepAlive.h
         callbacks/IReset.h callbacks/NetConnKeepAlive.cpp callbacks/ConnReset.cpp
         util/enc.c util/rsutil.cpp util/rhash.cpp util/TextUtils.h util/RPortList.cpp
         util/PortPair.cpp util/Handler.cpp util/ShotHandler.cpp util/UvUtil.cpp
@@ -31,7 +31,7 @@ set(SOURCE_FILES
         src/app/AppTimer.cpp util/RouteUtil.cpp util/RouteUtil.h src/service/ServiceUtil.h
         #src/service/ServiceUtil.cpp # template involved
         src/conf/ConfManager.cpp
-        src/util/Singleton.h src/util/ICloseable.h src/service/IBaseService.h src/util/KeyGenerator.cpp)
+        src/util/Singleton.h src/util/ICloseable.h src/service/IBaseService.h src/util/KeyGenerator.cpp src/service/NetService.cpp src/service/NetService.h src/service/INetObserver.h src/app/AppNetObserver.cpp src/app/AppNetObserver.h)
 
 # platform dependent dir		
 SET(ROS_DIR src/os/unix)

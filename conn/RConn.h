@@ -8,7 +8,6 @@
 #include <cstdint>
 #include "IConn.h"
 #include "IGroup.h"
-#include "../callbacks/ITcpInformer.h"
 
 class RawTcp;
 
@@ -20,7 +19,7 @@ class RConnReset;
 
 class IBtmConn;
 
-class RConn : public IGroup, public ITcpInformer {
+class RConn : public IGroup {
 public:
 //    using INetReset = std::function<void(ssize_t nread, const rbuf_t &rbuf)>;
 

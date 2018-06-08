@@ -19,6 +19,8 @@ public:
 
     static const std::string ROUTE_SERVICE;
 
+    static const std::string NET_SERVICE;
+
     /*
      * Init services already managed by ServiceManager.
      */

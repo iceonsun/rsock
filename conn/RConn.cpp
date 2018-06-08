@@ -11,6 +11,8 @@
 #include "../bean/EncHead.h"
 #include "../callbacks/RConnReset.h"
 #include "../src/util/KeyGenerator.h"
+#include "../src/service/ServiceUtil.h"
+#include "../src/service/NetService.h"
 
 using namespace std::placeholders;
 
@@ -29,13 +31,13 @@ int RConn::Init() {
         return nret;
     }
     auto fn = std::bind(&IConn::Input, this, _1, _2);
-    
-     nret = mRawTcp->Init();
-	if (nret) {
-		return nret;
-	}
-	mRawTcp->SetOnRecvCb(fn);
-	return 0;
+
+    nret = mRawTcp->Init();
+    if (nret) {
+        return nret;
+    }
+    mRawTcp->SetOnRecvCb(fn);
+    return 0;
 }
 
 int RConn::Close() {
@@ -75,7 +77,7 @@ int RConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
     } else if (!info->IsUdp()) {
         TcpInfo *tcpInfo = dynamic_cast<TcpInfo *>(info);
         if (tcpInfo && tcpInfo->HasCloseFlag()) {
-            Notify(*tcpInfo);
+            ServiceUtil::GetService<NetService *>(ServiceManager::NET_SERVICE)->NotifyTcpFinOrRst(*tcpInfo);
             return 0;
         }
     }

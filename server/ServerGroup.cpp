@@ -11,6 +11,8 @@
 #include "SNetGroup.h"
 #include "../net/INetManager.h"
 #include "SubGroup.h"
+#include "../src/service/ServiceUtil.h"
+#include "../src/service/NetService.h"
 
 using namespace std::placeholders;
 
@@ -22,13 +24,21 @@ ServerGroup::ServerGroup(const std::string &groupId, uv_loop_t *loop, const stru
     SetPrintableStr("ServerGroup");
 }
 
+int ServerGroup::Init() {
+    int nret = IGroup::Init();
+    if (nret) {
+        return nret;
+    }
+    return ServiceUtil::GetService<NetService *>(ServiceManager::NET_SERVICE)->RegisterObserver(this);
+}
+
 int ServerGroup::Close() {
     IGroup::Close();
     if (mTarget) {
         free(mTarget);
         mTarget = nullptr;
     }
-    return 0;
+    return ServiceUtil::GetService<NetService *>(ServiceManager::NET_SERVICE)->UnRegisterObserver(this);
 }
 
 int ServerGroup::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
@@ -68,7 +78,7 @@ IConn *ServerGroup::newConn(const std::string &groupId, uv_loop_t *loop, const s
     return conn;
 }
 
-bool ServerGroup::OnTcpFinOrRst(const TcpInfo &info) {
+void ServerGroup::OnTcpFinOrRst(const TcpInfo &info) {
     auto &conns = GetAllConns();
     for (auto &e: conns) {
         // if cast ot observer, there may crash. reinterpret_cast problem of multiple inheritance
@@ -76,12 +86,11 @@ bool ServerGroup::OnTcpFinOrRst(const TcpInfo &info) {
         auto *observer = dynamic_cast<SubGroup *>(e.second);
 
         assert(observer);
-        if (observer->OnTcpFinOrRst(info)) {
-            if (!e.second->Alive()) {
-                CloseConn(e.second);    // close and remove group if dead
-            }
-            return true;
+        if (observer->OnTcpFinOrRst(info)) {    // processed by subgroup
+//            if (!e.second->Alive()) {
+//                CloseConn(e.second);    // close and remove group if dead
+//            }
+            break;
         }
     }
-    return false;
 }

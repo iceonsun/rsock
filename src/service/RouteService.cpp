@@ -70,12 +70,12 @@ void RouteService::NotifyOnline(const std::string &dev, const std::string &ip) {
     const auto fn = [&](IRouteObserver *o) {
         o->OnNetConnected(dev, ip);
     };
-    ServiceUtil::ForEach<IRouteObserver, decltype(fn)>(this, fn);
+    ServiceUtil::ForEach<IRouteObserver>(this, fn);
 }
 
 void RouteService::NotifyOffline() {
-    auto fn = [](IRouteObserver *o) {
+    const auto fn = [](IRouteObserver *o) {
         o->OnNetDisconnected();
     };
-    ServiceUtil::ForEach<IRouteObserver, decltype(fn)>(this, fn);
+    ServiceUtil::ForEach<IRouteObserver>(this, fn);
 }
