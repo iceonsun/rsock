@@ -14,17 +14,13 @@
 #include "../src/service/TimerServiceUtil.h"
 #include "../src/util/KeyGenerator.h"
 
-NetConnKeepAlive::NetConnKeepAlive(IAppGroup *group, bool active, IReset *reset) {
+NetConnKeepAlive::NetConnKeepAlive(IAppGroup *group, IReset *reset) {
     mAppGroup = group;  // todo: refactor mAppGroup. use an interface instead
     mReset = reset;
-    mActive = active;
 }
 
 int NetConnKeepAlive::Init() {
-    if (mActive) {
-        return TimerServiceUtil::Register(this, FIRST_FLUSH_DELAY);
-    }
-    return 0;
+    return TimerServiceUtil::Register(this, FIRST_FLUSH_DELAY);
 }
 
 int NetConnKeepAlive::Input(uint8_t cmd, ssize_t nread, const rbuf_t &rbuf) {
@@ -41,12 +37,14 @@ int NetConnKeepAlive::Input(uint8_t cmd, ssize_t nread, const rbuf_t &rbuf) {
             }
         } else if (cmd == EncHead::TYPE_KEEP_ALIVE_RESP) {
             OnRecvResponse(connKey);
+        } else {
+            LOGD << "Unrecognized cmd: " << cmd;
+            return -1;
         }
-    } else {
-        LOGW << "nread < sizeof(IntKeyType)";
+        return nread;
     }
-
-    return nread;
+    LOGW << "nread < sizeof(IntKeyType)";
+    return -1;
 }
 
 int NetConnKeepAlive::SendResponse(IntKeyType connKey) {
@@ -59,10 +57,7 @@ int NetConnKeepAlive::SendResponse(IntKeyType connKey) {
 }
 
 int NetConnKeepAlive::Close() {
-    if (mActive) {
-        return TimerServiceUtil::UnRegister(this);
-    }
-    return 0;
+    return TimerServiceUtil::UnRegister(this);
 }
 
 int NetConnKeepAlive::SendRequest(IntKeyType connKey) {
@@ -126,8 +121,5 @@ void NetConnKeepAlive::onNetConnDead(IntKeyType keyType) {
 }
 
 uint64_t NetConnKeepAlive::Interval() const {
-    if (mActive) {
-        return FLUSH_INTERVAL;
-    }
-    return 0;
+    return FLUSH_INTERVAL;
 }

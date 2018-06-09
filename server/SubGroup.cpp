@@ -14,7 +14,7 @@
 using namespace std::placeholders;
 
 SubGroup::SubGroup(const std::string &groupId, uv_loop_t *loop, const struct sockaddr *target, INetGroup *fakeNetGroup,
-                   IConn *btm) : IAppGroup(groupId, fakeNetGroup, btm, false) {
+                   IConn *btm) : IAppGroup(groupId, fakeNetGroup, btm) {
     mLoop = loop;
     mTarget = new_addr(target);
 }

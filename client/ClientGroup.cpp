@@ -17,7 +17,7 @@ using namespace std::placeholders;
 
 ClientGroup::ClientGroup(const std::string &groupId, const std::string &listenUnPath, const std::string &listenUdpIp,
                          uint16_t listenUdpPort, uv_loop_t *loop, INetGroup *fakeGroup, IConn *btm)
-        : IAppGroup(groupId, fakeGroup, btm, true) {
+        : IAppGroup(groupId, fakeGroup, btm) {
     assert(fakeGroup != nullptr);
     if (!listenUdpIp.empty()) {
         mUdpAddr = new_addr4(listenUdpIp.c_str(), listenUdpPort);

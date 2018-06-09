@@ -17,7 +17,7 @@ class NetConnKeepAlive : public INetConnKeepAlive, public ITimerObserver {
 public:
     // be same as EncHead
 
-    explicit NetConnKeepAlive(IAppGroup *group, bool active, IReset *reset);
+    explicit NetConnKeepAlive(IAppGroup *group, IReset *reset);
 
     int Input(uint8_t cmd, ssize_t nread, const rbuf_t &rbuf) override;
 
@@ -49,7 +49,6 @@ private:
     IAppGroup *mAppGroup = nullptr;
     std::map<IntKeyType, int> mReqMap;
     IReset *mReset = nullptr;
-    bool mActive = false;
 };
 
 

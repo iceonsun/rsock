@@ -15,9 +15,7 @@
 
 using namespace std::placeholders;
 
-IAppGroup::IAppGroup(const std::string &groupId, INetGroup *fakeNetGroup, IConn *btm, bool activeKeepAlive)
-        : IGroup(groupId, btm) {
-    mActive = activeKeepAlive;
+IAppGroup::IAppGroup(const std::string &groupId, INetGroup *fakeNetGroup, IConn *btm) : IGroup(groupId, btm) {
     mFakeNetGroup = fakeNetGroup;
     assert(mFakeNetGroup);
 
@@ -42,7 +40,7 @@ int IAppGroup::Init() {
 
     mResetHelper = new ConnReset(this);
 
-    mKeepAlive = new NetConnKeepAlive(this, mActive, mResetHelper);
+    mKeepAlive = new NetConnKeepAlive(this, mResetHelper);
     return mKeepAlive->Init();
 }
 

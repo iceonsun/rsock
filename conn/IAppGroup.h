@@ -22,7 +22,7 @@ struct ConnInfo;
 
 class IAppGroup : public IGroup {
 public:
-    IAppGroup(const std::string &groupId, INetGroup *fakeNetGroup, IConn *btm, bool activeKeepAlive);
+    IAppGroup(const std::string &groupId, INetGroup *fakeNetGroup, IConn *btm);
 
     int Init() override;
 
@@ -57,7 +57,6 @@ protected:
     EncHead mHead;
 
 private:
-    bool mActive = true;
     IReset *mResetHelper = nullptr;
     INetConnKeepAlive *mKeepAlive = nullptr;
     INetGroup *mFakeNetGroup = nullptr;
