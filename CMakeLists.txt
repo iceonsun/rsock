@@ -10,16 +10,23 @@ include_directories(./src/os/include)
 #include(xbuild/cmake/base.cmake)   # uncomment for vs local dev
 set(SOURCE_FILES
         src/rcommon.c src/ISockApp.cpp
+
         bean/RConfig.cpp bean/ConnInfo.cpp bean/TcpInfo.cpp bean/EncHead.cpp
+
         callbacks/RConnReset.cpp callbacks/INetConnKeepAlive.h
         callbacks/IReset.h callbacks/NetConnKeepAlive.cpp callbacks/ConnReset.cpp
+
         util/enc.c util/rsutil.cpp util/rhash.cpp util/TextUtils.h util/RPortList.cpp
-        util/PortPair.cpp util/Handler.cpp util/ShotHandler.cpp util/UvUtil.cpp
+        util/PortPair.cpp util/Handler.cpp util/ShotHandler.cpp util/UvUtil.cpp util/RouteUtil.cpp
+
         cap/cap_util.cpp cap/RCap.cpp cap/CapUtil.cpp
+
         thirdparty/md5.c thirdparty/json11.cpp
+
         conn/INetConn.cpp conn/BtmUdpConn.cpp conn/FakeTcp.cpp conn/INetGroup.cpp conn/IGroup.cpp conn/FakeUdp.cpp
         conn/IConn.cpp conn/RConn.cpp conn/RawTcp.cpp conn/IAppGroup.cpp conn/IBtmConn.cpp conn/DefaultFakeConn.cpp
-        conn/CConn.cpp
+        conn/CConn.cpp conn/INetConnErrorHandler.h
+
         net/NetUtil.cpp net/ClientNetManager.cpp net/TcpAckPool.cpp net/TcpListenPool.cpp net/INetManager.cpp
         net/ServerNetManager.cpp net/NetManagerTimer.cpp
 
@@ -32,7 +39,7 @@ set(SOURCE_FILES
         src/app/AppTimer.cpp src/app/AppNetObserver.cpp
         #src/service/ServiceUtil.cpp # template involved
         src/conf/ConfManager.cpp
-        src/util/Singleton.h src/util/ICloseable.h src/util/KeyGenerator.cpp util/RouteUtil.cpp)
+        src/util/Singleton.h src/util/ICloseable.h src/util/KeyGenerator.cpp src/util/HandlerUtil.cpp)
 
 # platform dependent dir		
 SET(ROS_DIR src/os/unix)
@@ -58,7 +65,7 @@ MESSAGE(STATUS "source files: ${SOURCE_FILES}")
 set(SVR_SOURCE_FILES ${SOURCE_FILES} server/SConn.cpp server/SSockApp.cpp server/ssock.cpp server/SNetGroup.cpp
         server/ServerGroup.cpp server/SubGroup.cpp)
 set(CLI_SOURCE_FILES ${SOURCE_FILES} client/csock.cpp client/CSockApp.cpp client/ClientGroup.cpp
-        client/CNetGroup.cpp client/ClientNetObserver.cpp)
+        client/CNetGroup.cpp client/ClientNetObserver.cpp client/CConnErrHandler.cpp)
 
 ##### release {
 add_executable(server_rsock_${CMAKE_SYSTEM_NAME} ${SVR_SOURCE_FILES} server/main.cpp)

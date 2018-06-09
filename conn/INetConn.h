@@ -12,11 +12,17 @@
 
 struct ConnInfo;
 
+class INetConnErrorHandler;
+
 class INetConn : public IConn {
 public:
-    explicit INetConn(IntKeyType key);
+    enum {
+        ERR_NO_ERR = 0,
+        ERR_TIMEOUT = 1,
+        ERR_FIN_RST = 2,
+    };
 
-//    explicit INetConn(const std::string &key);
+    explicit INetConn(IntKeyType key);
 
     using ErrCb = std::function<void(INetConn *, int err)>; // todo: consider using connkey as first parameter
 
@@ -31,8 +37,6 @@ public:
     // set ConnInfo.data = EncHead;
     int Output(ssize_t nread, const rbuf_t &rbuf) override;
 
-    void SetOnErrCb(const ErrCb &cb);
-
     int OnRecv(ssize_t nread, const rbuf_t &rbuf) override;
 
     static const std::string BuildPrintableStr(const ConnInfo &info);
@@ -41,13 +45,15 @@ public:
 
     IntKeyType IntKey() const;
 
-protected:
-    virtual void OnNetConnErr(INetConn *conn, int err);
+    virtual void NotifyErr(int err);
+
+    bool Alive() override;
 
 private:
-    ErrCb mErrCb = nullptr;
     const IntKeyType mIntKey = 0;
     bool mNew = true;
+    bool mAlive = true;
+    int mErrCode = ERR_NO_ERR;
 };
 
 #endif //RSOCK_INETCONN_H

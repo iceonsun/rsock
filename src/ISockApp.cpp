@@ -29,7 +29,7 @@
 #include "../bean/RConfig.h"
 #include "service/NetService.h"
 #include "service/ServiceUtil.h"
-
+#include "util/HandlerUtil.h"
 
 ISockApp::ISockApp(bool is_server) : mServer(is_server) {
 }
@@ -71,15 +71,16 @@ int ISockApp::initServices(const RConfig &conf) {
     const auto confManager = ConfManager::GetInstance();
     assert(confManager);
 
-    auto manager = ServiceManager::GetInstance();
+    initSingletons();   // init singletons before services
 
+    auto manager = ServiceManager::GetInstance();
     if (manager) {
         assert(mLoop);
 
         auto *timerService = new TimerService(mLoop);
         manager->AddService(ServiceManager::TIMER_SERVICE, timerService);
 
-        auto *routeService = new RouteService(mLoop);
+        auto *routeService = new RouteService();
         manager->AddService(ServiceManager::ROUTE_SERVICE, routeService);
 
         auto *netService = new NetService();
@@ -92,6 +93,19 @@ int ISockApp::initServices(const RConfig &conf) {
     }
 
     return 0;
+}
+
+
+void ISockApp::initSingletons() {
+    // ConfManager::GetInstance() is called in Parse
+    auto manager = ServiceManager::GetInstance();
+    auto handlerUtil = HandlerUtil::GetInstance(mLoop);
+}
+
+void ISockApp::destroySingletons() {
+    ServiceManager::DestroyInstance();
+    HandlerUtil::DestroyInstance();
+    // ConfManager::DestroyInstance() is called in dtor
 }
 
 int ISockApp::initObservers() {
@@ -261,7 +275,7 @@ void ISockApp::Close() {
         mAckPool = nullptr;
     }
 
-    ServiceManager::DestroyInstance();
+    destroySingletons();
 
     if (mLoop) {
         UvUtil::stop_and_close_loop_fully(mLoop);
@@ -409,4 +423,3 @@ int ISockApp::initConfManager() {
     assert(confManager);
     return confManager->Init();
 }
-

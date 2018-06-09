@@ -33,7 +33,6 @@ int FakeTcp::Close() {
         uv_close(reinterpret_cast<uv_handle_t *>(mTcp), close_cb);
         mTcp = nullptr;
     }
-    mAlive = false;
     return 0;
 }
 
@@ -75,8 +74,7 @@ void FakeTcp::read_cb(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
 
 void FakeTcp::onTcpError(FakeTcp *conn, int err) {
     LOGE << "conn " << conn->ToStr() << ", err: " << err;
-    mAlive = false;
-    OnNetConnErr(conn, err);
+    NotifyErr(ERR_FIN_RST);
 }
 
 void FakeTcp::SetISN(uint32_t isn) {
@@ -88,9 +86,9 @@ void FakeTcp::SetAckISN(uint32_t isn) {
 }
 
 // The server will send keepalive now, so the alive state is determined by keepalive and tcp rst/fin if received any
-bool FakeTcp::Alive() {
-    return mAlive;
-}
+//bool FakeTcp::Alive() {
+//    return mAlive;
+//}
 
 ConnInfo *FakeTcp::GetInfo() {
     return &mInfo;

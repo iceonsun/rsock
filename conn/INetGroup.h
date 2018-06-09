@@ -12,6 +12,8 @@
 #include "INetConn.h"
 #include "../util/Handler.h"
 
+class INetConnErrorHandler;
+
 // if any error occurs in subconn, they should be removed from group
 // contains only fake udp and fake tcp. the real conns lie in rconn
 class INetGroup : public IGroup {
@@ -35,14 +37,16 @@ public:
     //can only add fakeconn
     virtual void AddNetConn(INetConn *conn);
 
-    void SetNetConnErrCb(const NetConnErrCb &cb);
-
-    // flush detect error
-    bool OnConnDead(IConn *conn) override;
+    void OnConnDead(IConn *conn) override;
 
     IConn *ConnOfIntKey(IntKeyType key);
 
     uv_loop_t *GetLoop() const { return mLoop; }
+
+    /*
+     * The caller must be responsible to free the handler itself.
+     */
+    void SetNetConnErrorHandler(INetConnErrorHandler *handler);
 
 private:
     using IGroup::ConnOfKey;
@@ -59,8 +63,8 @@ private:
     static const int MSG_CONN_ERR = 0;
     uv_loop_t *mLoop = nullptr;
     Handler::SPHandler mHandler = nullptr;
-    NetConnErrCb mErrCb = nullptr;
     IConn *mDefaultFakeConn = nullptr;
+    INetConnErrorHandler *mErrHandler = nullptr;
 };
 
 

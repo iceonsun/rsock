@@ -45,7 +45,7 @@ int ConnReset::Input(uint8_t cmd, ssize_t nread, const rbuf_t &rbuf) {
     const char *base = rbuf.base;
     ConnInfo *info = static_cast<ConnInfo *>(rbuf.data);
     if (EncHead::TYPE_CONV_RST == cmd) {
-        if (nread >= sizeof(uint32_t)) {    // conv is 32bit!!! todo: refactor
+        if (nread >= sizeof(uint32_t)) {    // conv is 32bit!!! todo: refactor. use ConvType
             uint32_t conv = 0;
             const char *p = decode_uint32(&conv, base);
             LOGD << "conv: " << conv;
@@ -79,8 +79,10 @@ int ConnReset::OnRecvConvRst(const ConnInfo &src, uint32_t rstConv) {
 int ConnReset::OnRecvNetConnRst(const ConnInfo &src, IntKeyType key) {
     auto netGroup = mAppGroup->GetNetGroup();
     auto conn = netGroup->ConnOfIntKey(key);
-    if (conn) {
-        netGroup->CloseConn(conn);
+    auto netconn = dynamic_cast<INetConn *>(conn);
+    if (netconn) { // report error here. The real operation(redial or not) depends on ErrorHandler of INetGroup.
+        LOGD << "receive rst/fin for: " << netconn->ToStr();
+        netconn->NotifyErr(INetConn::ERR_FIN_RST);
         return 0;
     } else {
         LOGD << "receive rst, but not conn for intKey: " << key;

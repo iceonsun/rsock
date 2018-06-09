@@ -126,7 +126,6 @@ void ClientGroup::udpRecvCb(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf
 //             << ntohs(addr4->sin_port);
         conn->onLocalRecv(nread, buf->base, addr);
     } else if (nread < 0) {
-        // todo: error processing
         LOGE << "udp error: " << uv_strerror(nread);
 #ifndef NNDEBUG
         assert(0);
@@ -152,12 +151,8 @@ void ClientGroup::pollCb(uv_poll_t *handle, int status, int events) {
             return;
         }
 
-//        todo: just close conn
         if (nread < 0) {
             LOGE << "read error on listened unix domain sock, " << nread << ": " << strerror(errno);
-#ifndef NNDEBUG
-            assert(0);
-#endif
             return;
         }
         conn->onLocalRecv(nread, buf, reinterpret_cast<const sockaddr *>(&addr));
@@ -240,5 +235,3 @@ int ClientGroup::cconSend(ssize_t nread, const rbuf_t &rbuf) {
     rbuf_t buf = new_buf(nread, rbuf, &mHead);
     return Send(nread, buf);
 }
-// todo: override Alive to enable auto restart
-

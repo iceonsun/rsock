@@ -14,8 +14,24 @@
 #include "../conn/FakeUdp.h"
 #include "../bean/RConfig.h"
 #include "../src/util/KeyGenerator.h"
+#include "CConnErrHandler.h"
 
 CSockApp::CSockApp() : ISockApp(false) {}
+
+int CSockApp::Init() {
+    if (!mErrorHandler) {
+        mErrorHandler = new CConnErrHandler();
+    }
+    return ISockApp::Init();
+}
+
+void CSockApp::Close() {
+    ISockApp::Close();
+    if (mErrorHandler) {
+        delete mErrorHandler;
+        mErrorHandler = nullptr;
+    }
+}
 
 RCap *CSockApp::CreateCap(const RConfig &conf) {
     return new RCap(conf.param.dev, conf.param.selfCapIp, {}, conf.param.capPorts,
@@ -38,61 +54,67 @@ RConn *CSockApp::CreateBtmConn(RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPo
     return rconn;
 }
 
+void CSockApp::addUdpNetConn(CNetGroup *group, IGroup *btm) {
+    const auto &conns = btm->GetAllConns();
+    for (auto &e: conns) {
+        auto *conn = dynamic_cast<IBtmConn *>(e.second);
+        auto info = conn->GetInfo();
+        auto key = KeyGenerator::KeyForConnInfo(*info);
+        INetConn *c = nullptr;
+        if (conn->IsUdp()) {
+            c = new FakeUdp(key, *info);
+            if (c->Init()) {
+                c->Close();
+                delete c;
+                continue;
+            }
+            group->AddNetConn(c);
+        }
+    }
+}
+
+void CSockApp::addTcpNetConn(RConfig &conf, CNetGroup *group, INetManager *netManager) {
+    TcpInfo info;
+    info.src = conf.param.selfCapInt;
+    info.dst = conf.param.targetCapInt;
+    auto dstPorts = conf.param.capPorts.GetRawList();
+
+    auto *clientNetManager = dynamic_cast<ClientNetManager *>(netManager);
+    assert(clientNetManager);
+
+    for (auto dp : dstPorts) {
+        info.sp = 0;
+        info.dp = dp;
+        auto c = clientNetManager->DialTcpSync(info);
+        if (c) {
+            if (0 == c->Init()) {
+                group->AddNetConn(c);
+            } else {
+                LOGE << "connection" << c->ToStr() << " init failed";
+                c->Close();
+                delete c;
+            }
+        } else {
+            LOGE << "Dial tcp " << info.ToStr() << " failed";
+        }
+    }
+}
+
 IConn *CSockApp::CreateBridgeConn(RConfig &conf, IConn *btm, uv_loop_t *loop, INetManager *netManager) {
     IGroup *btmGroup = dynamic_cast<IGroup *>(btm);
     assert(btmGroup);
 
     auto group = new CNetGroup(IdBuf2Str(conf.param.id), loop); // test tcp first
-    auto fn = std::bind(&CSockApp::OnConnErr, this, std::placeholders::_1);
-    group->SetNetConnErrCb(fn);
+    group->SetNetConnErrorHandler(mErrorHandler);
 
     // add udp conns immediately if enabled
     if (conf.param.type & OM_PIPE_UDP) {
-        const auto &conns = btmGroup->GetAllConns();
-        for (auto &e: conns) {
-            auto *conn = dynamic_cast<IBtmConn *>(e.second);
-            auto info = conn->GetInfo();
-            auto key = KeyGenerator::KeyForConnInfo(*info);
-            INetConn *c = nullptr;
-            if (conn->IsUdp()) {
-                c = new FakeUdp(key, *info);
-                if (c->Init()) {
-                    c->Close();
-                    delete c;
-                    continue;
-                }
-                group->AddNetConn(c);
-            }
-        }
+        addUdpNetConn(group, btmGroup);
     }
 
     // dial tcp conn
     if (conf.param.type & OM_PIPE_TCP) {
-        TcpInfo info;
-        info.src = conf.param.selfCapInt;
-        info.dst = conf.param.targetCapInt;
-        auto dstPorts = conf.param.capPorts.GetRawList();
-
-        auto manager = GetNetManager();
-        auto *clientNetManager = dynamic_cast<ClientNetManager *>(manager);
-        assert(clientNetManager);
-
-        for (auto dp : dstPorts) {
-            info.sp = 0;
-            info.dp = dp;
-            auto c = clientNetManager->DialTcpSync(info);
-            if (c) {
-                if (0 == c->Init()) {
-                    group->AddNetConn(c);
-                } else {
-                    LOGE << "connection" << c->ToStr() << " init failed";
-                    c->Close();
-                    delete c;
-                }
-            } else {
-                LOGE << "Dial tcp " << info.ToStr() << " failed";
-            }
-        }
+        addTcpNetConn(conf, group, netManager);
     }
 
     if (group->GetAllConns().empty()) {
@@ -107,38 +129,4 @@ IConn *CSockApp::CreateBridgeConn(RConfig &conf, IConn *btm, uv_loop_t *loop, IN
 
 INetManager *CSockApp::CreateNetManager(const RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool) {
     return new ClientNetManager(loop, ackPool);
-}
-
-// todo: add udp reconnect
-void CSockApp::OnConnErr(const ConnInfo &info) {
-    if (!IsClosing()) {
-        auto manager = GetNetManager();
-        auto *clientNetManager = dynamic_cast<ClientNetManager *>(manager);
-        assert(clientNetManager);
-        LOGE << "conn " << info.ToStr() << ", err, reconnect it";
-        if (!info.IsUdp()) {
-            auto cb = std::bind(&CSockApp::TcpDialAsyncCb, this, std::placeholders::_1, std::placeholders::_2);
-            ConnInfo newInfo = info;
-            newInfo.sp = 0;     // sp = 0;
-            clientNetManager->DialTcpAsync(newInfo, cb);
-        } else {
-            // todo: dial udp. succeeds immediately
-        }
-
-    }
-}
-
-void CSockApp::TcpDialAsyncCb(INetConn *conn, const ConnInfo &info) {
-    auto *clientGroup = dynamic_cast<ClientGroup *>(GetBridgeConn());
-    assert(clientGroup);
-    LOGD << "reconnecting conn " << info.ToStr() << ((conn != nullptr) ? " succeeds." : "failed");
-    if (conn) {
-        if (conn->Init()) {
-            LOGE << "conn " << conn->ToStr() << " init failed";
-            conn->Close();
-            delete conn;
-            return;
-        }
-        clientGroup->GetNetGroup()->AddNetConn(conn);
-    }
 }

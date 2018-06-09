@@ -23,8 +23,6 @@ public:
 
     ConnInfo *GetInfo() override;
 
-    bool Alive() override;
-
     void SetISN(uint32_t isn);
 
     void SetAckISN(uint32_t isn);
@@ -39,7 +37,6 @@ private:
 private:
     uv_stream_t *mTcp = nullptr;
     TcpInfo mInfo;
-    bool mAlive = true;
 };
 
 #endif //RSOCK_FAKETCP_H

@@ -8,10 +8,11 @@
 #include "../../util/RouteUtil.h"
 #include "ServiceUtil.h"
 #include "../conf/ConfManager.h"
+#include "../util/HandlerUtil.h"
 
-RouteService::RouteService(uv_loop_t *loop) {
+RouteService::RouteService() {
     auto cb = std::bind(&RouteService::handleMessage, this, std::placeholders::_1);
-    mHandler = Handler::NewHandler(loop, cb);
+    mHandler = HandlerUtil::ObtainHandler(cb);
 }
 
 int RouteService::Close() {

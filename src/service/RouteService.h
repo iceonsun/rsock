@@ -15,7 +15,7 @@ class Handler;
 
 class RouteService final : public IBaseService<IRouteObserver> {
 public:
-    explicit RouteService(uv_loop_t *loop);
+    explicit RouteService();
 
     int Close() override;
 

@@ -80,6 +80,10 @@ protected:
 
     virtual void destroyObservers();
 
+    virtual void destroySingletons();
+
+    virtual void initSingletons();
+
     virtual void onExitSignal();
 
     virtual void watchExitSignals();

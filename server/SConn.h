@@ -12,7 +12,9 @@ struct sockaddr_in;
 #include "../conn/IConn.h"
 
 
-// todo: add unix sock support
+/*
+ * Ipv4 udp target conn
+ */
 class SConn : public IConn {
 public:
     explicit SConn(const std::string &key, uv_loop_t *loop, const SA *target, uint32_t conv);

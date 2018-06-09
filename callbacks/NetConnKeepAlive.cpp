@@ -122,8 +122,9 @@ int NetConnKeepAlive::removeRequest(IntKeyType connKey) {
 void NetConnKeepAlive::onNetConnDead(IntKeyType keyType) {
     auto netGroup = mAppGroup->GetNetGroup();
     auto conn = netGroup->ConnOfIntKey(keyType);
-    if (conn) {
-        netGroup->OnConnDead(conn);
+    auto netconn = dynamic_cast<INetConn*>(conn);
+    if (netconn) {
+        netconn->NotifyErr(INetConn::ERR_TIMEOUT);
     }
 }
 

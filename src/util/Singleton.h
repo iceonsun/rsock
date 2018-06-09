@@ -12,7 +12,8 @@
 template<typename T>
 class Singleton {
 public:
-    static T *GetInstance();
+    template <typename ...Args>
+    static T *GetInstance(const Args&...args);
 
     static int DestroyInstance();
 
@@ -26,7 +27,6 @@ private:
     static T *sInstance;
     static bool sDestroyed;
 };
-
 
 template<typename T>
 std::mutex Singleton<T>::sMutex;

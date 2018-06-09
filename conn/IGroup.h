@@ -22,7 +22,11 @@ public:
     // will not close conn or delete conn
     virtual bool RemoveConn(IConn *conn);
 
-    virtual bool OnConnDead(IConn *conn) { return false; }  // todo: refactor
+    /*
+     * Detect error during flush.
+     * Close the conn by default
+     */
+    virtual void OnConnDead(IConn *conn);
 
     virtual bool CloseConn(IConn *conn);
 

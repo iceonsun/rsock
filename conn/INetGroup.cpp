@@ -10,6 +10,8 @@
 #include "../bean/TcpInfo.h"
 #include "DefaultFakeConn.h"
 #include "../src/util/KeyGenerator.h"
+#include "INetConnErrorHandler.h"
+#include "../src/util/HandlerUtil.h"
 
 using namespace std::placeholders;
 
@@ -25,7 +27,7 @@ int INetGroup::Init() {
     }
 
     auto cb = std::bind(&INetGroup::handleMessage, this, std::placeholders::_1);
-    mHandler = Handler::NewHandler(mLoop, cb);
+    mHandler = HandlerUtil::ObtainHandler(cb);
 
     mDefaultFakeConn = new DefaultFakeConn();
     nret = mDefaultFakeConn->Init();
@@ -41,7 +43,7 @@ int INetGroup::Init() {
 
 int INetGroup::Close() {
     IGroup::Close();
-    mErrCb = nullptr;
+    mErrHandler = nullptr;
     mHandler = nullptr; // handler will automatically remove all pending messages and tasks
     if (mDefaultFakeConn) {
         mDefaultFakeConn->Close();
@@ -84,8 +86,6 @@ void INetGroup::AddNetConn(INetConn *conn) {
     auto out = std::bind(&IConn::Output, this, _1, _2);
     auto rcv = std::bind(&IConn::OnRecv, this, _1, _2);
     LOGD << "Add INetConn: " << conn->ToStr();
-    auto err = std::bind(&INetGroup::childConnErrCb, this, _1, _2);
-    conn->SetOnErrCb(err);
     AddConn(conn, out, rcv);
 }
 
@@ -144,27 +144,23 @@ void INetGroup::handleMessage(const Handler::Message &message) {
     }
 }
 
-// todo: server should use method do deal with wrong conn
-void INetGroup::SetNetConnErrCb(const NetConnErrCb &cb) {
-    mErrCb = cb;
-}
-
-bool INetGroup::OnConnDead(IConn *conn) {
+void INetGroup::OnConnDead(IConn *conn) {
     INetConn *c = dynamic_cast<INetConn *>(conn);
     if (c) {
         childConnErrCb(c, -1);
-        return true;
     }
-    return false;
 }
 
-// todo: replace mErrCb with a method of an abstract class
 void INetGroup::netConnErr(const ConnInfo &info) {
-    if (mErrCb) {
-        mErrCb(info);
+    if (mErrHandler) {
+        mErrHandler->OnNetConnErr(info, -1);
     }
 }
 
 IConn *INetGroup::ConnOfIntKey(IntKeyType key) {
     return ConnOfKey(KeyGenerator::StrForIntKey(key));
+}
+
+void INetGroup::SetNetConnErrorHandler(INetConnErrorHandler *handler) {
+    mErrHandler = handler;
 }

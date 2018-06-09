@@ -43,7 +43,7 @@ int RCap::Init() {
     assert(mInited == false);
     int nret = doInit();
     mInited = true;
-    ServiceUtil::GetService<RouteService*>(ServiceManager::ROUTE_SERVICE)->RegisterObserver(this);
+    ServiceUtil::GetService<RouteService *>(ServiceManager::ROUTE_SERVICE)->RegisterObserver(this);
     return nret;
 }
 
@@ -116,7 +116,7 @@ void RCap::OnNetConnected(const std::string &ifName, const std::string &ip) {
     mDev = ifName;
     mDstIp = "";
 
-    if (mCap) {     // todo: break pcap_loop. restart thread
+    if (mCap) {
         pcap_breakloop(mCap);
         joinPcapThread();
         pcap_close(mCap);
@@ -170,7 +170,7 @@ int RCap::Close() {
         pcap_close(mCap);
         mCap = nullptr;
     }
-    ServiceUtil::GetService<RouteService*>(ServiceManager::ROUTE_SERVICE)->UnRegisterObserver(this);
+    ServiceUtil::GetService<RouteService *>(ServiceManager::ROUTE_SERVICE)->UnRegisterObserver(this);
     mHandler = nullptr;
     mDone = true;
     return 0;

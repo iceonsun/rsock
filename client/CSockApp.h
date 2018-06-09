@@ -7,10 +7,15 @@
 
 
 #include "../src/ISockApp.h"
+#include "../conn/IGroup.h"
 
 struct ConnInfo;
 
 class INetConn;
+
+class INetConnErrorHandler;
+
+class CNetGroup;
 
 class CSockApp : public ISockApp {
 public:
@@ -24,10 +29,17 @@ public:
 
     INetManager *CreateNetManager(const RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool) override;
 
-protected:
-    virtual void OnConnErr(const ConnInfo &info);
+    int Init() override;
 
-    virtual void TcpDialAsyncCb(INetConn *conn, const ConnInfo &info);
+    void Close() override;
+
+private:
+    void addUdpNetConn(CNetGroup *group, IGroup *btm);
+
+    void addTcpNetConn(RConfig &conf, CNetGroup *group, INetManager *netManager);
+
+private:
+    INetConnErrorHandler *mErrorHandler = nullptr;
 };
 
 

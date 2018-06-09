@@ -45,19 +45,14 @@ int INetConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
     return IConn::OnRecv(nread, rbuf);
 }
 
-void INetConn::SetOnErrCb(const INetConn::ErrCb &cb) {
-    mErrCb = cb;
-}
-
-void INetConn::OnNetConnErr(INetConn *conn, int err) {
-    if (conn && mErrCb) {
-        mErrCb(conn, err);
-    }
+void INetConn::NotifyErr(int err) {
+    mErrCode = err;
+    mAlive = false;
 }
 
 int INetConn::Close() {
     IConn::Close();
-    mErrCb = nullptr;
+    mAlive = false;
     return 0;
 }
 
@@ -79,4 +74,8 @@ IntKeyType INetConn::IntKey() const {
 
 bool INetConn::IsNew() const {
     return mNew;
+}
+
+bool INetConn::Alive() {
+    return IConn::Alive() && mAlive;
 }

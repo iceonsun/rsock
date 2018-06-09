@@ -15,7 +15,8 @@ Singleton<T>::~Singleton() {
 }
 
 template<typename T>
-T *Singleton<T>::GetInstance() {
+template<typename... Args>
+T *Singleton<T>::GetInstance(const Args &... args) {
     if (!sInstance) {
         std::lock_guard<std::mutex> lk(sMutex);
         if (!sInstance) {
@@ -23,7 +24,7 @@ T *Singleton<T>::GetInstance() {
                 LOGE << "already destroyed";
                 assert(0);
             }
-            sInstance = new T();
+            sInstance = new T(args...);
         }
     }
     return sInstance;
