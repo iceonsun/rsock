@@ -41,7 +41,7 @@ public:
     /*
      * return true if this rst/fin information is processed by this group
      */
-    bool OnTcpFinOrRst(const TcpInfo &info);
+    bool ProcessTcpFinOrRst(const TcpInfo &info);
 
 //    bool OnUdpRst(const ConnInfo &info) override;
 

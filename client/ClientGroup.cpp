@@ -11,6 +11,7 @@
 #include "../util/rsutil.h"
 #include "../bean/ConnInfo.h"
 #include "os_util.h"
+#include "ClientNetObserver.h"
 
 using namespace std::placeholders;
 
@@ -53,7 +54,11 @@ int ClientGroup::Init() {
         mUnSock = nret;
         LOGD << "client, listening on unix socket: " << mUnAddr->sun_path;
     }
-    return 0;
+    if (!mNetObserver) {
+        mNetObserver = new ClientNetObserver(this);
+        return mNetObserver->Init();
+    }
+    return -1;
 }
 
 // recv from peer. send data to origin
@@ -162,6 +167,12 @@ void ClientGroup::pollCb(uv_poll_t *handle, int status, int events) {
 int ClientGroup::Close() {
     IAppGroup::Close();
 
+    if (mNetObserver) {
+        mNetObserver->Close();
+        delete mNetObserver;
+        mNetObserver = nullptr;
+    }
+
     if (mUdp) {
         uv_close(reinterpret_cast<uv_handle_t *>(mUdp), close_cb);
         mUdp = nullptr;
@@ -169,7 +180,7 @@ int ClientGroup::Close() {
 
     if (mUnPoll) {
         uv_poll_stop(mUnPoll);
-		CloseSocket(mUnSock);
+        CloseSocket(mUnSock);
         uv_close(reinterpret_cast<uv_handle_t *>(mUnPoll), close_cb);
 //        free(mUnPoll);    // may cause bug!
     }

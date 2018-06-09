@@ -13,6 +13,8 @@ class CConn;
 
 class RPortList;
 
+class ClientNetObserver;
+
 class ClientGroup : public IAppGroup {
 public:
     ClientGroup(const std::string &groupId, const std::string &listenUnPath, const std::string &listenUdpIp,
@@ -51,6 +53,7 @@ private:
 
     uv_udp_t *mUdp = nullptr;
     uv_poll_t *mUnPoll = nullptr;
+    ClientNetObserver *mNetObserver = nullptr;
     int mUnSock;
 
     struct sockaddr_in *mUdpAddr = nullptr;

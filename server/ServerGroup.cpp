@@ -86,7 +86,7 @@ void ServerGroup::OnTcpFinOrRst(const TcpInfo &info) {
         auto *observer = dynamic_cast<SubGroup *>(e.second);
 
         assert(observer);
-        if (observer->OnTcpFinOrRst(info)) {    // processed by subgroup
+        if (observer->ProcessTcpFinOrRst(info)) {    // processed by subgroup
 //            if (!e.second->Alive()) {
 //                CloseConn(e.second);    // close and remove group if dead
 //            }

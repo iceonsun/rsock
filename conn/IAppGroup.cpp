@@ -99,7 +99,7 @@ void IAppGroup::Flush(uint64_t now) {
     mFakeNetGroup->Flush(now);
 }
 
-bool IAppGroup::OnTcpFinOrRst(const TcpInfo &info) {
+bool IAppGroup::ProcessTcpFinOrRst(const TcpInfo &info) {
     auto key = KeyGenerator::KeyForConnInfo(info);
     auto conn = mFakeNetGroup->ConnOfIntKey(key);
     if (conn) {
