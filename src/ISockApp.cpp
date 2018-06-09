@@ -95,7 +95,7 @@ int ISockApp::initServices(const RConfig &conf) {
 }
 
 int ISockApp::initObservers() {
-    if (mNetObserver) {
+    if (!mNetObserver) {
         mNetObserver = new AppNetObserver(this);
         return mNetObserver->Init();
     }

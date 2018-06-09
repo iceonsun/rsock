@@ -11,7 +11,6 @@ Singleton<T>::Singleton() {
 
 template<typename T>
 Singleton<T>::~Singleton() {
-    assert(!sInstance); // should be properly closed.
 }
 
 template<typename T>
