@@ -13,11 +13,15 @@ class IAppGroup;
 
 class IReset;
 
+/*
+ * The class will send keepalive request during interval seconds.
+ * If it doesn't receive after 3 trials, it will report the conn is dead
+ */
 class NetConnKeepAlive : public INetConnKeepAlive, public ITimerObserver {
 public:
     // be same as EncHead
 
-    explicit NetConnKeepAlive(IAppGroup *group, IReset *reset);
+    explicit NetConnKeepAlive(IAppGroup *group, IReset *reset, uint32_t flush_interval_ms);
 
     int Input(uint8_t cmd, ssize_t nread, const rbuf_t &rbuf) override;
 
@@ -42,10 +46,7 @@ private:
 
 private:
     const int MAX_RETRY = 3;
-    const uint32_t FLUSH_INTERVAL = 5000;  // every 2sec
-    // a problem is that, before first flush, if no data sent, this initial keepalive will
-    // result server reset sent to client, because server doesn't have record
-    const uint32_t FIRST_FLUSH_DELAY = 30000;   // same with RConfig.keepAlive
+    const uint32_t FLUSH_INTERVAL = 2000;  // same with RConfig.keepAlive
     IAppGroup *mAppGroup = nullptr;
     std::map<IntKeyType, int> mReqMap;
     IReset *mReset = nullptr;

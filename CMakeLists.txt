@@ -26,7 +26,7 @@ set(SOURCE_FILES
         src/sync/SyncConnFactory.cpp src/sync/LoopStreamSyncConn.cpp src/sync/ISyncConn.cpp src/sync/UdpSyncConn.cpp
         src/sync/TcpStreamSyncConn.cpp src/sync/IPacketSyncConn.cpp
         src/service/IObserver.h src/service/IService.cpp
-        src/service/ITimerObserver.h src/service/TimerService.cpp src/service/TimerServiceUtil.cpp
+        src/service/ITimerObserver.h src/service/TimerService.cpp
         src/service/IRouteObserver.h src/service/RouteService.cpp src/service/NetService.cpp
         src/service/ServiceManager.cpp src/service/ServiceUtil.h src/service/IBaseService.h src/service/INetObserver.h
         src/app/AppTimer.cpp src/app/AppNetObserver.cpp

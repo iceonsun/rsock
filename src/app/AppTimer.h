@@ -12,7 +12,7 @@ class ISockApp;
 
 class AppTimer : public ITimerObserver {
 public:
-    explicit AppTimer(uint64_t interval, uint64_t delay, ISockApp *app);
+    explicit AppTimer(uint64_t interval, ISockApp *app);
 
     int Init() override;
 
@@ -24,7 +24,6 @@ public:
 
 private:
     const uint64_t INTERVAL = 0;
-    const uint64_t DELAY = 0;
     ISockApp *mApp = nullptr;
 };
 

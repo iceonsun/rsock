@@ -34,6 +34,8 @@ public:
 
     std::map<std::string, IConn *> &GetAllConns();
 
+    int Size() const;
+
     // if false, parent will continue to process. if true, parent will not process
 
     bool Alive() override;

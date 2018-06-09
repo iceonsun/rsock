@@ -38,7 +38,7 @@ struct RConfig {
         std::string targetIp;
         uint16_t targetPort = 0;
 
-        uint32_t conn_duration_sec = 30;  // 30s
+        uint32_t appKeepAliveSec = 600;   // 10min
         uint32_t selfCapInt = 0;
         uint32_t targetCapInt = 0;
         std::string hashKey = "hello135";
@@ -47,7 +47,7 @@ struct RConfig {
         int type = OM_PIPE_TCP;     // default tcp ports
         uint16_t cap_timeout = OM_PCAP_TIMEOUT;
 
-        int keepAliveInterval = 5;  // default 5s, 3 times
+        int keepAliveIntervalSec = 2;  // default 2s, 3 times
 
         const std::string version = RSOCK_BUILD_TIME;
 

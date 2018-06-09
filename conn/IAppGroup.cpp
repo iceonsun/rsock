@@ -12,6 +12,8 @@
 #include "../util/rsutil.h"
 #include "../callbacks/NetConnKeepAlive.h"
 #include "../src/util/KeyGenerator.h"
+#include "../src/conf/ConfManager.h"
+#include "../bean/RConfig.h"
 
 using namespace std::placeholders;
 
@@ -40,7 +42,8 @@ int IAppGroup::Init() {
 
     mResetHelper = new ConnReset(this);
 
-    mKeepAlive = new NetConnKeepAlive(this, mResetHelper);
+    mKeepAlive = new NetConnKeepAlive(this, mResetHelper,
+                                      ConfManager::GetInstance()->Conf().param.keepAliveIntervalSec * 1000);
     return mKeepAlive->Init();
 }
 
@@ -114,7 +117,10 @@ bool IAppGroup::ProcessTcpFinOrRst(const TcpInfo &info) {
 //}
 
 bool IAppGroup::Alive() {
-    return mFakeNetGroup->Alive() && IGroup::Alive();  // if no data flows it'll report dead
+    if (Size()) {
+        return mFakeNetGroup->Alive() && IGroup::Alive();  // if no data flows it'll report dead
+    }
+    return mFakeNetGroup->Alive();
 }
 
 int IAppGroup::SendConvRst(uint32_t conv) {

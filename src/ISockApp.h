@@ -50,7 +50,7 @@ public:
 
     virtual RCap *CreateCap(const RConfig &conf) = 0;
 
-    virtual int StartTimer(uint32_t timeout_ms, uint32_t repeat_ms);
+    virtual int StartTimer(uint32_t repeat_ms);
 
     virtual RConn *CreateBtmConn(RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool) = 0;
 

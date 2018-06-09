@@ -151,7 +151,7 @@ int ISockApp::doInit() {
         return nret;
     }
 
-    mAckPool = new TcpAckPool(mLoop, conf.param.conn_duration_sec * 1000);
+    mAckPool = new TcpAckPool(mLoop);
 
     mNetManager = CreateNetManager(conf, mLoop, mAckPool);
     if (mNetManager->Init()) {
@@ -216,7 +216,7 @@ int ISockApp::Start() {
     assert(mInited);
     auto confManager = ConfManager::GetInstance();
     const auto &conf = confManager->Conf();
-    StartTimer(conf.param.conn_duration_sec * 1000, conf.param.conn_duration_sec * 1000);
+    StartTimer(conf.param.appKeepAliveSec * 1000);
     return uv_run(mLoop, UV_RUN_DEFAULT);
 }
 
@@ -272,9 +272,9 @@ void ISockApp::Close() {
     os_clean();
 }
 
-int ISockApp::StartTimer(uint32_t timeout_ms, uint32_t repeat_ms) {
+int ISockApp::StartTimer(uint32_t repeat_ms) {
     if (!mTimer) {
-        mTimer = new AppTimer(repeat_ms, timeout_ms, this);
+        mTimer = new AppTimer(repeat_ms, this);
         int nret = mTimer->Init();
         return nret;
     }

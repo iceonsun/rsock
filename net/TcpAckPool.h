@@ -19,7 +19,7 @@
 // store ack information of incomming connection
 class TcpAckPool {
 public:
-    explicit TcpAckPool(uv_loop_t *loop, uint64_t expireMs);
+    explicit TcpAckPool(uv_loop_t *loop);
 
     // sp or dp == 0 is not valid
     bool AddInfoFromPeer(const TcpInfo &infoFromPeer, uint8_t flags);
@@ -34,7 +34,7 @@ public:
 
     std::string Dump();
 
-    uint64_t PersistMs() const { return EXPIRE_INTERVAL; }
+    uint64_t PersistMs() const { return EXPIRE_INTERVAL_MS; }
 
 protected:
     // no lock protection
@@ -46,7 +46,8 @@ protected:
     };
 
 private:
-    const uint64_t EXPIRE_INTERVAL = 30000; // by default.
+    // 30s by default. if not removed from the pool manually, the conn info will be removed automatically
+    const uint64_t EXPIRE_INTERVAL_MS = 30000;
     std::map<TcpInfo, uint64_t, TcpCmpFn> mInfoPool;
     std::mutex mMutex;
     std::condition_variable mCondVar;

@@ -130,3 +130,7 @@ bool IGroup::CloseConn(IConn *conn) {
     }
     return false;
 }
+
+int IGroup::Size() const {
+    return mConns.size();
+}

@@ -11,16 +11,19 @@
 #include "../conn/IAppGroup.h"
 #include "../conn/INetGroup.h"
 #include "IReset.h"
-#include "../src/service/TimerServiceUtil.h"
 #include "../src/util/KeyGenerator.h"
+#include "../src/service/ServiceUtil.h"
+#include "../src/service/TimerService.h"
 
-NetConnKeepAlive::NetConnKeepAlive(IAppGroup *group, IReset *reset) {
+NetConnKeepAlive::NetConnKeepAlive(IAppGroup *group, IReset *reset, uint32_t flush_interval_ms)
+        : FLUSH_INTERVAL(flush_interval_ms) {
+    assert(flush_interval_ms > 0);
     mAppGroup = group;  // todo: refactor mAppGroup. use an interface instead
     mReset = reset;
 }
 
 int NetConnKeepAlive::Init() {
-    return TimerServiceUtil::Register(this, FIRST_FLUSH_DELAY);
+    return ServiceUtil::GetService<TimerService*>(ServiceManager::TIMER_SERVICE)->RegisterObserver(this);
 }
 
 int NetConnKeepAlive::Input(uint8_t cmd, ssize_t nread, const rbuf_t &rbuf) {
@@ -57,7 +60,7 @@ int NetConnKeepAlive::SendResponse(IntKeyType connKey) {
 }
 
 int NetConnKeepAlive::Close() {
-    return TimerServiceUtil::UnRegister(this);
+    return ServiceUtil::GetService<TimerService*>(ServiceManager::TIMER_SERVICE)->UnRegisterObserver(this);
 }
 
 int NetConnKeepAlive::SendRequest(IntKeyType connKey) {

@@ -5,7 +5,7 @@
 #include <plog/Log.h>
 #include "TcpAckPool.h"
 
-TcpAckPool::TcpAckPool(uv_loop_t *loop, uint64_t expireMs): EXPIRE_INTERVAL(expireMs) {
+TcpAckPool::TcpAckPool(uv_loop_t *loop) {
     mLoop = loop;
 }
 
@@ -19,7 +19,7 @@ bool TcpAckPool::AddInfoFromPeer(const TcpInfo &infoFromPeer, uint8_t flags) {
 
     LOGV << "Add tcpInfo: " << infoFromPeer.ToStr();
     std::unique_lock<std::mutex> lk(mMutex);
-    mInfoPool[infoFromPeer] = uv_now(mLoop) + EXPIRE_INTERVAL;    // just overwrite if exists. Bug!!! shoud add expire interval
+    mInfoPool[infoFromPeer] = uv_now(mLoop) + EXPIRE_INTERVAL_MS;    // just overwrite if exists. Bug!!! shoud add expire interval
     mCondVar.notify_one();
     return true;
 }

@@ -3,20 +3,20 @@
 //
 
 #include "NetManagerTimer.h"
-#include "../src/service/TimerServiceUtil.h"
 #include "INetManager.h"
+#include "../src/service/ServiceUtil.h"
+#include "../src/service/TimerService.h"
 
-NetManagerTimer::NetManagerTimer(INetManager *netManager, uint64_t interval): FLUSH_INTERVAL(interval) {
+NetManagerTimer::NetManagerTimer(INetManager *netManager, uint64_t interval) : FLUSH_INTERVAL(interval) {
     mManager = netManager;
 }
 
 int NetManagerTimer::Init() {
-    return TimerServiceUtil::Register(this);
+    return ServiceUtil::GetService<TimerService *>(ServiceManager::TIMER_SERVICE)->RegisterObserver(this);
 }
 
 int NetManagerTimer::Close() {
-    int nret = TimerServiceUtil::UnRegister(this);
-    return nret;
+    return ServiceUtil::GetService<TimerService *>(ServiceManager::TIMER_SERVICE)->UnRegisterObserver(this);
 }
 
 void NetManagerTimer::OnFlush(uint64_t timestamp) {
