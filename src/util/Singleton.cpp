@@ -11,6 +11,7 @@ Singleton<T>::Singleton() {
 
 template<typename T>
 Singleton<T>::~Singleton() {
+    assert(!sInstance); // should be properly closed.
 }
 
 template<typename T>
@@ -37,8 +38,9 @@ int Singleton<T>::DestroyInstance() {
             sDestroyed = true;
             auto *closeable = dynamic_cast<ICloseable *>(sInstance);
             nret = closeable->Close();
-            delete sInstance;
+            auto p = sInstance;
             sInstance = nullptr;
+            delete p;
         }
     }
     return nret;

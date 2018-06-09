@@ -18,12 +18,12 @@
 NetConnKeepAlive::NetConnKeepAlive(IAppGroup *group, IReset *reset, uint32_t flush_interval_ms)
         : FLUSH_INTERVAL(flush_interval_ms) {
     assert(flush_interval_ms > 0);
-    mAppGroup = group;  // todo: refactor mAppGroup. use an interface instead
+    mAppGroup = group;
     mReset = reset;
 }
 
 int NetConnKeepAlive::Init() {
-    return ServiceUtil::GetService<TimerService*>(ServiceManager::TIMER_SERVICE)->RegisterObserver(this);
+    return ServiceUtil::GetService<TimerService *>(ServiceManager::TIMER_SERVICE)->RegisterObserver(this);
 }
 
 int NetConnKeepAlive::Input(uint8_t cmd, ssize_t nread, const rbuf_t &rbuf) {
@@ -60,7 +60,7 @@ int NetConnKeepAlive::SendResponse(IntKeyType connKey) {
 }
 
 int NetConnKeepAlive::Close() {
-    return ServiceUtil::GetService<TimerService*>(ServiceManager::TIMER_SERVICE)->UnRegisterObserver(this);
+    return ServiceUtil::GetService<TimerService *>(ServiceManager::TIMER_SERVICE)->UnRegisterObserver(this);
 }
 
 int NetConnKeepAlive::SendRequest(IntKeyType connKey) {
@@ -104,7 +104,6 @@ void NetConnKeepAlive::OnFlush(uint64_t timestamp) {
         }
     }
 
-    // todo: make an interface. and move these into inetgroup
     auto aCopy = mReqMap;
     for (auto &e: aCopy) {
         if (e.second >= MAX_RETRY) {        // keep alive timeout
