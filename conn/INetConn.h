@@ -37,6 +37,8 @@ public:
 
     static const std::string BuildPrintableStr(const ConnInfo &info);
 
+    bool IsNew() const;
+
     IntKeyType IntKey() const;
 
 protected:
@@ -45,6 +47,7 @@ protected:
 private:
     ErrCb mErrCb = nullptr;
     const IntKeyType mIntKey = 0;
+    bool mNew = true;
 };
 
 #endif //RSOCK_INETCONN_H

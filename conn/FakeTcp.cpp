@@ -87,10 +87,9 @@ void FakeTcp::SetAckISN(uint32_t isn) {
     mInfo.UpdateAck(isn);
 }
 
-// it is likely that router doesn't send rst/fin even it has no record for this connection
-// Because server will not send request, so it doesn't know if this conn is dead.
+// The server will send keepalive now, so the alive state is determined by keepalive and tcp rst/fin if received any
 bool FakeTcp::Alive() {
-    return mAlive && IConn::Alive();
+    return mAlive;
 }
 
 ConnInfo *FakeTcp::GetInfo() {

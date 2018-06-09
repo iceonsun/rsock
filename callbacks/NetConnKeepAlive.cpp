@@ -85,14 +85,19 @@ void NetConnKeepAlive::OnFlush(uint64_t timestamp) {
     for (auto &e: conns) {
         auto *conn = dynamic_cast<INetConn *>(e.second);
         auto it = mReqMap.find(conn->IntKey());
-        if (it != mReqMap.end()) {
-            it->second++;
-        } else {
-            mReqMap.emplace(conn->IntKey(), 0);
-        }
+        // wait until the conn is not new: it has sent some bytes before
+        // This check mainly solve the bug: if keepalive packet reaches server before data does, the server will send rst,
+        // and this conn will be closed and no more connected.
+        if (!conn->IsNew()) {
+            if (it != mReqMap.end()) {
+                it->second++;
+            } else {
+                mReqMap.emplace(conn->IntKey(), 0);
+            }
 
-        if (it == mReqMap.end() || it->second < MAX_RETRY) {    // new or still valid
-            SendRequest(conn->IntKey());
+            if (it == mReqMap.end() || it->second < MAX_RETRY) {    // new or still valid
+                SendRequest(conn->IntKey());
+            }
         }
     }
 

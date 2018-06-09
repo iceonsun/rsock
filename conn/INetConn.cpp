@@ -33,6 +33,7 @@ int INetConn::Output(ssize_t nread, const rbuf_t &rbuf) {
     info->head = hd;
     hd->SetConnKey(mIntKey);
     const rbuf_t buf = new_buf(nread, rbuf.base, info);
+    mNew = false;
     return IConn::Output(nread, buf);
 }
 
@@ -74,4 +75,8 @@ const std::string INetConn::BuildPrintableStr(const ConnInfo &info) {
 
 IntKeyType INetConn::IntKey() const {
     return mIntKey;
+}
+
+bool INetConn::IsNew() const {
+    return mNew;
 }

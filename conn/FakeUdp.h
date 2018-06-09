@@ -16,6 +16,9 @@ public:
 
     inline bool IsUdp() override;
 
+    // The FakeUdp is always true in case keepalive fails
+    bool Alive() override;
+
 private:
     ConnInfo mInfo;
 };
