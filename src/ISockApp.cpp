@@ -165,7 +165,7 @@ int ISockApp::doInit() {
         return nret;
     }
 
-    mAckPool = new TcpAckPool();
+    mAckPool = new TcpAckPool(conf.param.appKeepAliveSec * 1000);
     nret = mAckPool->Init();
     if (nret) {
         fprintf(stdout, "failed to initialize TcpAckPool: %d\n", nret);

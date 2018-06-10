@@ -20,7 +20,7 @@
 // store ack information of incomming connection
 class TcpAckPool : public ITimerObserver {
 public:
-    TcpAckPool() = default;
+    explicit TcpAckPool(uint64_t expireMs);
 
     int Init() override;
 
@@ -49,8 +49,8 @@ protected:
     };
 
 private:
-    // 30s by default. if not removed from the pool manually, the conn info will be removed automatically
-    const uint64_t EXPIRE_INTERVAL_MS = 30000;
+    // Be same with app keepalive. if not removed from the pool manually, the conn info will be removed automatically
+    const uint64_t EXPIRE_INTERVAL_MS = 0;
     std::map<TcpInfo, uint64_t, TcpCmpFn> mInfoPool;
     std::mutex mMutex;
     std::condition_variable mCondVar;

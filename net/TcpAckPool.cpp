@@ -8,6 +8,10 @@
 #include "../src/service/ServiceUtil.h"
 #include "../src/service/TimerService.h"
 
+TcpAckPool::TcpAckPool(uint64_t expireMs) : EXPIRE_INTERVAL_MS(expireMs) {
+    assert(expireMs);
+}
+
 // must be added from pcap thread.
 // because pcap will only capture output packet
 bool TcpAckPool::AddInfoFromPeer(const TcpInfo &infoFromPeer, uint8_t flags) {
