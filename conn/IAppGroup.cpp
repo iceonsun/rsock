@@ -104,7 +104,10 @@ bool IAppGroup::ProcessTcpFinOrRst(const TcpInfo &info) {
     auto key = KeyGenerator::KeyForConnInfo(info);
     auto conn = mFakeNetGroup->ConnOfIntKey(key);
     INetConn *netConn = dynamic_cast<INetConn *>(conn);
-    assert(netConn);
+    // still in container.
+    // conn state:
+    //          1. dead, in container, this will process it;
+    //          2. dead, not in container: been processed in INetGroup.Send
     if (netConn) {
         auto intKey = netConn->IntKey();
         return mResetHelper->OnRecvNetConnRst(info, intKey) == 0;

@@ -2,10 +2,8 @@
 // Created on 10/30/17.
 //
 
-#include <MacTypes.h>
 #include <assert.h>
 #include "enc.h"
-
 
 char *big_endian_to_little_n(uint64_t i, char *p, int size) {
     assert((size % 8) == 0);

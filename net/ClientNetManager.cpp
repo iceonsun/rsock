@@ -16,6 +16,7 @@
 #include "TcpAckPool.h"
 #include "../src/service/ServiceUtil.h"
 #include "../src/service/RouteService.h"
+#include "../util/rsutil.h"
 
 ClientNetManager::ClientNetManager(uv_loop_t *loop, TcpAckPool *ackPool)
         : INetManager(loop, ackPool), MAX_RETRY(INT_MAX) {
@@ -66,7 +67,7 @@ int ClientNetManager::DialTcpAsync(const ConnInfo &info, const ClientNetManager:
     helper.info = info;
     helper.cb = cb;
     helper.nRetry = MAX_RETRY;
-    helper.nextRetryMs = uv_now(mLoop) + helper.durationMs;
+    helper.nextRetryMs = rsk_now_ms() + helper.durationMs;
 
     mPending.push_back(helper);
     return 0;
@@ -111,7 +112,7 @@ void ClientNetManager::onTcpConnect(uv_connect_t *req, int status) {
             if (status) {
                 LOGE << "connect failed: " << uv_strerror(status);
                 it->req = nullptr;
-                it->dialFailed(uv_now(mLoop));
+                it->dialFailed(rsk_now_ms());
                 mTcpAckPool->RemoveInfo(tcpInfo);
             } else {
                 uv_tcp_t *tcp = reinterpret_cast<uv_tcp_t *>(req->handle);

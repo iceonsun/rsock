@@ -11,6 +11,10 @@
 #include "ClientGroup.h"
 #include "../conn/INetGroup.h"
 
+CConnErrHandler::CConnErrHandler(CSockApp *app) {
+    mApp = app;
+}
+
 void CConnErrHandler::OnNetConnErr(const ConnInfo &info, int errCode) {
     if (!mApp->IsClosing()) {
         auto manager = mApp->GetNetManager();

@@ -65,7 +65,7 @@ char *KeyGenerator::EncodeKey(char *p, IntKeyType key) {
 }
 
 std::string KeyGenerator::BuildConvKey(uint32_t dst, uint32_t conv) {
-    std::__1::ostringstream out;
+    std::ostringstream out;
     out << "conv:" << InAddr2Ip(dst) << ":" << conv;
     return out.str();
 }

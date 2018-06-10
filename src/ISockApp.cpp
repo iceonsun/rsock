@@ -165,7 +165,7 @@ int ISockApp::doInit() {
         return nret;
     }
 
-    mAckPool = new TcpAckPool(mLoop);
+    mAckPool = new TcpAckPool();
 
     mNetManager = CreateNetManager(conf, mLoop, mAckPool);
     if (mNetManager->Init()) {
@@ -234,8 +234,8 @@ int ISockApp::Start() {
     return uv_run(mLoop, UV_RUN_DEFAULT);
 }
 
-void ISockApp::Flush(void *arg) {
-    mBridge->Flush(uv_now(mLoop));
+void ISockApp::Flush(uint64_t timestamp) {
+    mBridge->Flush(timestamp);
 }
 
 void ISockApp::Close() {
@@ -261,6 +261,12 @@ void ISockApp::Close() {
         delete mBridge;
         mBridge = nullptr;
         mBtmConn = nullptr; // it's closed in bridge
+    }
+
+    if (mBtmConn) { // in case failed to create bridge. but btmconn is not null
+        mBtmConn->Close();
+        delete mBtmConn;
+        mBtmConn = nullptr;
     }
 
     if (mNetManager) {

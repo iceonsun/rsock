@@ -10,7 +10,9 @@
 #include "NetUtil.h"
 #include "../conn/BtmUdpConn.h"
 #include "NetManagerTimer.h"
+#include "../util/rsutil.h"
 
+// todo: refactor INetManager. The key related stuff
 INetManager::INetManager(uv_loop_t *loop, TcpAckPool *ackPool) : POOL_PERSIST_MS(ackPool->PersistMs()) {
     mLoop = loop;
     mTcpAckPool = ackPool;
@@ -39,7 +41,7 @@ int INetManager::Add2Pool(INetConn *conn, bool closeIfFail) {
             // caution: this cannot be exactly right. It may cause indefinite ack. but why??
             c->SetISN(tcpInfo.ack + 1); // for client, this may be 1 larger than should be. but it has no effect on tcp
             c->SetAckISN(tcpInfo.seq + 1);
-            uint64_t expireMs = uv_now(mLoop) + POOL_PERSIST_MS;
+            uint64_t expireMs = rsk_now_ms() + POOL_PERSIST_MS;
             mPool.emplace(conn->Key(), ConnHelper(conn, expireMs));
 
             return 0;
@@ -101,7 +103,7 @@ void INetManager::OnFlush(uint64_t timestamp) {
                 continue;
             }
         } else {
-            it = mPool.erase(it);
+            it = mPool.erase(it);   // todo: bug here!!!. should add continue
         }
         it++;
     }

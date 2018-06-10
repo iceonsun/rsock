@@ -4,10 +4,7 @@
 
 #include <plog/Log.h>
 #include "TcpAckPool.h"
-
-TcpAckPool::TcpAckPool(uv_loop_t *loop) {
-    mLoop = loop;
-}
+#include "../util/rsutil.h"
 
 // must be added from pcap thread.
 // because pcap will only capture output packet
@@ -19,7 +16,7 @@ bool TcpAckPool::AddInfoFromPeer(const TcpInfo &infoFromPeer, uint8_t flags) {
 
     LOGV << "Add tcpInfo: " << infoFromPeer.ToStr();
     std::unique_lock<std::mutex> lk(mMutex);
-    mInfoPool[infoFromPeer] = uv_now(mLoop) + EXPIRE_INTERVAL_MS;    // just overwrite if exists. Bug!!! shoud add expire interval
+    mInfoPool[infoFromPeer] = rsk_now_ms() + EXPIRE_INTERVAL_MS;    // just overwrite if exists. Bug!!! shoud add expire interval
     mCondVar.notify_one();
     return true;
 }

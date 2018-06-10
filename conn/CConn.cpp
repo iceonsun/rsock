@@ -43,6 +43,10 @@ int CConn::Init() {
 }
 
 const std::string CConn::BuildPrintableStr(const SA *addr) {
+    if (!addr) {
+        return "printableStr null";
+    }
+
     if (addr->sa_family == AF_INET) {
         struct sockaddr_in *addr4 = (struct sockaddr_in *) addr;
         std::ostringstream out;

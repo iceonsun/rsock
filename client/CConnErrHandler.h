@@ -15,6 +15,8 @@ class INetConn;
 
 class CConnErrHandler : public INetConnErrorHandler, public ICloseable {
 public:
+    explicit CConnErrHandler(CSockApp *app);
+
     void OnNetConnErr(const ConnInfo &info, int errCode) override;
 
     void TcpDialAsyncCb(INetConn *conn, const ConnInfo &info);

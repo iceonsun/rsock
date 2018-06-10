@@ -20,7 +20,7 @@ CSockApp::CSockApp() : ISockApp(false) {}
 
 int CSockApp::Init() {
     if (!mErrorHandler) {
-        mErrorHandler = new CConnErrHandler();
+        mErrorHandler = new CConnErrHandler(this);
     }
     return ISockApp::Init();
 }

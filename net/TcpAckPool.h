@@ -19,7 +19,7 @@
 // store ack information of incomming connection
 class TcpAckPool {
 public:
-    explicit TcpAckPool(uv_loop_t *loop);
+    virtual ~TcpAckPool() = default;
 
     // sp or dp == 0 is not valid
     bool AddInfoFromPeer(const TcpInfo &infoFromPeer, uint8_t flags);
@@ -51,7 +51,6 @@ private:
     std::map<TcpInfo, uint64_t, TcpCmpFn> mInfoPool;
     std::mutex mMutex;
     std::condition_variable mCondVar;
-    uv_loop_t *mLoop = nullptr;
 };
 
 

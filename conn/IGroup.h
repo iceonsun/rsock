@@ -28,6 +28,9 @@ public:
      */
     virtual void OnConnDead(IConn *conn);
 
+    /*
+     * Remove and then close the conn.
+     */
     virtual bool CloseConn(IConn *conn);
 
     int Init() override;

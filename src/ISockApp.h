@@ -46,7 +46,7 @@ public:
 
     virtual void Close();
 
-    virtual void Flush(void *arg);
+    virtual void Flush(uint64_t timestamp);
 
     virtual RCap *CreateCap(const RConfig &conf) = 0;
 

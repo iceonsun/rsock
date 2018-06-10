@@ -22,7 +22,7 @@ int AppTimer::Close() {
 }
 
 void AppTimer::OnFlush(uint64_t timestamp) {
-    mApp->Flush(nullptr);
+    mApp->Flush(timestamp);
 }
 
 uint64_t AppTimer::Interval() const {

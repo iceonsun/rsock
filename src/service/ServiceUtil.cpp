@@ -2,6 +2,7 @@
 // Created by System Administrator on 6/1/18.
 //
 
+#include <memory>
 #include "ServiceManager.h"
 
 template<typename T>

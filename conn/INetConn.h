@@ -24,8 +24,6 @@ public:
 
     explicit INetConn(IntKeyType key);
 
-    using ErrCb = std::function<void(INetConn *, int err)>; // todo: consider using connkey as first parameter
-
     int Init() override;
 
     int Close() override;
