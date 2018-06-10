@@ -29,7 +29,7 @@ int TimerService::RegisterObserver(ITimerObserver *observer) {
         return -1;
     }
 
-    return RegisterObserver(observer, observer->Interval());
+    return RegisterObserver(observer, observer->IntervalMs());
 }
 
 int TimerService::RegisterObserver(ITimerObserver *observer, uint64_t delay) {
@@ -37,7 +37,7 @@ int TimerService::RegisterObserver(ITimerObserver *observer, uint64_t delay) {
         return -1;
     }
 
-    if (observer->Interval() == 0) {
+    if (observer->IntervalMs() == 0) {
         LOGE << "time interval cannot be 0!!";
         return -1;
     }
@@ -95,8 +95,8 @@ void TimerService::onFlush() {
     uint64_t now = rsk_now_ms();
 
     for (auto &e: aCopy) {
-        if (ContainsObserver(e.second) && e.second->Interval() > 0) {   // in case unregister during flush
-            uint64_t ts = nextExpireTs(now + e.second->Interval());
+        if (ContainsObserver(e.second) && e.second->IntervalMs() > 0) {   // in case unregister during flush
+            uint64_t ts = nextExpireTs(now + e.second->IntervalMs());
             mExpireMap.emplace(ts, e.second);
         }
     }

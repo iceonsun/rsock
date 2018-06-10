@@ -23,7 +23,7 @@ void NetManagerTimer::OnFlush(uint64_t timestamp) {
     mManager->OnFlush(timestamp);
 }
 
-uint64_t NetManagerTimer::Interval() const {
+uint64_t NetManagerTimer::IntervalMs() const {
     return FLUSH_INTERVAL;
 }
 

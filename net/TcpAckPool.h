@@ -15,11 +15,16 @@
 #include "rscomm.h"
 
 #include "../bean/TcpInfo.h"
+#include "../src/service/ITimerObserver.h"
 
 // store ack information of incomming connection
-class TcpAckPool {
+class TcpAckPool : public ITimerObserver {
 public:
-    virtual ~TcpAckPool() = default;
+    TcpAckPool() = default;
+
+    int Init() override;
+
+    int Close() override;
 
     // sp or dp == 0 is not valid
     bool AddInfoFromPeer(const TcpInfo &infoFromPeer, uint8_t flags);
@@ -28,13 +33,11 @@ public:
 
     bool Wait2Info(TcpInfo &info, std::chrono::milliseconds milliSec);
 
-    void Flush(uint64_t now);
-
-    void Close() {}
-
     std::string Dump();
 
-    uint64_t PersistMs() const { return EXPIRE_INTERVAL_MS; }
+    uint64_t PersistMs() const;
+
+    void OnFlush(uint64_t timestamp) override;
 
 protected:
     // no lock protection

@@ -5,6 +5,8 @@
 #include <plog/Log.h>
 #include "TcpAckPool.h"
 #include "../util/rsutil.h"
+#include "../src/service/ServiceUtil.h"
+#include "../src/service/TimerService.h"
 
 // must be added from pcap thread.
 // because pcap will only capture output packet
@@ -16,7 +18,7 @@ bool TcpAckPool::AddInfoFromPeer(const TcpInfo &infoFromPeer, uint8_t flags) {
 
     LOGV << "Add tcpInfo: " << infoFromPeer.ToStr();
     std::unique_lock<std::mutex> lk(mMutex);
-    mInfoPool[infoFromPeer] = rsk_now_ms() + EXPIRE_INTERVAL_MS;    // just overwrite if exists. Bug!!! shoud add expire interval
+    mInfoPool[infoFromPeer] = rsk_now_ms() + EXPIRE_INTERVAL_MS; // just overwrite if exists.
     mCondVar.notify_one();
     return true;
 }
@@ -46,9 +48,9 @@ bool TcpAckPool::Wait2Info(TcpInfo &info, const std::chrono::milliseconds milliS
     return ok;
 }
 
-void TcpAckPool::Flush(uint64_t now) {
+void TcpAckPool::OnFlush(uint64_t timestamp) {
     for (auto it = mInfoPool.begin(); it != mInfoPool.end();) {
-        if (it->second <= now) {
+        if (it->second <= timestamp) {
             it = mInfoPool.erase(it);
         } else {
             it++;
@@ -62,6 +64,18 @@ std::string TcpAckPool::Dump() {
         out << e.first.ToStr() << "; ";
     }
     return out.str();
+}
+
+int TcpAckPool::Close() {
+    return ServiceUtil::GetService<TimerService *>(ServiceManager::TIMER_SERVICE)->UnRegisterObserver(this);
+}
+
+int TcpAckPool::Init() {
+    return ServiceUtil::GetService<TimerService *>(ServiceManager::TIMER_SERVICE)->RegisterObserver(this);
+}
+
+uint64_t TcpAckPool::PersistMs() const {
+    return EXPIRE_INTERVAL_MS;
 }
 
 bool TcpAckPool::TcpCmpFn::operator()(const TcpInfo &info1, const TcpInfo &info2) const {

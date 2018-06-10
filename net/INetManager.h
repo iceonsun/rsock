@@ -64,7 +64,7 @@ private:
     const std::chrono::milliseconds BLOCK_WAIT_MS = std::chrono::milliseconds(500);
 
     const uint64_t FLUSH_INTERVAL = 1000;   // 1s
-    const uint64_t POOL_PERSIST_MS = 30000; // 30s
+    const uint64_t POOL_PERSIST_MS = 0; // assigned to TcpAckPool.PersistMs in ctor
     std::map<std::string, ConnHelper> mPool;
     NetManagerTimer *mTimer = nullptr;
 

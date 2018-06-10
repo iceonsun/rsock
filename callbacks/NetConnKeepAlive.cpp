@@ -122,12 +122,12 @@ int NetConnKeepAlive::removeRequest(IntKeyType connKey) {
 void NetConnKeepAlive::onNetConnDead(IntKeyType keyType) {
     auto netGroup = mAppGroup->GetNetGroup();
     auto conn = netGroup->ConnOfIntKey(keyType);
-    auto netconn = dynamic_cast<INetConn*>(conn);
+    auto netconn = dynamic_cast<INetConn *>(conn);
     if (netconn) {
         netconn->NotifyErr(INetConn::ERR_TIMEOUT);
     }
 }
 
-uint64_t NetConnKeepAlive::Interval() const {
+uint64_t NetConnKeepAlive::IntervalMs() const {
     return FLUSH_INTERVAL;
 }

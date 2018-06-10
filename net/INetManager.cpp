@@ -103,11 +103,11 @@ void INetManager::OnFlush(uint64_t timestamp) {
                 continue;
             }
         } else {
-            it = mPool.erase(it);   // todo: bug here!!!. should add continue
+            it = mPool.erase(it);
+            continue;
         }
         it++;
     }
-    mTcpAckPool->Flush(timestamp);
 }
 
 IBtmConn *INetManager::BindUdp(const ConnInfo &info) {

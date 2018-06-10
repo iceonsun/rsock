@@ -20,7 +20,7 @@ public:
 
     void OnFlush(uint64_t timestamp) override;
 
-    uint64_t Interval() const override;
+    uint64_t IntervalMs() const override;
 
 private:
     const uint64_t INTERVAL = 0;

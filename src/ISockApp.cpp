@@ -166,6 +166,11 @@ int ISockApp::doInit() {
     }
 
     mAckPool = new TcpAckPool();
+    nret = mAckPool->Init();
+    if (nret) {
+        fprintf(stdout, "failed to initialize TcpAckPool: %d\n", nret);
+        return nret;
+    }
 
     mNetManager = CreateNetManager(conf, mLoop, mAckPool);
     if (mNetManager->Init()) {

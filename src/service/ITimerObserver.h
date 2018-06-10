@@ -18,9 +18,10 @@ public:
     virtual void OnFlush(uint64_t timestamp) = 0;
 
     /*
-     * @return Time interval to repeat. Cannot be 0.
+     * @return Time interval(ms) to repeat. Cannot be 0.
+     * Default value is 1000ms.
      */
-    virtual uint64_t Interval() const = 0;
+    virtual uint64_t IntervalMs() const { return 1000; };
 };
 
 #endif //RSOCK_ITIMEROBSERVER_H

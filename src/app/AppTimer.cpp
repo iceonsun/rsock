@@ -25,6 +25,6 @@ void AppTimer::OnFlush(uint64_t timestamp) {
     mApp->Flush(timestamp);
 }
 
-uint64_t AppTimer::Interval() const {
+uint64_t AppTimer::IntervalMs() const {
     return INTERVAL;
 }

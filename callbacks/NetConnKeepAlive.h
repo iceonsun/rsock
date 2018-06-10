@@ -37,7 +37,7 @@ public:
 
     void OnFlush(uint64_t timestamp) override;
 
-    uint64_t Interval() const override;
+    uint64_t IntervalMs() const override;
 
 private:
     int removeRequest(IntKeyType connKey);
@@ -46,7 +46,7 @@ private:
 
 private:
     const int MAX_RETRY = 3;
-    const uint32_t FLUSH_INTERVAL = 2000;  // same with RConfig.keepAlive
+    const uint32_t FLUSH_INTERVAL = 0;  // shoud be same with RConfig.keepAlive
     IAppGroup *mAppGroup = nullptr;
     std::map<IntKeyType, int> mReqMap;
     IReset *mReset = nullptr;
