@@ -14,7 +14,7 @@ int HandlerUtil::Close() {
 }
 
 Handler::SPHandler HandlerUtil::ObtainHandler(const Handler::Callback &cb, uv_loop_t *loop) {
-    if (loop) {
+    if (!loop) {
         loop = HandlerUtil::GetInstance(nullptr)->mLoop;
     }
     assert(loop);
