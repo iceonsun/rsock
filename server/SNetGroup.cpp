@@ -5,7 +5,7 @@
 #include <plog/Log.h>
 #include "SNetGroup.h"
 #include "../conn/FakeUdp.h"
-#include "../net/ServerNetManager.h"
+#include "ServerNetManager.h"
 #include "../src/util/KeyGenerator.h"
 #include "../conn/FakeTcp.h"
 

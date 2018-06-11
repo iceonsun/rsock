@@ -6,7 +6,7 @@
 #include <plog/Log.h>
 #include "CConnErrHandler.h"
 #include "CSockApp.h"
-#include "../net/ClientNetManager.h"
+#include "ClientNetManager.h"
 #include "../bean/ConnInfo.h"
 #include "ClientGroup.h"
 #include "../conn/INetGroup.h"

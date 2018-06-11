@@ -6,9 +6,9 @@
 #include "ServerNetManager.h"
 #include "../bean/TcpInfo.h"
 #include "../util/rsutil.h"
-#include "NetUtil.h"
+#include "../net/NetUtil.h"
 #include "../conn/FakeTcp.h"
-#include "TcpAckPool.h"
+#include "../net/TcpAckPool.h"
 
 using namespace std::placeholders;
 

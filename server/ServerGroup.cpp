@@ -9,7 +9,7 @@
 #include "../util/rhash.h"
 #include "../util/rsutil.h"
 #include "SNetGroup.h"
-#include "../net/ServerNetManager.h"
+#include "ServerNetManager.h"
 #include "SubGroup.h"
 #include "../src/service/ServiceUtil.h"
 #include "../src/service/NetService.h"

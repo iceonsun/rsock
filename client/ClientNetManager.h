@@ -10,7 +10,7 @@
 
 #include "rscomm.h"
 #include "../bean/TcpInfo.h"
-#include "INetManager.h"
+#include "../net/INetManager.h"
 #include "../src/service/IRouteObserver.h"
 
 class BtmUdpConn;

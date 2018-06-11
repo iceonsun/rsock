@@ -6,8 +6,8 @@
 #define RSOCK_SERVERNETMANAGER_H
 
 
-#include "INetManager.h"
-#include "TcpListenPool.h"
+#include "../net/INetManager.h"
+#include "../net/TcpListenPool.h"
 #include "../src/util/TcpCmpFn.h"
 
 class TcpAckPool;

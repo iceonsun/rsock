@@ -27,8 +27,8 @@ set(SOURCE_FILES
         conn/IConn.cpp conn/RConn.cpp conn/RawTcp.cpp conn/IAppGroup.cpp conn/IBtmConn.cpp conn/DefaultFakeConn.cpp
         conn/CConn.cpp conn/INetConnErrorHandler.h
 
-        net/NetUtil.cpp net/ClientNetManager.cpp net/TcpAckPool.cpp net/TcpListenPool.cpp net/INetManager.cpp
-        net/ServerNetManager.cpp net/NetManagerTimer.cpp
+        net/NetUtil.cpp net/TcpAckPool.cpp net/TcpListenPool.cpp net/INetManager.cpp
+        net/NetManagerTimer.cpp
 
         src/sync/SyncConnFactory.cpp src/sync/LoopStreamSyncConn.cpp src/sync/ISyncConn.cpp src/sync/UdpSyncConn.cpp
         src/sync/TcpStreamSyncConn.cpp src/sync/IPacketSyncConn.cpp
@@ -63,9 +63,9 @@ MESSAGE(STATUS "source files: ${SOURCE_FILES}")
 ## } code
 
 set(SVR_SOURCE_FILES ${SOURCE_FILES} server/SConn.cpp server/SSockApp.cpp server/ssock.cpp server/SNetGroup.cpp
-        server/ServerGroup.cpp server/SubGroup.cpp)
+        server/ServerGroup.cpp server/SubGroup.cpp server/ServerNetManager.cpp )
 set(CLI_SOURCE_FILES ${SOURCE_FILES} client/csock.cpp client/CSockApp.cpp client/ClientGroup.cpp
-        client/CNetGroup.cpp client/ClientNetObserver.cpp client/CConnErrHandler.cpp)
+        client/CNetGroup.cpp client/ClientNetObserver.cpp client/CConnErrHandler.cpp client/ClientNetManager.cpp )
 
 ##### release {
 add_executable(server_rsock_${CMAKE_SYSTEM_NAME} ${SVR_SOURCE_FILES} server/main.cpp)

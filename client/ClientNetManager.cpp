@@ -10,10 +10,10 @@
 #include <plog/Log.h>
 
 #include "ClientNetManager.h"
-#include "NetUtil.h"
+#include "../net/NetUtil.h"
 #include "../conn/BtmUdpConn.h"
 #include "../conn/FakeTcp.h"
-#include "TcpAckPool.h"
+#include "../net/TcpAckPool.h"
 #include "../src/service/ServiceUtil.h"
 #include "../src/service/RouteService.h"
 #include "../util/rsutil.h"

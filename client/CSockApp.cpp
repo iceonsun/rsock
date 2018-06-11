@@ -9,7 +9,7 @@
 #include "../conn/BtmUdpConn.h"
 #include "CNetGroup.h"
 #include "../util/rhash.h"
-#include "../net/ClientNetManager.h"
+#include "ClientNetManager.h"
 #include "../cap/RCap.h"
 #include "../conn/FakeUdp.h"
 #include "../bean/RConfig.h"
