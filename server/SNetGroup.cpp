@@ -25,7 +25,7 @@ INetConn *SNetGroup::CreateNetConn(IntKeyType key, const ConnInfo *info) {
         TcpInfo tcpInfo(*info);
         auto tcp = mNetManager->GetTcp(tcpInfo);
         if (tcp) {
-            c = new FakeTcp(tcp, key);
+            c = new FakeTcp(tcp, key, tcpInfo);
 //            c = new FakeTcp(tcp, KeyGenerator::KeyForConnInfo(tcpInfo));  bug: Can't use key generation here!!!
         }
     }

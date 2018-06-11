@@ -64,7 +64,7 @@ INetConn *ClientNetManager::createINetConn(uv_tcp_t *tcp) {
     if (!nret) {
         bool ok = mTcpAckPool->Wait2TransferInfo(tcpInfo, BLOCK_WAIT_MS);
         if (ok) {
-            return new FakeTcp(tcp, KeyGenerator::KeyForConnInfo(tcpInfo));
+            return new FakeTcp(tcp, KeyGenerator::KeyForConnInfo(tcpInfo), tcpInfo);
         }
     }
 

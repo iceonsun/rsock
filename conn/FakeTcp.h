@@ -11,7 +11,7 @@
 
 class FakeTcp : public INetConn {
 public:
-    FakeTcp(uv_tcp_t *tcp, IntKeyType key);
+    FakeTcp(uv_tcp_t *tcp, IntKeyType key, const TcpInfo &info);
 
     int Init() override;
 

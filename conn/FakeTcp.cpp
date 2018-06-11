@@ -8,17 +8,24 @@
 #include "RConn.h"
 #include "../util/rsutil.h"
 #include "../src/util/KeyGenerator.h"
+#include "../src/util/TcpUtil.h"
 
 // If send 1 bytes for a specific interval to check if alive. This will severely slow down speed
-FakeTcp::FakeTcp(uv_tcp_t *tcp, IntKeyType key) : INetConn(key) {
+FakeTcp::FakeTcp(uv_tcp_t *tcp, IntKeyType key, const TcpInfo &info) : INetConn(key), mInfo(info) {
     assert(tcp);
     mTcp = (uv_stream_t *) tcp;
-    GetTcpInfo(mInfo, reinterpret_cast<uv_tcp_t *>(mTcp));
+
+    TcpInfo anInfo;
+    GetTcpInfo(anInfo, reinterpret_cast<uv_tcp_t *>(mTcp));
+    assert(anInfo.src == info.src && anInfo.dst == info.dst && anInfo.sp == info.sp && anInfo.dp == info.dp);
 }
 
 int FakeTcp::Init() {
     INetConn::Init();
     assert(mTcp);
+
+    TcpUtil::SetISN(this, mInfo);
+    TcpUtil::SetAckISN(this, mInfo);
 
     mTcp->data = this;
     return uv_read_start(mTcp, alloc_buf, read_cb);
@@ -70,7 +77,6 @@ void FakeTcp::read_cb(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
 }
 
 void FakeTcp::onTcpError(FakeTcp *conn, int err) {
-    LOGE << "conn " << conn->ToStr() << ", err: " << err;
     NotifyErr(ERR_FIN_RST);
 }
 

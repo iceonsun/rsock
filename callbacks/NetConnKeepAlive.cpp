@@ -85,17 +85,26 @@ int NetConnKeepAlive::OnRecvResponse(IntKeyType connKey) {
 
 void NetConnKeepAlive::OnFlush(uint64_t timestamp) {
     auto conns = mAppGroup->NetGroup()->GetAllConns();
+    auto group = mAppGroup->NetGroup();
     for (auto &e: conns) {
         auto *conn = dynamic_cast<INetConn *>(e.second);
-        auto it = mReqMap.find(conn->IntKey());
         // wait until the conn is not new: it has sent some bytes before
         // This check mainly solve the bug: if keepalive packet reaches server before data does, the server will send rst,
         // and this conn will be closed and no more connected.
         if (!conn->IsNew()) {
-            if (it != mReqMap.end()) {
+            // in case some invalid request is still in the pool. remove them
+            auto aCopy = mReqMap;
+            for (auto &item: aCopy) {
+                if (!group->ConnOfIntKey(item.first)) {
+                    removeRequest(item.first);
+                }
+            }
+
+            auto it = mReqMap.find(conn->IntKey());
+            if (it != mReqMap.end()) {  // has record, increment number of trials
                 it->second++;
             } else {
-                mReqMap.emplace(conn->IntKey(), 0);
+                mReqMap.emplace(conn->IntKey(), 0); // insert new
             }
 
             if (it == mReqMap.end() || it->second < MAX_RETRY) {    // new or still valid

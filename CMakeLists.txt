@@ -39,7 +39,8 @@ set(SOURCE_FILES
         src/app/AppTimer.cpp src/app/AppNetObserver.cpp
         #src/service/ServiceUtil.cpp # template involved
         src/conf/ConfManager.cpp
-        src/util/Singleton.h src/util/ICloseable.h src/util/KeyGenerator.cpp src/util/HandlerUtil.cpp src/util/TcpCmpFn.cpp)
+        src/util/Singleton.h src/util/ICloseable.h src/util/KeyGenerator.cpp src/util/HandlerUtil.cpp
+        src/util/TcpCmpFn.cpp src/util/TcpUtil.cpp)
 
 # platform dependent dir		
 SET(ROS_DIR src/os/unix)
@@ -63,9 +64,9 @@ MESSAGE(STATUS "source files: ${SOURCE_FILES}")
 ## } code
 
 set(SVR_SOURCE_FILES ${SOURCE_FILES} server/SConn.cpp server/SSockApp.cpp server/ssock.cpp server/SNetGroup.cpp
-        server/ServerGroup.cpp server/SubGroup.cpp server/ServerNetManager.cpp )
+        server/ServerGroup.cpp server/SubGroup.cpp server/ServerNetManager.cpp)
 set(CLI_SOURCE_FILES ${SOURCE_FILES} client/csock.cpp client/CSockApp.cpp client/ClientGroup.cpp
-        client/CNetGroup.cpp client/ClientNetObserver.cpp client/CConnErrHandler.cpp client/ClientNetManager.cpp )
+        client/CNetGroup.cpp client/ClientNetObserver.cpp client/CConnErrHandler.cpp client/ClientNetManager.cpp)
 
 ##### release {
 add_executable(server_rsock_${CMAKE_SYSTEM_NAME} ${SVR_SOURCE_FILES} server/main.cpp)
