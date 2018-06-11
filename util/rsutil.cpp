@@ -265,12 +265,14 @@ int GetTcpInfo(ConnInfo &info, uv_tcp_t *tcp) {
     int socklen = sizeof(SA4);
     int nret = uv_tcp_getsockname(tcp, (SA *) &self, &socklen);
     if (nret) {
+        LOGE << "uv_tcp_getsockname failed: " << uv_strerror(nret);
         return nret;
     }
     SA4 peer = {0};
     socklen = sizeof(SA4);
     nret = uv_tcp_getpeername(tcp, (SA *) &peer, &socklen);
     if (nret) {
+        LOGE << "uv_tcp_getpeername failed: " << uv_strerror(nret);
         return nret;
     }
     info.src = self.sin_addr.s_addr;

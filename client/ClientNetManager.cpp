@@ -96,7 +96,6 @@ void ClientNetManager::flushPending(uint64_t now) {
                 helper.cb(nullptr, helper.info);
             }
             it = mPending.erase(it);
-            it++;
             continue;
         }
 
@@ -128,12 +127,15 @@ void ClientNetManager::onTcpConnect(uv_connect_t *req, int status) {
                 INetConn *c = createINetConn(tcp);
                 TcpInfo tcpInfo;
                 int nret = GetTcpInfo(tcpInfo, tcp);
+                auto cb = it->cb;
                 if (nret || tcpInfo.dp == 0 || tcpInfo.dst == 0) {
                     LOGD << "failed to get information of tcp";
                     tcpInfo = it->info;
+                    it->dialFailed(rsk_now_ms());   // if failed, remove it
+                } else {
+                    it->cb(c, tcpInfo);
+                    mPending.erase(it); //  if succeeded, remove the request.
                 }
-                it->cb(c, tcpInfo);
-                mPending.erase(it);
                 mTcpAckPool->RemoveInfo(tcpInfo);
             }
             break;

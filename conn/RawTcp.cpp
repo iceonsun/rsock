@@ -79,6 +79,7 @@ int RawTcp::Close() {
 }
 
 void RawTcp::OnNetConnected(const std::string &ifName, const std::string &ip) {
+    LOGV << "newDev: " << ifName << ", ip: " << ip;
     mDev = ifName;
 
     libnet_t *l = newLibnet(ifName);

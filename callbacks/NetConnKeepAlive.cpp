@@ -90,7 +90,7 @@ int NetConnKeepAlive::SendRequest(IntKeyType connKey) {
 int NetConnKeepAlive::OnRecvResponse(IntKeyType connKey) {
     auto conn = mAppGroup->GetNetGroup()->ConnOfIntKey(connKey);
     if (conn) {
-        LOGV << "receive response keepalive response for " << conn->ToStr();
+        LOGV << "receive response keepalive response for " << connKey;
     } else {
         LOGD << "receive invalid response: " << connKey;
     }
@@ -107,7 +107,6 @@ void NetConnKeepAlive::removeInvalidRequest() {
     }
 
 }
-
 
 void NetConnKeepAlive::OnFlush(uint64_t timestamp) {
     removeInvalidRequest();
@@ -150,9 +149,8 @@ int NetConnKeepAlive::RemoveRequest(IntKeyType connKey) {
 void NetConnKeepAlive::onNetConnDead(IntKeyType keyType) {
     auto netGroup = mAppGroup->GetNetGroup();
     auto conn = netGroup->ConnOfIntKey(keyType);
-    auto netconn = dynamic_cast<INetConn *>(conn);
-    if (netconn) {
-        netconn->NotifyErr(INetConn::ERR_TIMEOUT);
+    if (conn) {
+        conn->NotifyErr(INetConn::ERR_TIMEOUT);
     }
 }
 

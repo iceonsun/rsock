@@ -94,6 +94,7 @@ uv_connect_t *NetUtil::ConnectTcp(uv_loop_t *loop, const ConnInfo &info, const u
     req->data = data;
     int nret = uv_tcp_connect(req, tcp, (const SA *) &target, cb);
     if (nret) {
+        LOGV << "uv_tcp_connect failed: " << uv_strerror(nret);
         free(req);
         uv_close(reinterpret_cast<uv_handle_t *>(tcp), close_cb);
         return nullptr;
