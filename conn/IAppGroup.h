@@ -51,10 +51,11 @@ public:
 
     virtual int doSendCmd(uint8_t cmd, ssize_t nread, const rbuf_t &rbuf);
 
-    virtual int RawOutput(ssize_t nread, const rbuf_t &rbuf);
+    // todo: refactor mhead and this method
+    virtual int SendNetConnReset(ssize_t nread, const rbuf_t &rbuf, IntKeyType keyOfConnToReset);
 
 protected:
-    EncHead mHead;
+    EncHead mHead;  // todo: refactor mhead. error prone
 
 private:
     IReset *mResetHelper = nullptr;

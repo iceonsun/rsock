@@ -28,7 +28,7 @@ int ConnReset::SendNetConnRst(const ConnInfo &src, IntKeyType key) {
     char *p = KeyGenerator::EncodeKey(base, key);
     // it will be wrong to decode dst and dp, because dst and dp are from nat not from client.
     auto rbuf = new_buf((p - base), base, (void *) &src);
-    return mAppGroup->RawOutput(rbuf.len, rbuf);   // directly send // todo: refactor RawOutput
+    return mAppGroup->SendNetConnReset(rbuf.len, rbuf, key);   // todo: refactor SendNetConnReset
 }
 
 int ConnReset::SendConvRst(uint32_t conv) {

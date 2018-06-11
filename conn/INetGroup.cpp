@@ -101,12 +101,40 @@ bool INetGroup::RemoveConn(IConn *conn) {
 }
 
 int INetGroup::Send(ssize_t nread, const rbuf_t &rbuf) {
+    return SendNetConnReset(nread, rbuf, 0);
+//    if (nread > 0) {
+//        while (!mConns.empty()) {
+//            int n = rand() % mConns.size();
+//            auto it = mConns.begin();
+//            std::advance(it, n);
+//            if (it->second->Alive()) {
+//                int n = it->second->Send(nread, rbuf);   // udp or tcp conn
+//                afterSend(n);
+//                return n;
+//            }
+//            LOGW << "send, conn " << it->second->ToStr() << " is dead. Remove it now";
+//            childConnErrCb(dynamic_cast<INetConn *>(it->second), -1);
+//        }
+//        LOGE << "All conns are dead!!! Wait to reconnect";
+//        return ERR_NO_CONN;
+//    }
+//    return nread;
+}
+
+int INetGroup::SendNetConnReset(ssize_t nread, const rbuf_t &rbuf, IntKeyType keyOfConnToReset) {
     if (nread > 0) {
         while (!mConns.empty()) {
             int n = rand() % mConns.size();
             auto it = mConns.begin();
             std::advance(it, n);
             if (it->second->Alive()) {
+                if (keyOfConnToReset != 0) {
+                    INetConn *conn = dynamic_cast<INetConn*>(it->second);
+                    if (conn->IntKey() == keyOfConnToReset) {
+                        LOGW << "Don't use this conn to send reset";
+                        continue;
+                    }
+                }
                 int n = it->second->Send(nread, rbuf);   // udp or tcp conn
                 afterSend(n);
                 return n;

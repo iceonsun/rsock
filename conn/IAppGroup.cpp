@@ -138,6 +138,10 @@ int IAppGroup::doSendCmd(uint8_t cmd, ssize_t nread, const rbuf_t &rbuf) {
     return n;
 }
 
-int IAppGroup::RawOutput(ssize_t nread, const rbuf_t &rbuf) {
-    return Output(nread, rbuf);
+int IAppGroup::SendNetConnReset(ssize_t nread, const rbuf_t &rbuf, IntKeyType keyOfConnToReset) {
+    mHead.SetCmd(EncHead::TYPE_NETCONN_RST);
+    const rbuf_t buf = new_buf(nread, rbuf, &mHead);
+    int n = mFakeNetGroup->SendNetConnReset(nread, buf, keyOfConnToReset);
+    mHead.SetCmd(EncHead::TYPE_DATA);
+    return n;
 }
