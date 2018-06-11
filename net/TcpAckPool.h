@@ -32,6 +32,9 @@ public:
 
     ssize_t RemoveInfo(const TcpInfo &tcpInfo);
 
+    /*
+     * This will tranfer captured tcpInfo. You need to increment Caution: see TcpUtil.
+     */
     bool Wait2TransferInfo(TcpInfo &info, const std::chrono::milliseconds milliSec);
 
     std::string Dump();

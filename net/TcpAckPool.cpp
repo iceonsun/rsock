@@ -20,12 +20,12 @@ bool TcpAckPool::AddInfoFromPeer(const TcpInfo &infoFromPeer, uint8_t flags) {
         return false;
     }
 
-    LOGD << "Add tcpInfo: " << infoFromPeer.ToStr();
     std::unique_lock<std::mutex> lk(mMutex);
     auto it = mInfoPool.find(infoFromPeer);
     if (it != mInfoPool.end()) {
-        LOGV << "Overwrite info";
+        LOGD << "Overwrite info, original: " << it->first.ToStr();
     }
+    LOGD << "Add tcpInfo: " << infoFromPeer.ToStr();
     mInfoPool[infoFromPeer] = rsk_now_ms() + EXPIRE_INTERVAL_MS; // just overwrite if exists.
     mCondVar.notify_one();
     return true;

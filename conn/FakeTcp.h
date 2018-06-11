@@ -11,6 +11,9 @@
 
 class FakeTcp : public INetConn {
 public:
+    /*
+     * @param info The info fetched from TcpAckPool. Don't forget to FakeTcp.seq and FakeTcp.ack with the info.
+     */
     FakeTcp(uv_tcp_t *tcp, IntKeyType key, const TcpInfo &info);
 
     int Init() override;
