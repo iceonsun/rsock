@@ -127,7 +127,11 @@ void ClientNetManager::onTcpConnect(uv_connect_t *req, int status) {
                 uv_tcp_t *tcp = reinterpret_cast<uv_tcp_t *>(req->handle);
                 INetConn *c = createINetConn(tcp);
                 TcpInfo tcpInfo;
-                GetTcpInfo(tcpInfo, tcp);
+                int nret = GetTcpInfo(tcpInfo, tcp);
+                if (nret || tcpInfo.dp == 0 || tcpInfo.dst == 0) {
+                    LOGD << "failed to get information of tcp";
+                    tcpInfo = it->info;
+                }
                 it->cb(c, tcpInfo);
                 mPending.erase(it);
                 mTcpAckPool->RemoveInfo(tcpInfo);

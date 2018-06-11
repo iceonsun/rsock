@@ -13,6 +13,8 @@ class IAppGroup;
 
 class IReset;
 
+class KeepAliveRouteObserver;
+
 /*
  * The class will send keepalive request during interval seconds.
  * If it doesn't receive after 3 trials, it will report the conn is dead
@@ -39,14 +41,20 @@ public:
 
     uint64_t IntervalMs() const override;
 
-private:
-    int removeRequest(IntKeyType connKey);
+    int RemoveRequest(IntKeyType connKey) override;
 
+    int RemoveAllRequest() override;
+
+private:
     void onNetConnDead(IntKeyType key);
+
+    // in case some invalid request is still in the pool. remove them
+    void removeInvalidRequest();
 
 private:
     const int MAX_RETRY = 3;
     const uint32_t FLUSH_INTERVAL = 0;  // shoud be same with RConfig.keepAlive
+    KeepAliveRouteObserver *mRouteObserver = nullptr;
     IAppGroup *mAppGroup = nullptr;
     std::map<IntKeyType, int> mReqMap;
     IReset *mReset = nullptr;

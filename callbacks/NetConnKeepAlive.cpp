@@ -14,6 +14,7 @@
 #include "../src/util/KeyGenerator.h"
 #include "../src/service/ServiceUtil.h"
 #include "../src/service/TimerService.h"
+#include "KeepAliveRouteObserver.h"
 
 NetConnKeepAlive::NetConnKeepAlive(IAppGroup *group, IReset *reset, uint32_t flush_interval_ms)
         : FLUSH_INTERVAL(flush_interval_ms) {
@@ -23,6 +24,13 @@ NetConnKeepAlive::NetConnKeepAlive(IAppGroup *group, IReset *reset, uint32_t flu
 }
 
 int NetConnKeepAlive::Init() {
+    if (!mRouteObserver) {
+        mRouteObserver = new KeepAliveRouteObserver(this);
+        int nret = mRouteObserver->Init();
+        if (nret) {
+            return nret;
+        }
+    }
     return ServiceUtil::GetService<TimerService *>(ServiceManager::TIMER_SERVICE)->RegisterObserver(this);
 }
 
@@ -60,6 +68,12 @@ int NetConnKeepAlive::SendResponse(IntKeyType connKey) {
 }
 
 int NetConnKeepAlive::Close() {
+    RemoveAllRequest();
+    if (mRouteObserver) {
+        mRouteObserver->Close();
+        delete mRouteObserver;
+        mRouteObserver = nullptr;
+    }
     return ServiceUtil::GetService<TimerService *>(ServiceManager::TIMER_SERVICE)->UnRegisterObserver(this);
 }
 
@@ -80,26 +94,31 @@ int NetConnKeepAlive::OnRecvResponse(IntKeyType connKey) {
     } else {
         LOGD << "receive invalid response: " << connKey;
     }
-    return removeRequest(connKey);
+    return RemoveRequest(connKey);
 }
 
-void NetConnKeepAlive::OnFlush(uint64_t timestamp) {
-    auto conns = mAppGroup->NetGroup()->GetAllConns();
+void NetConnKeepAlive::removeInvalidRequest() {
     auto group = mAppGroup->NetGroup();
+    auto aCopy = mReqMap;
+    for (auto &item: aCopy) {
+        if (!group->ConnOfIntKey(item.first)) {
+            RemoveRequest(item.first);
+        }
+    }
+
+}
+
+
+void NetConnKeepAlive::OnFlush(uint64_t timestamp) {
+    removeInvalidRequest();
+
+    auto conns = mAppGroup->NetGroup()->GetAllConns();
     for (auto &e: conns) {
         auto *conn = dynamic_cast<INetConn *>(e.second);
         // wait until the conn is not new: it has sent some bytes before
         // This check mainly solve the bug: if keepalive packet reaches server before data does, the server will send rst,
         // and this conn will be closed and no more connected.
         if (!conn->IsNew()) {
-            // in case some invalid request is still in the pool. remove them
-            auto aCopy = mReqMap;
-            for (auto &item: aCopy) {
-                if (!group->ConnOfIntKey(item.first)) {
-                    removeRequest(item.first);
-                }
-            }
-
             auto it = mReqMap.find(conn->IntKey());
             if (it != mReqMap.end()) {  // has record, increment number of trials
                 it->second++;
@@ -117,14 +136,14 @@ void NetConnKeepAlive::OnFlush(uint64_t timestamp) {
     for (auto &e: aCopy) {
         if (e.second >= MAX_RETRY) {        // keep alive timeout
             LOGE << "keepalive timeout, key: " << e.first;
-            removeRequest(e.first);
+            RemoveRequest(e.first);
 
             onNetConnDead(e.first);
         }
     }
 }
 
-int NetConnKeepAlive::removeRequest(IntKeyType connKey) {
+int NetConnKeepAlive::RemoveRequest(IntKeyType connKey) {
     return mReqMap.erase(connKey);
 }
 
@@ -139,4 +158,9 @@ void NetConnKeepAlive::onNetConnDead(IntKeyType keyType) {
 
 uint64_t NetConnKeepAlive::IntervalMs() const {
     return FLUSH_INTERVAL;
+}
+
+int NetConnKeepAlive::RemoveAllRequest() {
+    mReqMap.clear();
+    return 0;
 }

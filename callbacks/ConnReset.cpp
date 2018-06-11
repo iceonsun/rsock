@@ -22,7 +22,7 @@ void ConnReset::Close() {
 }
 
 int ConnReset::SendNetConnRst(const ConnInfo &src, IntKeyType key) {
-    LOGD << "src: " << src.ToStr() << ", key: " << key;
+    LOGD << "key: " << key;
 
     char base[OM_MAX_PKT_SIZE] = {0};
     char *p = KeyGenerator::EncodeKey(base, key);

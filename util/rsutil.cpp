@@ -257,6 +257,10 @@ std::string Addr2Str(const struct sockaddr *addr) {
 }
 
 int GetTcpInfo(ConnInfo &info, uv_tcp_t *tcp) {
+    if (!tcp) {
+        return -1;
+    }
+
     SA4 self = {0};
     int socklen = sizeof(SA4);
     int nret = uv_tcp_getsockname(tcp, (SA *) &self, &socklen);

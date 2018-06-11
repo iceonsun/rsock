@@ -14,7 +14,7 @@ set(SOURCE_FILES
         bean/RConfig.cpp bean/ConnInfo.cpp bean/TcpInfo.cpp bean/EncHead.cpp
 
         callbacks/RConnReset.cpp callbacks/INetConnKeepAlive.h
-        callbacks/IReset.h callbacks/NetConnKeepAlive.cpp callbacks/ConnReset.cpp
+        callbacks/IReset.h callbacks/NetConnKeepAlive.cpp callbacks/ConnReset.cpp callbacks/KeepAliveRouteObserver.cpp
 
         util/enc.c util/rsutil.cpp util/rhash.cpp util/TextUtils.h util/RPortList.cpp
         util/PortPair.cpp util/Handler.cpp util/ShotHandler.cpp util/UvUtil.cpp util/RouteUtil.cpp

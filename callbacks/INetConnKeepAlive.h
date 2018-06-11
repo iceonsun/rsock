@@ -29,6 +29,10 @@ public:
     virtual int Close() = 0;
 
     virtual int OnRecvResponse(IntKeyType connKey) = 0;
+
+    virtual int RemoveRequest(IntKeyType connkey) = 0;
+
+    virtual int RemoveAllRequest() = 0;
 };
 
 #endif //RSOCK_IKEEPALIVE_H

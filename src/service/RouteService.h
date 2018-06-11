@@ -29,6 +29,13 @@ public:
      */
     void CheckNetworkStatusNow();
 
+    /*
+     * There are cases where only online event is reported while offline event is not.
+     * i.e when the network switches and during switching, the caller doesn't detect network change(some conn is still alive),
+     * so it doesn't call CheckXXX of this class. So, there is no offline reported.
+     * After some time the caller detect no network, it call CheckXXX of this class.
+     * The service successfully detects a new network, it will report online event.
+     */
     void NotifyOffline();
 
     void NotifyOnline(const std::string &dev, const std::string &ip);
