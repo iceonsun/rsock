@@ -393,7 +393,7 @@ ISockApp::~ISockApp() {
 
 void ISockApp::OnTcpFinOrRst(const TcpInfo &info) {
     if (IsClosing()) { // if app is closing, tell NetService to block subsequent call
-        ServiceUtil::GetService<NetService *>(ServiceManager::NET_SERVICE)->OnAppClosing();
+        ServiceUtil::GetService<NetService *>(ServiceManager::NET_SERVICE)->SetBlock(true);
     }
 }
 

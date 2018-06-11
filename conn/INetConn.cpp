@@ -71,9 +71,7 @@ const std::string INetConn::BuildPrintableStr(const ConnInfo &info, IntKeyType k
     out << InAddr2Ip(info.src) << ":" << info.sp << "-";
     out << InAddr2Ip(info.dst) << ":" << info.dp;
 
-    if (key != 0) {
-        out << ", key: " << key;
-    }
+    out << ", key: " << key;
     return out.str();
 }
 

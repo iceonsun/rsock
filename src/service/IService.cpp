@@ -11,6 +11,17 @@ IService::IService() : mVisitCount(0) {
 
 }
 
+int IService::Init() {
+    assert(!mInited);
+    mInited = true;
+    return 0;
+}
+
+int IService::Close() {
+    assert(mObserver.empty());
+    return 0;
+}
+
 int IService::RegisterObserver(IObserver *observer) {
     if (mVisitCount.load() != 0) {
         throw std::logic_error("ConcurrentModificationException");
@@ -48,19 +59,17 @@ bool IService::ContainsObserver(IObserver *observer) {
     return it != mObserver.end();
 }
 
-int IService::Close() {
-    assert(mObserver.empty());
-    return 0;
-}
 
-int IService::Init() {
-    assert(!mInited);
-    mInited = true;
-    return 0;
+void IService::SetBlock(bool block) {
+    mBlock = block;
 }
 
 IService::IIterator *IService::NewIterator() {
     return new Iterator(this);
+}
+
+bool IService::Blocked() const {
+    return mBlock;
 }
 
 IService::IIterator::IIterator(IService *service) {

@@ -45,3 +45,11 @@ ConfManager::~ConfManager() {
 RConfig &ConfManager::Conf() {
     return *mConf;
 }
+
+void ConfManager::SetDev(const std::string &dev) {
+    mConf->param.dev = dev;
+}
+
+void ConfManager::SetIp(const std::string &ip) {
+    mConf->param.selfCapIp = ip;
+}

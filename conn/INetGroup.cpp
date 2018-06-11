@@ -85,7 +85,7 @@ int INetGroup::Input(ssize_t nread, const rbuf_t &rbuf) {
 void INetGroup::AddNetConn(INetConn *conn) {
     auto out = std::bind(&IConn::Output, this, _1, _2);
     auto rcv = std::bind(&IConn::OnRecv, this, _1, _2);
-    LOGD << "Add INetConn: " << conn->ToStr() << ", intKey: " << conn->IntKey();
+    LOGD << "Add INetConn: " << conn->ToStr();
     AddConn(conn, out, rcv);
     mConnMap.emplace(conn->IntKey(), conn);
     assert(mConnMap.size() == Size());

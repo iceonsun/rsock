@@ -114,7 +114,7 @@ int RCap::doInit() {
 
 void RCap::OnNetConnected(const std::string &ifName, const std::string &ip) {
     mDev = ifName;
-    mDstIp = "";
+    mDstIp = ip;
 
     if (mCap) {
         pcap_breakloop(mCap);

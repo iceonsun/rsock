@@ -7,7 +7,7 @@
 #include "INetObserver.h"
 
 void NetService::NotifyTcpFinOrRst(const TcpInfo &info) {
-    if (!mClosing) {
+    if (!Blocked()) {
         auto fn = [&](INetObserver *o) {
             o->OnTcpFinOrRst(info);
         };
@@ -15,6 +15,3 @@ void NetService::NotifyTcpFinOrRst(const TcpInfo &info) {
     }
 }
 
-void NetService::OnAppClosing() {
-    mClosing = true;
-}

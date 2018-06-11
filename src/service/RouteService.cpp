@@ -21,7 +21,7 @@ int RouteService::Close() {
 }
 
 void RouteService::CheckNetworkStatusDelayed() {
-    if (mBlock) {
+    if (Blocked()) {
         return;
     }
 
@@ -33,18 +33,20 @@ void RouteService::CheckNetworkStatusDelayed() {
 }
 
 void RouteService::CheckNetworkStatusNow() {
-    if (mBlock) {
+    if (Blocked()) {
         return;
     }
 
     std::string dev;
     std::string ip;
     int nret = RouteUtil::GetWanInfo(dev, ip);
+    auto conf = ConfManager::GetInstance();
     if (nret || dev.empty() || ip.empty()) {
         LOGE << "failed to get wan information";
+        conf->SetDev("");
+        conf->SetIp("");
         NotifyOffline();
     } else {
-        auto conf = ConfManager::GetInstance();
         std::string oldDev = conf->GetDev();
         std::string oldIp = conf->GetIp();
         if (!RouteUtil::SameNetwork(oldDev, oldIp, dev, ip)) {
@@ -87,8 +89,4 @@ void RouteService::NotifyOffline() {
         o->OnNetDisconnected();
     };
     ServiceUtil::ForEach<IRouteObserver>(this, fn);
-}
-
-void RouteService::SetBlock(bool block) {
-    mBlock = block;
 }

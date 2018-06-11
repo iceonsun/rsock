@@ -24,6 +24,10 @@ public:
 
     std::string GetIp() const;
 
+    void SetDev(const std::string &dev);
+
+    void SetIp(const std::string &ip);
+
     RConfig &Conf();
 
     const RConfig &Conf() const;

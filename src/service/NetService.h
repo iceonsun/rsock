@@ -15,11 +15,6 @@ struct TcpInfo;
 class NetService final : public IBaseService<INetObserver> {
 public:
     void NotifyTcpFinOrRst(const TcpInfo &info);
-
-    void OnAppClosing();
-
-private:
-    bool mClosing = false;
 };
 
 

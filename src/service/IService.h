@@ -34,6 +34,16 @@ public:
 
     virtual bool ContainsObserver(IObserver *observer);
 
+    /*
+     * If set to true, the service will no longer notify events
+     */
+    void SetBlock(bool block);
+
+    /*
+     * Return block status. If true, the server should
+     */
+    bool Blocked() const;
+
     class IIterator {
     public:
         explicit IIterator(IService *service);
@@ -75,6 +85,7 @@ private:
     std::vector<IObserver *> mObserver; // use vector to main register order.
     bool mInited = false;
     std::atomic<int> mVisitCount;
+    bool mBlock = false;
 };
 
 
