@@ -3,6 +3,7 @@
 //
 
 #include <algorithm>
+#include <sstream>
 #include "TcpInfo.h"
 #include "../util/enc.h"
 
@@ -59,4 +60,11 @@ TcpInfo::TcpInfo(const ConnInfo &info) : ConnInfo(info) {
 void TcpInfo::Reverse() {
     ConnInfo::Reverse();
     std::swap<uint32_t>(seq, ack);
+}
+
+std::string TcpInfo::ToIntStr() const {
+    std::ostringstream out;
+    out << "src: " << src << ", sp: " << sp << ", dst: " << dst << ", dp: " << dp << ", seq: " << seq << ", ack: "
+        << ack << ", flag: " << flag;
+    return out.str();
 }
