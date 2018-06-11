@@ -70,7 +70,7 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
     args::ValueFlag<uint16_t> cap_timeout(opt, "", "pcap timeout(ms). > 0 and <= 50", {"cap_timeout"});
 
     args::ValueFlag<int> keepAlive(opt, "keepalive interval",
-                                   "interval used to send keepalive request. default 2s.",
+                                   "interval used to send keepalive request. default 2s for client, 4s for server.",
                                    {"keepalive"});
     try {
         parser.ParseCLI(argc, argv);

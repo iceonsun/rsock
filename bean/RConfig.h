@@ -47,7 +47,11 @@ struct RConfig {
         int type = OM_PIPE_TCP;     // default tcp ports
         uint16_t cap_timeout = OM_PCAP_TIMEOUT;
 
+#ifdef RSOCK_IS_SERVER_
+        int keepAliveIntervalSec = 4;  // default 4s, 3 times
+#else
         int keepAliveIntervalSec = 2;  // default 2s, 3 times
+#endif
 
         const std::string version = RSOCK_BUILD_TIME;
 
