@@ -22,9 +22,11 @@ class NetUtil {
 public:
     static BtmUdpConn *CreateBtmUdpConn(uv_loop_t *loop, const ConnInfo &info);
 
-    static FakeTcp *CreateTcpConn(uv_loop_t *loop, const ConnInfo &info);
+    static uv_tcp_t *CreateTcp(uv_loop_t *loop, const ConnInfo &info);
 
-    static FakeTcp *CreateTcpConn(uv_tcp_t *tcp);
+//    static FakeTcp *CreateTcpConn(uv_loop_t *loop, const ConnInfo &info);
+
+//    static FakeTcp *CreateTcpConn(uv_tcp_t *tcp);
 
     static uv_connect_t *ConnectTcp(uv_loop_t *loop, const ConnInfo &info, const uv_connect_cb &cb, void *data);
 

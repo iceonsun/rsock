@@ -21,6 +21,10 @@ int RouteService::Close() {
 }
 
 void RouteService::CheckNetworkStatusDelayed() {
+    if (mBlock) {
+        return;
+    }
+
     auto m = mHandler->ObtainMessage(MSG_CHECK);
     if (!mHandler->HasMessages(MSG_CHECK)) {
         mHandler->SendMessageDelayed(m, mCheckIntervalSec * 1000);
@@ -29,6 +33,10 @@ void RouteService::CheckNetworkStatusDelayed() {
 }
 
 void RouteService::CheckNetworkStatusNow() {
+    if (mBlock) {
+        return;
+    }
+
     std::string dev;
     std::string ip;
     int nret = RouteUtil::GetWanInfo(dev, ip);
@@ -79,4 +87,8 @@ void RouteService::NotifyOffline() {
         o->OnNetDisconnected();
     };
     ServiceUtil::ForEach<IRouteObserver>(this, fn);
+}
+
+void RouteService::SetBlock(bool block) {
+    mBlock = block;
 }

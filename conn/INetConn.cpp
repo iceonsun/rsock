@@ -21,7 +21,7 @@ int INetConn::Init() {
     IConn::Init();
 
     if (GetInfo()) {
-        SetPrintableStr(BuildPrintableStr(*GetInfo()));
+        SetPrintableStr(BuildPrintableStr(*GetInfo(), mIntKey));
     }
     return 0;
 }
@@ -57,14 +57,23 @@ int INetConn::Close() {
 }
 
 const std::string INetConn::BuildPrintableStr(const ConnInfo &info) {
+    return BuildPrintableStr(info, 0);
+}
+
+const std::string INetConn::BuildPrintableStr(const ConnInfo &info, IntKeyType key) {
     std::ostringstream out;
     if (info.IsUdp()) {
         out << "udp:";
     } else {
         out << "tcp:";
     }
+
     out << InAddr2Ip(info.src) << ":" << info.sp << "-";
     out << InAddr2Ip(info.dst) << ":" << info.dp;
+
+    if (key != 0) {
+        out << ", key: " << key;
+    }
     return out.str();
 }
 
@@ -79,3 +88,4 @@ bool INetConn::IsNew() const {
 bool INetConn::Alive() {
     return IConn::Alive() && mAlive;
 }
+

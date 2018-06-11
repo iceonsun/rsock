@@ -10,13 +10,10 @@
 #include "../src/util/KeyGenerator.h"
 
 // If send 1 bytes for a specific interval to check if alive. This will severely slow down speed
-FakeTcp::FakeTcp(uv_stream_t *tcp, IntKeyType key) : INetConn(key) {
-    mTcp = tcp;
-    assert(mTcp);
-
+FakeTcp::FakeTcp(uv_tcp_t *tcp, IntKeyType key) : INetConn(key) {
+    assert(tcp);
+    mTcp = (uv_stream_t *) tcp;
     GetTcpInfo(mInfo, reinterpret_cast<uv_tcp_t *>(mTcp));
-
-    assert(KeyGenerator::KeyForTcp(mInfo) == key);
 }
 
 int FakeTcp::Init() {

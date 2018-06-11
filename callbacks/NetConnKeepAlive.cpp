@@ -78,7 +78,7 @@ int NetConnKeepAlive::OnRecvResponse(IntKeyType connKey) {
     if (conn) {
         LOGV << "receive response keepalive response for " << conn->ToStr();
     } else {
-        LOGD << "receive invalid response";
+        LOGD << "receive invalid response: " << connKey;
     }
     return removeRequest(connKey);
 }

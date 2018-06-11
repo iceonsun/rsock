@@ -50,6 +50,7 @@ int INetGroup::Close() {
         delete mDefaultFakeConn;
         mDefaultFakeConn = nullptr;
     }
+    mConnMap.clear();   // netconn is cleared in mConnMap
     return 0;
 }
 
@@ -62,11 +63,10 @@ int INetGroup::Input(ssize_t nread, const rbuf_t &rbuf) {
         auto key = info->head->ConnKey();
         auto conn = ConnOfIntKey(key);
         if (!conn) {
-            auto netconn = CreateNetConn(key, info);
-            if (netconn) {
-                AddNetConn(netconn);
+            conn = CreateNetConn(key, info);
+            if (conn) {
+                AddNetConn(conn);
             }
-            conn = netconn;
         }
 
         if (conn) {
@@ -85,8 +85,19 @@ int INetGroup::Input(ssize_t nread, const rbuf_t &rbuf) {
 void INetGroup::AddNetConn(INetConn *conn) {
     auto out = std::bind(&IConn::Output, this, _1, _2);
     auto rcv = std::bind(&IConn::OnRecv, this, _1, _2);
-    LOGD << "Add INetConn: " << conn->ToStr();
+    LOGD << "Add INetConn: " << conn->ToStr() << ", intKey: " << conn->IntKey();
     AddConn(conn, out, rcv);
+    mConnMap.emplace(conn->IntKey(), conn);
+    assert(mConnMap.size() == Size());
+}
+
+bool INetGroup::RemoveConn(IConn *conn) {
+    bool ok = IGroup::RemoveConn(conn);
+    auto c = dynamic_cast<INetConn *>(conn);
+    bool ok2 = mConnMap.erase(c->IntKey()) != 0;
+    assert(ok == ok2);
+    assert(mConnMap.size() == Size());
+    return ok;
 }
 
 int INetGroup::Send(ssize_t nread, const rbuf_t &rbuf) {
@@ -157,8 +168,10 @@ void INetGroup::netConnErr(const ConnInfo &info) {
     }
 }
 
-IConn *INetGroup::ConnOfIntKey(IntKeyType key) {
-    return ConnOfKey(KeyGenerator::StrForIntKey(key));
+INetConn *INetGroup::ConnOfIntKey(IntKeyType key) {
+    assert(mConnMap.size() == Size());
+    auto it = mConnMap.find(key);
+    return (it != mConnMap.end()) ? it->second : nullptr;
 }
 
 void INetGroup::SetNetConnErrorHandler(INetConnErrorHandler *handler) {

@@ -34,8 +34,6 @@ int ipv4OfDev(const char *dev, char *ip_buf, char *err) {
         pcap_if_t *anIf = nullptr;
         bool ok = false;
         for (anIf = dev_list; anIf != nullptr && !ok; anIf = anIf->next) {
-			fprintf(stdout, "dev name: %s\n", anIf->name);
-            LOGV << "dev_name: " << anIf->name;
             if (!strcmp(dev, anIf->name)) {
                 struct pcap_addr *addr = nullptr;
                 for (addr = anIf->addresses; addr != nullptr; addr = addr->next) {

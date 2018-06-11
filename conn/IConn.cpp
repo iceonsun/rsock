@@ -41,12 +41,14 @@ int IConn::Output(ssize_t nread, const rbuf_t &rbuf) {
 }
 
 int IConn::Input(ssize_t nread, const rbuf_t &rbuf) {
+    assert(mInited);
     int n = OnRecv(nread, rbuf);
     afterInput(n);
     return n;
 }
 
 int IConn::OnRecv(ssize_t nread, const rbuf_t &rbuf) {
+    assert(mInited);
     if (mOnRecvCb) {
         return mOnRecvCb(nread, rbuf);
     }

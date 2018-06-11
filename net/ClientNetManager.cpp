@@ -17,6 +17,7 @@
 #include "../src/service/ServiceUtil.h"
 #include "../src/service/RouteService.h"
 #include "../util/rsutil.h"
+#include "../src/util/KeyGenerator.h"
 
 ClientNetManager::ClientNetManager(uv_loop_t *loop, TcpAckPool *ackPool)
         : INetManager(loop, ackPool), MAX_RETRY(INT_MAX) {
@@ -49,17 +50,27 @@ int ClientNetManager::Close() {
 }
 
 INetConn *ClientNetManager::DialTcpSync(const ConnInfo &info) {
-    INetConn *c = NetUtil::CreateTcpConn(mLoop, info);
-    if (c) {    // dial succeeds. then there must be info of tcp ack
-        auto *realInfo = dynamic_cast<TcpInfo *>(c->GetInfo());
-        assert(realInfo);
-        if (0 == add2PoolAutoClose(c)) {
-            c = TransferConn(c->Key());
-        } else {
-            c = nullptr;
+    auto *tcp = NetUtil::CreateTcp(mLoop, info);
+    if (!tcp) {
+        return nullptr;
+    }
+
+    return createINetConn(tcp);
+}
+
+INetConn *ClientNetManager::createINetConn(uv_tcp_t *tcp) {
+    TcpInfo tcpInfo;
+    int nret = GetTcpInfo(tcpInfo, tcp);
+    if (!nret) {
+        bool ok = mTcpAckPool->Wait2TransferInfo(tcpInfo, BLOCK_WAIT_MS);
+        if (ok) {
+            return new FakeTcp(tcp, KeyGenerator::KeyForConnInfo(tcpInfo));
         }
     }
-    return c;
+
+    mTcpAckPool->RemoveInfo(tcpInfo);
+    closeTcp(tcp);
+    return nullptr;
 }
 
 int ClientNetManager::DialTcpAsync(const ConnInfo &info, const ClientNetManager::NetDialCb &cb) {
@@ -74,7 +85,7 @@ int ClientNetManager::DialTcpAsync(const ConnInfo &info, const ClientNetManager:
 }
 
 void ClientNetManager::flushPending(uint64_t now) {
-    if (mNetworkAlive) {   // if dead network. don't send tcp request
+    if (!mNetworkAlive) {   // if dead network. don't send tcp request
         return;
     }
 
@@ -108,20 +119,18 @@ void ClientNetManager::flushPending(uint64_t now) {
 void ClientNetManager::onTcpConnect(uv_connect_t *req, int status) {
     for (auto it = mPending.begin(); it != mPending.end(); it++) {
         if (it->req == req) {
-            TcpInfo tcpInfo(it->info);
             if (status) {
                 LOGE << "connect failed: " << uv_strerror(status);
                 it->req = nullptr;
                 it->dialFailed(rsk_now_ms());
-                mTcpAckPool->RemoveInfo(tcpInfo);
             } else {
                 uv_tcp_t *tcp = reinterpret_cast<uv_tcp_t *>(req->handle);
-                INetConn *c = NetUtil::CreateTcpConn(tcp);
-                if (0 == add2PoolAutoClose(c)) {
-                    c = TransferConn(c->Key());
-                    it->cb(c, tcpInfo);
-                };
+                INetConn *c = createINetConn(tcp);
+                TcpInfo tcpInfo;
+                GetTcpInfo(tcpInfo, tcp);
+                it->cb(c, tcpInfo);
                 mPending.erase(it);
+                mTcpAckPool->RemoveInfo(tcpInfo);
             }
             break;
         }
@@ -160,4 +169,3 @@ void ClientNetManager::OnNetConnected(const std::string &ifName, const std::stri
 void ClientNetManager::OnNetDisconnected() {
     mNetworkAlive = false;
 }
-

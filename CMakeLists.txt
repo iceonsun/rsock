@@ -39,7 +39,7 @@ set(SOURCE_FILES
         src/app/AppTimer.cpp src/app/AppNetObserver.cpp
         #src/service/ServiceUtil.cpp # template involved
         src/conf/ConfManager.cpp
-        src/util/Singleton.h src/util/ICloseable.h src/util/KeyGenerator.cpp src/util/HandlerUtil.cpp)
+        src/util/Singleton.h src/util/ICloseable.h src/util/KeyGenerator.cpp src/util/HandlerUtil.cpp src/util/TcpCmpFn.cpp)
 
 # platform dependent dir		
 SET(ROS_DIR src/os/unix)

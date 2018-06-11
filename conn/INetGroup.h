@@ -37,9 +37,11 @@ public:
     //can only add fakeconn
     virtual void AddNetConn(INetConn *conn);
 
+    bool RemoveConn(IConn *conn) override;
+
     void OnConnDead(IConn *conn) override;
 
-    IConn *ConnOfIntKey(IntKeyType key);
+    INetConn *ConnOfIntKey(IntKeyType key);
 
     uv_loop_t *GetLoop() const { return mLoop; }
 
@@ -47,6 +49,7 @@ public:
      * The caller must be responsible to free the handler itself.
      */
     void SetNetConnErrorHandler(INetConnErrorHandler *handler);
+
 
 private:
     using IGroup::ConnOfKey;
@@ -65,6 +68,7 @@ private:
     Handler::SPHandler mHandler = nullptr;
     IConn *mDefaultFakeConn = nullptr;
     INetConnErrorHandler *mErrHandler = nullptr;
+    std::map<IntKeyType, INetConn *> mConnMap;
 };
 
 

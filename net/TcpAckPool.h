@@ -16,6 +16,7 @@
 
 #include "../bean/TcpInfo.h"
 #include "../src/service/ITimerObserver.h"
+#include "../src/util/TcpCmpFn.h"
 
 // store ack information of incomming connection
 class TcpAckPool : public ITimerObserver {
@@ -31,7 +32,7 @@ public:
 
     ssize_t RemoveInfo(const TcpInfo &tcpInfo);
 
-    bool Wait2Info(TcpInfo &info, std::chrono::milliseconds milliSec);
+    bool Wait2TransferInfo(TcpInfo &info, const std::chrono::milliseconds milliSec);
 
     std::string Dump();
 
@@ -39,14 +40,13 @@ public:
 
     void OnFlush(uint64_t timestamp) override;
 
+    bool ContainsInfo(const TcpInfo &info, const std::chrono::milliseconds milliSec);
+
 protected:
     // no lock protection
     bool getInfoIfExists(TcpInfo &info);
 
-protected:
-    struct TcpCmpFn {
-        inline bool operator()(const TcpInfo &info1, const TcpInfo &info2) const;
-    };
+    ssize_t locklessRemove(const TcpInfo &tcpInfo);
 
 private:
     // Be same with app keepalive. if not removed from the pool manually, the conn info will be removed automatically

@@ -16,6 +16,12 @@ public:
 //    using SPIterator = std::shared_ptr<IService::IIterator>;
 //    static SPIterator NewIterator(IService *service); // failed to compile. why?
 
+
+    /*
+     * If you want to unregister observer during iteration,
+     * you must not use this method and call IService.NewIterator yourself, then use Iterator.Remove.
+     * Unregister during ServiceUtil::ForEach will throw exception.
+     */
     template<class T, class F, typename ...Args>
     static void ForEach(IService *service, const F &f, Args... args);;
 };

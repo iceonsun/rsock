@@ -25,6 +25,11 @@ public:
     int Send(int nread, const rbuf_t &rbuf) override;
 
 protected:
+    /*
+     * Send through socket by default. synchronous way.
+     */
+    virtual int doSend(const char *buf, int nread);
+
     virtual int CreateSockPair(struct uv_loop_s *loop, sock_pair_t *socks) = 0;
 
     // default: close(writeFd); uv_close((uv_handle_t*) readPtr);

@@ -11,12 +11,12 @@
 
 struct ConnInfo;
 
-class INetManager;
+class ServerNetManager;
 
 class ServerGroup : public IGroup, public INetObserver {
 public:
     ServerGroup(const std::string &groupId, uv_loop_t *loop, const struct sockaddr *target, IConn *btm,
-                INetManager *netManager);
+                ServerNetManager *netManager);
 
     int OnRecv(ssize_t nread, const rbuf_t &rbuf) override;
 
@@ -32,7 +32,7 @@ private:
 private:
     uv_loop_t *mLoop = nullptr;
     sockaddr *mTarget = nullptr;
-    INetManager *mNetManager = nullptr;
+    ServerNetManager *mNetManager = nullptr;
 };
 
 

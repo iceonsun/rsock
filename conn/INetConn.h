@@ -39,6 +39,8 @@ public:
 
     static const std::string BuildPrintableStr(const ConnInfo &info);
 
+    static const std::string BuildPrintableStr(const ConnInfo &info, IntKeyType key);
+
     bool IsNew() const;
 
     IntKeyType IntKey() const;

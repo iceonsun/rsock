@@ -41,7 +41,8 @@ IConn *SSockApp::CreateBridgeConn(RConfig &conf, IConn *btm, uv_loop_t *loop, IN
     target.sin_family = AF_INET;
     target.sin_port = htons(conf.param.targetPort);
     target.sin_addr.s_addr = inet_addr(conf.param.targetIp.c_str());
-    return new ServerGroup(IdBuf2Str(conf.param.id), loop, (const SA *) (&target), btm, netManager);
+    return new ServerGroup(IdBuf2Str(conf.param.id), loop, (const SA *) (&target), btm,
+                           dynamic_cast<ServerNetManager *>(netManager));
 }
 
 INetManager *SSockApp::CreateNetManager(const RConfig &conf, uv_loop_t *loop, TcpAckPool *ackPool) {

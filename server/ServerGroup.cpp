@@ -9,7 +9,7 @@
 #include "../util/rhash.h"
 #include "../util/rsutil.h"
 #include "SNetGroup.h"
-#include "../net/INetManager.h"
+#include "../net/ServerNetManager.h"
 #include "SubGroup.h"
 #include "../src/service/ServiceUtil.h"
 #include "../src/service/NetService.h"
@@ -17,7 +17,7 @@
 using namespace std::placeholders;
 
 ServerGroup::ServerGroup(const std::string &groupId, uv_loop_t *loop, const struct sockaddr *target, IConn *btm,
-                         INetManager *netManager) : IGroup(groupId, btm) {
+                         ServerNetManager *netManager) : IGroup(groupId, btm) {
     mLoop = loop;
     mTarget = new_addr(target);
     mNetManager = netManager;

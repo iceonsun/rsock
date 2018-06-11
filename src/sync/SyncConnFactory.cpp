@@ -14,6 +14,7 @@
 ISyncConn *SyncConnFactory::CreateSysSyncConn(struct uv_loop_s *loop, const ISyncConn::Callback cb, void *obj) {
 #ifndef _WIN32
     return new UnixDgramSyncConn(loop, cb, obj);
+//        return new LoopStreamSyncConn(loop, cb, obj);
 #else
     //return new UdpSyncConn(loop, cb, obj);    // extremely low performance on Winddows
     return new TcpStreamSyncConn(loop, cb, obj);

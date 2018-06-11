@@ -59,6 +59,8 @@ private:
 
     void flushPending(uint64_t now);
 
+    INetConn *createINetConn(uv_tcp_t *tcp);
+
 private:
     // std::numeric_limits<int>::max()
     const int MAX_RETRY;                   // maximum number of times to try to dial

@@ -19,6 +19,8 @@ class TcpAckPool;
 
 struct ConnInfo;
 
+struct TcpInfo;
+
 class NetManagerTimer;
 
 class INetManager {
@@ -27,47 +29,29 @@ public:
 
     virtual ~INetManager() = default;
 
-    virtual int Add2Pool(INetConn *conn, bool closeIfFail);
-
     virtual int Init();
 
     virtual int Close();
-
-    INetConn *TransferConn(const std::string &key);
 
     INetManager &operator=(const INetManager &) = delete;
 
     IBtmConn *BindUdp(const ConnInfo &info);
 
+    virtual bool Wait2GetInfo(TcpInfo &info);
+
     virtual void OnFlush(uint64_t timestamp);
 
 protected:
-    virtual int add2PoolAutoClose(INetConn *conn);
-
-private:
-    struct ConnHelper {
-        INetConn *conn = nullptr;
-
-        uint64_t expireMs = 0;
-
-        ConnHelper(INetConn *aConn, uint64_t expireMs) {
-            conn = aConn;
-            this->expireMs = expireMs;
-        }
-    };
+    void closeTcp(uv_tcp_t *tcp);
 
 protected:
     uv_loop_t *mLoop = nullptr;
     TcpAckPool *mTcpAckPool = nullptr;
 
-private:
+protected:
     const std::chrono::milliseconds BLOCK_WAIT_MS = std::chrono::milliseconds(500);
-
     const uint64_t FLUSH_INTERVAL = 1000;   // 1s
-    const uint64_t POOL_PERSIST_MS = 0; // assigned to TcpAckPool.PersistMs in ctor
-    std::map<std::string, ConnHelper> mPool;
     NetManagerTimer *mTimer = nullptr;
-
 };
 
 #endif //RSOCK_CONNPOOL_H

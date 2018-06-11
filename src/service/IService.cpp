@@ -7,18 +7,30 @@
 #include "IService.h"
 #include "IObserver.h"
 
+IService::IService() : mVisitCount(0) {
+
+}
+
 int IService::RegisterObserver(IObserver *observer) {
+    if (mVisitCount.load() != 0) {
+        throw std::logic_error("ConcurrentModificationException");
+    }
+
     assert(mInited);
     auto it = std::find(mObserver.begin(), mObserver.end(), observer);
     if (it == mObserver.end()) {
         mObserver.push_back(observer);
         return 0;
     }
-    assert(0);  // registered twice
     return -1;
 }
 
 int IService::UnRegisterObserver(IObserver *observer) {
+    if (mVisitCount.load() != 0) {
+        throw std::logic_error("ConcurrentModificationException");
+    }
+
+    assert(mInited);
     auto it = std::find(mObserver.begin(), mObserver.end(), observer);
     if (it != mObserver.end()) {
         mObserver.erase(it);
@@ -51,7 +63,20 @@ IService::IIterator *IService::NewIterator() {
     return new Iterator(this);
 }
 
-IService::Iterator::Iterator(IService *service) {
+IService::IIterator::IIterator(IService *service) {
+    mService = service;
+    mService->mVisitCount++;
+    mInited = true;
+}
+
+IService::IIterator::~IIterator() {
+    if (!mInited) {
+        throw std::logic_error("Super class constructor not called");
+    }
+    mService->mVisitCount--;
+}
+
+IService::Iterator::Iterator(IService *service) : IIterator(service) {
     assert(service);
     mService = service;
     mIterator = mService->mObserver.begin();
@@ -59,8 +84,7 @@ IService::Iterator::Iterator(IService *service) {
 
 IObserver *IService::Iterator::Next() {
     if (mIterator == mService->mObserver.end()) {
-        LOGE << "out of range";
-        assert(0);
+        throw std::out_of_range("iterator out of range");
     }
 
     auto p = *mIterator;
@@ -71,3 +95,11 @@ IObserver *IService::Iterator::Next() {
 bool IService::Iterator::HasNext() {
     return mIterator != mService->mObserver.end();
 }
+
+void IService::Iterator::Remove() {
+    if (!HasNext()) {
+        throw std::out_of_range("iterator out of range");
+    }
+    mIterator = mService->mObserver.erase(mIterator);
+}
+

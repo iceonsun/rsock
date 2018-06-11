@@ -27,8 +27,12 @@ void IPacketSyncConn::Close() {
 }
 
 int IPacketSyncConn::Send(int nread, const rbuf_t &rbuf) {
+    return doSend(rbuf.base, nread);
+}
+
+int IPacketSyncConn::doSend(const char *buf, int nread) {
     if (nread > 0) {
-        int nret = sendto(mSocks.writeFd, rbuf.base, nread, 0, nullptr, 0);
+        int nret = sendto(mSocks.writeFd, buf, nread, 0, nullptr, 0);
         LOGI_IF(nret < 0) << "sendto error: " << strerror(errno);
         return nret;
     }

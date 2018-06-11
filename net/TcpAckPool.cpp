@@ -20,8 +20,12 @@ bool TcpAckPool::AddInfoFromPeer(const TcpInfo &infoFromPeer, uint8_t flags) {
         return false;
     }
 
-    LOGV << "Add tcpInfo: " << infoFromPeer.ToStr();
+    LOGD << "Add tcpInfo: " << infoFromPeer.ToStr();
     std::unique_lock<std::mutex> lk(mMutex);
+    auto it = mInfoPool.find(infoFromPeer);
+    if (it != mInfoPool.end()) {
+        LOGV << "Overwrite info";
+    }
     mInfoPool[infoFromPeer] = rsk_now_ms() + EXPIRE_INTERVAL_MS; // just overwrite if exists.
     mCondVar.notify_one();
     return true;
@@ -29,8 +33,14 @@ bool TcpAckPool::AddInfoFromPeer(const TcpInfo &infoFromPeer, uint8_t flags) {
 
 ssize_t TcpAckPool::RemoveInfo(const TcpInfo &tcpInfo) {
     std::unique_lock<std::mutex> lk(mMutex);
+    return locklessRemove(tcpInfo);
+}
+
+ssize_t TcpAckPool::locklessRemove(const TcpInfo &tcpInfo) {
+    LOGV << "RemoveInfo: " << tcpInfo.ToStr();
     return mInfoPool.erase(tcpInfo);
 }
+
 
 bool TcpAckPool::getInfoIfExists(TcpInfo &info) {
     auto it = mInfoPool.find(info);
@@ -42,19 +52,43 @@ bool TcpAckPool::getInfoIfExists(TcpInfo &info) {
     return false;
 }
 
-bool TcpAckPool::Wait2Info(TcpInfo &info, const std::chrono::milliseconds milliSec) {
+bool TcpAckPool::Wait2TransferInfo(TcpInfo &info, const std::chrono::milliseconds milliSec) {
     std::cv_status status = std::cv_status::no_timeout;
     std::unique_lock<std::mutex> lk(mMutex);
     bool ok = false;
-    while (!(ok = getInfoIfExists(info)) && (status == std::cv_status::no_timeout)) {
+    while (status == std::cv_status::no_timeout) {
+        ok = getInfoIfExists(info);
+        if (ok) {
+            locklessRemove(info);   // caution to recursive locking: use unique_lock
+            return true;
+        }
         status = mCondVar.wait_for(lk, milliSec);
     }
-    return ok;
+
+//    while (!(ok = getInfoIfExists(info)) && (status == std::cv_status::no_timeout)) {
+//        status = mCondVar.wait_for(lk, milliSec);
+//    }
+    return false;
+}
+
+bool TcpAckPool::ContainsInfo(const TcpInfo &info, const std::chrono::milliseconds milliSec) {
+    std::unique_lock<std::mutex> lk(mMutex);
+    std::cv_status status = std::cv_status::no_timeout;
+    while (status == std::cv_status::no_timeout) {
+        auto it = mInfoPool.find(info);
+        if (it != mInfoPool.end()) {
+            return true;
+        }
+        status = mCondVar.wait_for(lk, milliSec);
+    }
+    return false;
 }
 
 void TcpAckPool::OnFlush(uint64_t timestamp) {
+    std::unique_lock<std::mutex> lk(mMutex);
     for (auto it = mInfoPool.begin(); it != mInfoPool.end();) {
         if (it->second <= timestamp) {
+            LOGV << it->first.ToStr() << " expired, remove it from pool";
             it = mInfoPool.erase(it);
         } else {
             it++;
@@ -80,9 +114,4 @@ int TcpAckPool::Init() {
 
 uint64_t TcpAckPool::PersistMs() const {
     return EXPIRE_INTERVAL_MS;
-}
-
-bool TcpAckPool::TcpCmpFn::operator()(const TcpInfo &info1, const TcpInfo &info2) const {
-    auto ok = info1.src < info2.src && info1.sp < info2.sp && info1.dst < info2.dst && info1.dp < info2.dp;
-    return ok;
 }

@@ -32,7 +32,7 @@ BtmUdpConn *NetUtil::CreateBtmUdpConn(uv_loop_t *loop, const ConnInfo &info) {
     return btm;
 }
 
-FakeTcp *NetUtil::CreateTcpConn(uv_loop_t *loop, const ConnInfo &info) {
+uv_tcp_t *NetUtil::CreateTcp(uv_loop_t *loop, const ConnInfo &info) {
     int sock = NetUtil::createTcpSock(info);
     if (sock < 0) {
         LOGE << "init tcp socket failed: " << strerror(errno);
@@ -48,20 +48,28 @@ FakeTcp *NetUtil::CreateTcpConn(uv_loop_t *loop, const ConnInfo &info) {
         LOGE << "uv_tcp_open failed: " << uv_strerror(nret);
         return nullptr;
     }
-
-    TcpInfo realInfo;
-    GetTcpInfo(realInfo, tcp);
-
-    FakeTcp *conn = new FakeTcp(reinterpret_cast<uv_stream_t *>(tcp), KeyGenerator::KeyForConnInfo(realInfo));
-    return conn;
+    return tcp;
 }
 
-FakeTcp *NetUtil::CreateTcpConn(uv_tcp_t *tcp) {
-    TcpInfo realInfo;
-    GetTcpInfo(realInfo, tcp);
-    FakeTcp *conn = new FakeTcp(reinterpret_cast<uv_stream_t *>(tcp), KeyGenerator::KeyForConnInfo(realInfo));
-    return conn;
-}
+//FakeTcp *NetUtil::CreateTcpConn(uv_loop_t *loop, const ConnInfo &info) {
+//    auto tcp = CreateTcp(loop, info);
+//    if (!tcp) {
+//        return nullptr;
+//    }
+//
+//    TcpInfo realInfo;
+//    GetTcpInfo(realInfo, tcp);
+//
+//    FakeTcp *conn = new FakeTcp(tcp, KeyGenerator::KeyForConnInfo(realInfo));
+//    return conn;
+//}
+//
+//FakeTcp *NetUtil::CreateTcpConn(uv_tcp_t *tcp) {
+//    TcpInfo realInfo;
+//    GetTcpInfo(realInfo, tcp);
+//    FakeTcp *conn = new FakeTcp(tcp, KeyGenerator::KeyForConnInfo(realInfo));
+//    return conn;
+//}
 
 uv_connect_t *NetUtil::ConnectTcp(uv_loop_t *loop, const ConnInfo &info, const uv_connect_cb &cb, void *data) {
     uv_tcp_t *tcp = static_cast<uv_tcp_t *>(malloc(sizeof(uv_tcp_t)));

@@ -20,7 +20,7 @@ public:
     int Close() override;
 
     /*
-     * Check network status periodically.
+     * Check network status with delay.
      */
     void CheckNetworkStatusDelayed();
 
@@ -32,6 +32,11 @@ public:
     void NotifyOffline();
 
     void NotifyOnline(const std::string &dev, const std::string &ip);
+
+    /*
+     * If set to true, the service will no longer notify events
+     */
+    void SetBlock(bool block);
 
 protected:
     void handleMessage(const Handler::Message &m);
@@ -46,6 +51,8 @@ private:
     uint64_t mCheckIntervalSec = 1;
 
     static const int MSG_CHECK = 0;
+
+    bool mBlock = false;
 };
 
 
