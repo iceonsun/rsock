@@ -37,8 +37,9 @@ ssize_t TcpAckPool::RemoveInfo(const TcpInfo &tcpInfo) {
 }
 
 ssize_t TcpAckPool::locklessRemove(const TcpInfo &tcpInfo) {
-    LOGV << "RemoveInfo: " << tcpInfo.ToStr();
-    return mInfoPool.erase(tcpInfo);
+    auto n = mInfoPool.erase(tcpInfo);
+    LOGV_IF(n > 0) << "RemoveInfo: " << tcpInfo.ToStr();
+    return n;
 }
 
 

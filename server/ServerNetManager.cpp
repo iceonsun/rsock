@@ -63,8 +63,12 @@ uv_tcp_t *ServerNetManager::GetTcp(TcpInfo &info) {
         }
     } else {
         LOGE << "TcpPool has no tcp: " << info.ToStr();
+        for (auto &e: mPool) {
+            LOGE << "subinfo: " << e.first.ToStr();
+        }
     }
-    mTcpAckPool->RemoveInfo(info);
+    int n = mTcpAckPool->RemoveInfo(info);
+    LOGD << "Remove the tcpInfo " << ((n > 0) ? "succeeded" : "failed");
     return nullptr;
 }
 
@@ -103,15 +107,14 @@ void ServerNetManager::add2Pool(uv_tcp_t *tcp) {
     if (!nret) {
 //        bool ok = mTcpAckPool->ContainsInfo(tcpInfo, BLOCK_WAIT_MS);
 //        if (ok) {
-            LOGV << tcpInfo.ToStr() << " added to pool";
+        LOGV << tcpInfo.ToStr() << " added to pool";
         auto it = mPool.find(tcpInfo);
         if (it != mPool.end()) {
             LOGW << "override information, original: " << it->first.ToStr();
         }
         uint64_t expireMs = rsk_now_ms() + POOL_PERSIST_MS;
-            mPool.emplace(tcpInfo, ConnHelper(tcp, expireMs));
-            mPool.emplace(tcpInfo, ConnHelper(tcp, expireMs));
-            return;
+        mPool.emplace(tcpInfo, ConnHelper(tcp, expireMs));
+        return;
 //        } else {
 //            LOGE << "AckPool has no record in pool: " << tcpInfo.ToStr();
 //        }

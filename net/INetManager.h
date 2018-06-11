@@ -23,6 +23,9 @@ struct TcpInfo;
 
 class NetManagerTimer;
 
+/*
+ * Consider combine some func of TcpAckPool
+ */
 class INetManager {
 public:
     explicit INetManager(uv_loop_t *loop, TcpAckPool *ackPool);
