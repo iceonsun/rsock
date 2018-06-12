@@ -65,9 +65,11 @@ uv_tcp_t *ServerNetManager::GetTcp(TcpInfo &info) {
     } else {
         LOGE << "TcpPool has no tcp: " << info.ToStr();
         LOGE << "IntStr: " << info.ToIntStr();
+        TcpCmpFn cmp;
         for (auto &e: mPool) {
             LOGE << "subinfo: " << e.first.ToIntStr();
             LOGE << "equals?" << TcpCmpFn::Equals(e.first, info);
+            LOGE << "equals2? " << cmp(e.first, info) << ", " << cmp(info, e.first);
         }
     }
     int n = mTcpAckPool->RemoveInfo(info);

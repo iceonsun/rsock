@@ -131,6 +131,8 @@ void ClientNetManager::onTcpConnect(uv_connect_t *req, int status) {
                 if (nret || tcpInfo.dp == 0 || tcpInfo.dst == 0) {
                     LOGD << "failed to get information of tcp";
                     tcpInfo = it->info;
+                    uv_close((uv_handle_t*)tcp, close_cb);
+                    it->req = nullptr;
                     it->dialFailed(rsk_now_ms());   // if failed, remove it
                 } else {
                     it->cb(c, tcpInfo);

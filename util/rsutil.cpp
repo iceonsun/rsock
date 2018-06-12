@@ -265,14 +265,14 @@ int GetTcpInfo(ConnInfo &info, uv_tcp_t *tcp) {
     int socklen = sizeof(SA4);
     int nret = uv_tcp_getsockname(tcp, (SA *) &self, &socklen);
     if (nret) {
-        LOGE << "uv_tcp_getsockname failed: " << uv_strerror(nret);
+        LOGE << "uv_tcp_getsockname failed: " << uv_strerror(nret) << ", tcp: " << (void *) tcp;
         return nret;
     }
     SA4 peer = {0};
     socklen = sizeof(SA4);
     nret = uv_tcp_getpeername(tcp, (SA *) &peer, &socklen);
     if (nret) {
-        LOGE << "uv_tcp_getpeername failed: " << uv_strerror(nret);
+        LOGE << "uv_tcp_getpeername failed: " << uv_strerror(nret) << ", tcp: " << (void *) tcp;
         return nret;
     }
     info.src = self.sin_addr.s_addr;
@@ -361,7 +361,7 @@ void ipStr2Addr(const std::string &ip, struct in_addr *addr) {
 static inline int setSockBufSize(int sock, int size, int cmd) {
     assert(cmd == SO_SNDBUF || cmd == SO_RCVBUF);
     int bufSize = size;
-    return setsockopt(sock, SOL_SOCKET, cmd, (SOCKOPT_VAL_TYPE)&bufSize, sizeof(bufSize));
+    return setsockopt(sock, SOL_SOCKET, cmd, (SOCKOPT_VAL_TYPE) &bufSize, sizeof(bufSize));
 }
 
 int setSendBufSize(int sock, int size) {
@@ -377,7 +377,7 @@ static inline int getSockBufSize(int sock, int cmd) {
     int bufSize = 0;
     socklen_t socklen = sizeof(bufSize);
 
-    int nret = getsockopt(sock, SOL_SOCKET, cmd, (SOCKOPT_VAL_TYPE)&bufSize, &socklen);
+    int nret = getsockopt(sock, SOL_SOCKET, cmd, (SOCKOPT_VAL_TYPE) &bufSize, &socklen);
     if (nret) {
         return -1;
     }
