@@ -62,13 +62,7 @@ done
 
 1. 如果rsock不能正常工作，请检查你的网卡是否支持winpcap工作。路由器也有可能过滤掉包(特别是windows系统）。
 
-2. 在Windows系统上，rsock的速度要远慢于mac/linux上。我测试的情况是，速度在500-800KB/s之间。
-
-3. 在windows系统上，建议传入 --lcapIp参数，而不是-d。因为要找到网卡名字，并不容易。比如: `--lcapIp=x.x.x.x` 其中 `x.x.x.x`是你的ip地址。
-
-4. 在Windows系统上，rsock的表现没有它在Linux和Mac上好。举个例子：Linux和Mac用户，可以流畅的观看1080P youtube。Windows用户只能看720P，1080P会有点卡。
-
-5. 在Windows系统上，如果你装了虚拟机，最好指定-d参数。后面有讲解。
+2. 在Windows系统上，rsock的速度要远慢于mac/linux上。我测试的情况是，速度在500-800KB/s之间。举个例子：Linux和Mac用户，可以流畅的观看1080P youtube。Windows用户只能看720P，1080P会有点卡。
 
 ### 退出运行
 
@@ -215,8 +209,6 @@ kcptun的下载速度. 速度在2M左右。
 ### TODO
   
 1. 代码重构
-
-1. 自动检测网络变更
 
 1. 增加随机端口监听。
 
