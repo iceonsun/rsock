@@ -8,7 +8,8 @@
 
 #include "IBaseService.h"
 
-class INetObserver;
+//class INetObserver;
+#include "INetObserver.h"
 
 struct TcpInfo;
 

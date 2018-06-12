@@ -11,7 +11,8 @@
 #include "uv.h"
 #include "IBaseService.h"
 
-class ITimerObserver;
+//class ITimerObserver;
+#include "ITimerObserver.h"
 
 class TimerService final : public IBaseService<ITimerObserver> {
 public:

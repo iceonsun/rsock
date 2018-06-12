@@ -22,12 +22,14 @@ private:
 
 template<typename T>
 int IBaseService<T>::RegisterObserver(T *observer) {
-    return IService::RegisterObserver(dynamic_cast<IObserver *>(observer));
+    //return IService::RegisterObserver(dynamic_cast<IObserver *>(observer));
+    return IService::RegisterObserver(observer);
 }
 
 template<typename T>
 int IBaseService<T>::UnRegisterObserver(T *observer) {
-    return IService::UnRegisterObserver(dynamic_cast<IObserver *>(observer));
+    //return IService::UnRegisterObserver(dynamic_cast<IObserver *>(observer));
+    return IService::UnRegisterObserver(observer);
 }
 
 

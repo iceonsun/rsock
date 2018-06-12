@@ -53,7 +53,7 @@ const char *KeyGenerator::DecodeKey(const char *p, IntKeyType *key) {
     return decode_uint64(key, p);
 }
 
-int KeyGenerator::DecodeKeySafe(ssize_t nread, const char *p, IntKeyType *key) {
+int KeyGenerator::DecodeKeySafe(int nread, const char *p, IntKeyType *key) {
     if (nread >= sizeof(IntKeyType)) {
         return DecodeKey(p, key) - p;
     }

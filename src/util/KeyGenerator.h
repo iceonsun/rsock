@@ -38,7 +38,7 @@ public:
 
     static const char *DecodeKey(const char *p, IntKeyType *key);
 
-    static int DecodeKeySafe(ssize_t nread, const char *p, IntKeyType *key);
+    static int DecodeKeySafe(int nread, const char *p, IntKeyType *key);
 
     static char *EncodeKey(char *p, IntKeyType key);
 

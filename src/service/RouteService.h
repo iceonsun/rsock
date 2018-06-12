@@ -8,8 +8,9 @@
 #include "uv.h"
 #include "../../util/Handler.h"
 #include "IBaseService.h"
+#include "IRouteObserver.h"
 
-class IRouteObserver;
+//class IRouteObserver;
 
 class Handler;
 

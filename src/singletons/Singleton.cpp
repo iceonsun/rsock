@@ -2,7 +2,7 @@
 // Created by System Administrator on 6/1/18.
 //
 
-#include <plog/Log.h>
+//#include <plog/Log.h>
 
 template<typename T>
 Singleton<T>::Singleton() {
@@ -21,7 +21,7 @@ T *Singleton<T>::GetInstance(const Args &... args) {
         std::lock_guard<std::mutex> lk(sMutex);
         if (!sInstance) {
             if (sDestroyed) {
-                LOGE << "already destroyed";
+                //LOGE << "already destroyed";
                 assert(0);
             }
             sInstance = new T(args...);
