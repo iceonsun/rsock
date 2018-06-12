@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/iceonsun/rsock.svg?branch=master)](https://travis-ci.org/iceonsun/rsock) [![Build status](https://ci.appveyor.com/api/projects/status/cqtcqeg2n2k0eivl?svg=true)](https://ci.appveyor.com/project/iceonsun/rsock)
+[![Build Status](https://travis-ci.org/iceonsun/rsock.svg?branch=master)](https://travis-ci.org/iceonsun/rsock) [![Build status](https://ci.appveyor.com/api/projects/status/cqtcqeg2n2k0eivl?svg=true)](https://ci.appveyor.com/project/iceonsun/rsock)  [![Downloads][1]][2]
 
 ---
 
@@ -236,3 +236,5 @@ kcptun的下载速度. 速度在2M左右。
 
 ![](img/ethdonation.jpeg)
 
+[1]: https://img.shields.io/github/downloads/iceonsun/rsock/total.svg?maxAge=1800
+[2]: https://github.com/iceonsun/rsock/releases
