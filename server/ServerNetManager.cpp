@@ -9,7 +9,6 @@
 #include "../net/NetUtil.h"
 #include "../conn/FakeTcp.h"
 #include "../net/TcpAckPool.h"
-#include "../src/util/KeyGenerator.h"
 
 using namespace std::placeholders;
 
@@ -51,9 +50,8 @@ void ServerNetManager::OnNewConnection(uv_tcp_t *tcp) {
 }
 
 uv_tcp_t *ServerNetManager::GetTcp(TcpInfo &info) {
-    IntKeyType key = HashTcpInfo(info);
-    LOGV << "original info: " << info.ToIntStr() << ", NetHashKey: " << key;
-    auto it = mPool.find(key);
+    LOGV << "original info: " << info.ToIntStr();
+    auto it = mPool.find(info);
     if (it != mPool.end()) {
         auto tcp = it->second.conn;
         mPool.erase(it);
@@ -69,9 +67,9 @@ uv_tcp_t *ServerNetManager::GetTcp(TcpInfo &info) {
         LOGE << "IntStr: " << info.ToIntStr();
         TcpCmpFn cmp;
         for (auto &e: mPool) {
-            LOGE << "subinfo: " << e.second.info.ToIntStr();
-            LOGE << "equals?" << TcpCmpFn::Equals(e.second.info, info);
-            LOGE << "equals2? " << cmp(e.second.info, info) << ", " << cmp(info, e.second.info);
+            LOGE << "subinfo: " << e.first.ToIntStr();
+            LOGE << "equals?" << TcpCmpFn::Equals(e.first, info);
+            LOGE << "equals2? " << cmp(e.first, info) << ", " << cmp(info, e.first);
         }
     }
     int n = mTcpAckPool->RemoveInfo(info);
@@ -81,7 +79,7 @@ uv_tcp_t *ServerNetManager::GetTcp(TcpInfo &info) {
 
 
 bool ServerNetManager::ContainsTcp(const TcpInfo &info) {
-    return mPool.find(HashTcpInfo(info)) != mPool.end() ? true : false;
+    return mPool.find(info) != mPool.end() ? true : false;
 }
 
 void ServerNetManager::OnFlush(uint64_t timestamp) {
@@ -115,13 +113,12 @@ void ServerNetManager::add2Pool(uv_tcp_t *tcp) {
 //        bool ok = mTcpAckPool->ContainsInfo(tcpInfo, BLOCK_WAIT_MS);
 //        if (ok) {
         LOGV << tcpInfo.ToStr() << " added to pool";
-        IntKeyType key = HashTcpInfo(tcpInfo);
-        auto it = mPool.find(key);
+        auto it = mPool.find(tcpInfo);
         if (it != mPool.end()) {
-            LOGW << "override information, original: " << it->second.info.ToStr();
+            LOGW << "override information, original: " << it->first.ToStr();
         }
         uint64_t expireMs = rsk_now_ms() + POOL_PERSIST_MS;
-        mPool.emplace(key, ConnHelper(tcp, expireMs, tcpInfo));
+        mPool.emplace(tcpInfo, ConnHelper(tcp, expireMs));
         return;
 //        } else {
 //            LOGE << "AckPool has no record in pool: " << tcpInfo.ToStr();
@@ -131,8 +128,4 @@ void ServerNetManager::add2Pool(uv_tcp_t *tcp) {
     }
     int n = mTcpAckPool->RemoveInfo(tcpInfo);
     LOGD << "Remove the tcpInfo " << ((n > 0) ? "succeeded" : "failed");
-}
-
-IntKeyType ServerNetManager::HashTcpInfo(const TcpInfo &info) {
-    return KeyGenerator::KeyForConnInfo(info);
 }

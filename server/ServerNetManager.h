@@ -46,8 +46,6 @@ protected:
      */
     void add2Pool(uv_tcp_t *tcp);
 
-    static IntKeyType HashTcpInfo(const TcpInfo &info);
-
 private:
 
     struct ConnHelper {
@@ -55,19 +53,15 @@ private:
 
         uint64_t expireMs = 0;
 
-        TcpInfo info;
-
-        ConnHelper(uv_tcp_t *aConn, uint64_t expireMs, const TcpInfo &info) {
+        ConnHelper(uv_tcp_t *aConn, uint64_t expireMs) {
             conn = aConn;
             this->expireMs = expireMs;
-            this->info = info;
         }
     };
 
     const uint64_t POOL_PERSIST_MS = 0; // assigned to TcpAckPool.PersistMs in ctor
     TcpListenPool mListenPool;
-    std::map<IntKeyType , ConnHelper> mPool;
-//    std::map<TcpInfo, ConnHelper, TcpCmpFn> mPool;
+    std::map<TcpInfo, ConnHelper, TcpCmpFn> mPool;
 };
 
 
