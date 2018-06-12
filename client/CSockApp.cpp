@@ -24,8 +24,9 @@ int CSockApp::Init() {
     if (!mErrorHandler) {
         mErrorHandler = new CConnErrHandler(this);
     }
+    int n = ISockApp::Init();
     RouteManager::GetInstance()->AddTargetFront(ConfManager::GetInstance()->Conf().param.targetIp);
-    return ISockApp::Init();
+    return n;
 }
 
 void CSockApp::Close() {

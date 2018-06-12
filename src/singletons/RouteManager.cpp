@@ -114,6 +114,10 @@ int RouteManager::getDefGateway(struct addr &gateway) {
 }
 
 void RouteManager::AddTargetFront(const std::string &target) {
+    if (target.empty()) {
+        LOGD << "target empty";
+        return;
+    }
     auto it = mConnectTarget.begin();
     if (*it == target) {
         mConnectTarget.erase(it);
