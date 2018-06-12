@@ -50,6 +50,7 @@ void ServerNetManager::OnNewConnection(uv_tcp_t *tcp) {
 }
 
 uv_tcp_t *ServerNetManager::GetTcp(TcpInfo &info) {
+    LOGV << "original info: " << info;
     auto it = mPool.find(info);
     if (it != mPool.end()) {
         auto tcp = it->second.conn;
@@ -66,6 +67,7 @@ uv_tcp_t *ServerNetManager::GetTcp(TcpInfo &info) {
         LOGE << "IntStr: " << info.ToIntStr();
         for (auto &e: mPool) {
             LOGE << "subinfo: " << e.first.ToIntStr();
+            LOGE << "equals?" << TcpCmpFn::Equals(e.first, info);
         }
     }
     int n = mTcpAckPool->RemoveInfo(info);

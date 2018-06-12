@@ -11,6 +11,10 @@ struct TcpCmpFn {
     inline bool operator()(const TcpInfo &info1, const TcpInfo &info2) const {
         return (info1.src < info2.src) || (info1.sp < info2.sp) || (info1.dst < info2.dst) || (info1.dp < info2.dp);
     }
+
+    static inline bool Equals(const TcpInfo &info1, const TcpInfo &info2) {
+        return (info1.src == info2.src) && (info1.sp == info2.sp) && (info1.dst == info2.dst) && (info1.dp == info2.dp);
+    }
 };
 
 

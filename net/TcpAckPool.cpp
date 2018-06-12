@@ -69,6 +69,10 @@ bool TcpAckPool::Wait2TransferInfo(TcpInfo &info, const std::chrono::millisecond
 //    while (!(ok = getInfoIfExists(info)) && (status == std::cv_status::no_timeout)) {
 //        status = mCondVar.wait_for(lk, milliSec);
 //    }
+    for (auto &e: mInfoPool) {
+        LOGV << "ackpool element: " << e.first.ToStr();
+    }
+    LOGV << "cond_var timeout";
     return false;
 }
 
