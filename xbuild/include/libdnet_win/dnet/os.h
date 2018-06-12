@@ -23,7 +23,7 @@
   typedef u_short	uint16_t;
   typedef u_int		uint32_t;
 # ifndef __CYGWIN__
-  typedef long		ssize_t;
+  typedef intptr_t		ssize_t;
 # endif
 #else
 # include <sys/param.h>
