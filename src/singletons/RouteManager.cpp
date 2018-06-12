@@ -10,13 +10,32 @@
 
 #include "rscomm.h"
 
-#include "RouteUtil.h"
-#include "rsutil.h"
+#include "RouteManager.h"
+#include "../../util/rsutil.h"
 
 // public dns list
-const std::vector<std::string> RouteUtil::PUBLIC_DNS_VEC({"223.5.5.5", "114.114.114.114", "8.8.8.8"});
+//const std::vector<std::string> RouteManager::mConnectTarget({"223.5.5.5", "114.114.114.114", "8.8.8.8"});
 
-int RouteUtil::GetWanInfo(std::string &ifName, std::string &ip) {
+
+RouteManager::RouteManager() : RouteManager(std::vector<std::string>{}) {
+
+}
+
+RouteManager::RouteManager(const std::vector<std::string> &dns) : Singleton(), mConnectTarget(dns.begin(), dns.end()) {
+    for (auto &s: {"223.5.5.5", "114.114.114.114", "8.8.8.8"}) {
+        mConnectTarget.emplace_back("223.5.5.5");
+    }
+}
+
+int RouteManager::Init() {
+    return 0;
+}
+
+int RouteManager::Close() {
+    return 0;
+}
+
+int RouteManager::GetWanInfo(std::string &ifName, std::string &ip) {
     struct addr gw = {0};
     int nret = getDefGateway(gw);
     if (nret) {
@@ -31,7 +50,7 @@ int RouteUtil::GetWanInfo(std::string &ifName, std::string &ip) {
     return nret;
 }
 
-int RouteUtil::getIfaceInfo(std::string &ifName, std::string &ip, uint32_t gw) {
+int RouteManager::getIfaceInfo(std::string &ifName, std::string &ip, uint32_t gw) {
     pcap_if_t *pcapIf = nullptr;
     bool found = false;
     do {
@@ -67,7 +86,7 @@ int RouteUtil::getIfaceInfo(std::string &ifName, std::string &ip, uint32_t gw) {
     return found ? 0 : -1;
 }
 
-int RouteUtil::getDefGateway(struct addr &gateway) {
+int RouteManager::getDefGateway(struct addr &gateway) {
     route_t *r = route_open();
     if (!r) {
         return -1;
@@ -79,7 +98,7 @@ int RouteUtil::getDefGateway(struct addr &gateway) {
 
     int nret = 0;
     bool found = false;
-    for (auto &e: PUBLIC_DNS_VEC) {
+    for (auto &e: mConnectTarget) {
         entry.route_dst.__addr_u.__ip = inet_addr(e.c_str());
         nret = route_get(r, &entry);
         if (0 == nret) {
@@ -94,7 +113,17 @@ int RouteUtil::getDefGateway(struct addr &gateway) {
     return found ? 0 : -1;
 }
 
-bool RouteUtil::SameNetwork(const std::string &dev1, const std::string &ip1, const std::string &dev2,
-                            const std::string &ip2) {
-    return (dev1 == dev2) && (ip1 == ip2);
+void RouteManager::AddTargetFront(const std::string &target) {
+    auto it = mConnectTarget.begin();
+    if (*it == target) {
+        mConnectTarget.erase(it);
+        // already has one. move it to frontmost
+    }
+    mConnectTarget.push_front(target);
 }
+
+
+std::deque<std::string> RouteManager::GetDns() const {
+    return mConnectTarget;
+}
+

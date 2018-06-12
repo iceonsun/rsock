@@ -52,6 +52,9 @@ public:
 
     virtual int SendNetConnReset(ssize_t nread, const rbuf_t &rbuf, IntKeyType keyOfConnToReset);
 
+protected:
+    virtual int doSend(ssize_t nread, const rbuf_t &rbuf, IntKeyType keyOfConnToReset);
+
 private:
     using IGroup::ConnOfKey;
     using IGroup::AddConn;

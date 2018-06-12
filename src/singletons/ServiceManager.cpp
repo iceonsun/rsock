@@ -5,7 +5,7 @@
 #include <cassert>
 #include <plog/Log.h>
 #include "ServiceManager.h"
-#include "TimerService.h"
+#include "../service/TimerService.h"
 
 const std::string ServiceManager::TIMER_SERVICE = "TimerService";
 const std::string ServiceManager::ROUTE_SERVICE = "RouteService";

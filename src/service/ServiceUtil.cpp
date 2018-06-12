@@ -3,7 +3,7 @@
 //
 
 #include <memory>
-#include "ServiceManager.h"
+#include "../singletons/ServiceManager.h"
 
 template<typename T>
 T ServiceUtil::GetService(const std::string &name) {

@@ -15,7 +15,7 @@
 #include "../util/rhash.h"
 #include "FdUtil.h"
 #include "../cap/cap_util.h"
-#include "../util/RouteUtil.h"
+#include "../src/singletons/RouteManager.h"
 
 using namespace args;
 using namespace json11;
@@ -84,11 +84,21 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
                 }
                 break;
             }
+
+            if (targetAddr) {
+                if (!parseAddr(targetAddr.Get(), param.targetIp, param.targetPort, is_server) ||
+                    !ValidIp4(param.targetIp)) {
+                    throw args::Error("Unable to parse target address: " + targetAddr.Get());
+                }
+            } else {
+                throw args::Error("You must specify target address.");
+            }
+
             if (dev) {
                 param.dev = dev.Get();
             } else {
                 if (!selfCapIp) {
-                    int nret = RouteUtil::GetWanInfo(param.dev, param.selfCapIp);
+                    int nret = RouteManager::GetInstance()->GetWanInfo(param.dev, param.selfCapIp);
                     if (nret || param.dev.empty()) {
                         throw args::Error("unable to find default device");
                     }
@@ -119,14 +129,6 @@ int RConfig::Parse(bool is_server, int argc, const char *const *argv) {
                 }
             } else if (!isServer) {
                 throw args::Error("For client you must specify local listening udp address. e.g -l 127.0.0.1:30000");
-            }
-
-            if (targetAddr) {
-                if (!parseAddr(targetAddr.Get(), param.targetIp, param.targetPort, is_server)) {
-                    throw args::Error("Unable to parse target address: " + targetAddr.Get());
-                }
-            } else {
-                throw args::Error("You must specify target address.");
             }
 
             if (duration) {

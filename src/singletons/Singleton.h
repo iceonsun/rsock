@@ -7,7 +7,7 @@
 
 #include <mutex>
 #include <cassert>
-#include "ICloseable.h"
+#include "../util/ICloseable.h"
 
 template<typename T>
 class Singleton {

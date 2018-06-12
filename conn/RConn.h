@@ -44,7 +44,6 @@ public:
 
     static void CapInputCb(u_char *args, const pcap_pkthdr *hdr, const u_char *packet);
 
-// todo: override flush
 private:
     using IGroup::AddConn;
 

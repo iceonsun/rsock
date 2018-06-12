@@ -17,7 +17,7 @@ set(SOURCE_FILES
         callbacks/IReset.h callbacks/NetConnKeepAlive.cpp callbacks/ConnReset.cpp callbacks/KeepAliveRouteObserver.cpp
 
         util/enc.c util/rsutil.cpp util/rhash.cpp util/TextUtils.h util/RPortList.cpp
-        util/PortPair.cpp util/Handler.cpp util/ShotHandler.cpp util/UvUtil.cpp util/RouteUtil.cpp
+        util/PortPair.cpp util/Handler.cpp util/ShotHandler.cpp util/UvUtil.cpp
 
         cap/cap_util.cpp cap/RCap.cpp cap/CapUtil.cpp
 
@@ -32,15 +32,20 @@ set(SOURCE_FILES
 
         src/sync/SyncConnFactory.cpp src/sync/LoopStreamSyncConn.cpp src/sync/ISyncConn.cpp src/sync/UdpSyncConn.cpp
         src/sync/TcpStreamSyncConn.cpp src/sync/IPacketSyncConn.cpp
+
         src/service/IObserver.h src/service/IService.cpp
         src/service/ITimerObserver.h src/service/TimerService.cpp
         src/service/IRouteObserver.h src/service/RouteService.cpp src/service/NetService.cpp
-        src/service/ServiceManager.cpp src/service/ServiceUtil.h src/service/IBaseService.h src/service/INetObserver.h
-        src/app/AppTimer.cpp src/app/AppNetObserver.cpp
         #src/service/ServiceUtil.cpp # template involved
-        src/conf/ConfManager.cpp
-        src/util/Singleton.h src/util/ICloseable.h src/util/KeyGenerator.cpp src/util/HandlerUtil.cpp
-        src/util/TcpCmpFn.cpp src/util/TcpUtil.cpp)
+
+        src/service/ServiceUtil.h src/service/IBaseService.h src/service/INetObserver.h
+        src/app/AppTimer.cpp src/app/AppNetObserver.cpp
+
+        src/singletons/ConfManager.cpp src/singletons/Singleton.h src/singletons/HandlerUtil.cpp
+        src/singletons/RouteManager.cpp src/singletons/ServiceManager.cpp
+
+        src/util/ICloseable.h src/util/KeyGenerator.cpp src/util/TcpCmpFn.cpp src/util/TcpUtil.cpp
+        src/util/RouteUtil.cpp)
 
 # platform dependent dir		
 SET(ROS_DIR src/os/unix)

@@ -22,16 +22,31 @@
 #include "../util/UvUtil.h"
 #include "app/AppTimer.h"
 #include "app/AppNetObserver.h"
-#include "service/ServiceManager.h"
+#include "singletons/ServiceManager.h"
 #include "service/TimerService.h"
 #include "service/RouteService.h"
-#include "conf/ConfManager.h"
+#include "singletons/ConfManager.h"
 #include "../bean/RConfig.h"
 #include "service/NetService.h"
 #include "service/ServiceUtil.h"
-#include "util/HandlerUtil.h"
+#include "singletons/HandlerUtil.h"
+#include "singletons/RouteManager.h"
 
 ISockApp::ISockApp(bool is_server) : mServer(is_server) {
+}
+
+
+ISockApp::~ISockApp() {
+    destroyGlobalSingletons();
+
+    if (mFileAppender) {
+        delete mFileAppender;
+        mFileAppender = nullptr;
+    }
+    if (mConsoleAppender) {
+        delete mConsoleAppender;
+        mConsoleAppender = nullptr;
+    }
 }
 
 int ISockApp::Parse(int argc, const char *const *argv) {
@@ -40,12 +55,13 @@ int ISockApp::Parse(int argc, const char *const *argv) {
         return -1;
     }
 
-    int nret = initConfManager();
+    int nret = initGlobalSingletons();
     if (nret) {
         LOGE << "failed to init conf manager";
         return nret;
     }
 
+    RouteManager::GetInstance();    // init before ConfManager. becase RConfig depends on RouteManager
     auto confManager = ConfManager::GetInstance();
     nret = confManager->Conf().Parse(mServer, argc, argv);
     return nret;
@@ -65,6 +81,19 @@ int ISockApp::Init() {
     }
 
     return doInit();
+}
+
+int ISockApp::initGlobalSingletons() {
+    int nret = RouteManager::GetInstance()->Init();
+    if (nret) {
+        return nret;
+    }
+    return ConfManager::GetInstance()->Init();
+}
+
+void ISockApp::destroyGlobalSingletons() {
+    ConfManager::DestroyInstance();
+    RouteManager::DestroyInstance();
 }
 
 int ISockApp::initServices(const RConfig &conf) {
@@ -94,7 +123,6 @@ int ISockApp::initServices(const RConfig &conf) {
 
     return 0;
 }
-
 
 void ISockApp::initSingletons() {
     // ConfManager::GetInstance() is called in Parse
@@ -378,18 +406,6 @@ void ISockApp::watchExitSignals() {
     }
 }
 
-ISockApp::~ISockApp() {
-    ConfManager::DestroyInstance();
-
-    if (mFileAppender) {
-        delete mFileAppender;
-        mFileAppender = nullptr;
-    }
-    if (mConsoleAppender) {
-        delete mConsoleAppender;
-        mConsoleAppender = nullptr;
-    }
-}
 
 void ISockApp::OnTcpFinOrRst(const TcpInfo &info) {
     if (IsClosing()) { // if app is closing, tell NetService to block subsequent call
@@ -429,8 +445,3 @@ void ISockApp::destroySignals() {
     }
 }
 
-int ISockApp::initConfManager() {
-    auto confManager = ConfManager::GetInstance();
-    assert(confManager);
-    return confManager->Init();
-}

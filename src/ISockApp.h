@@ -72,8 +72,6 @@ protected:
     std::vector<IBtmConn *> bindUdpConns(uint32_t src, const std::vector<uint16_t> &ports, uint32_t dst,
                                          const std::vector<uint16_t> &svr_ports);
 
-    virtual int initConfManager();
-
     virtual int initServices(const RConfig &conf);
 
     virtual int initObservers();
@@ -81,6 +79,10 @@ protected:
     virtual void destroyObservers();
 
     virtual void destroySingletons();
+
+    virtual void destroyGlobalSingletons();
+
+    virtual int initGlobalSingletons();
 
     virtual void initSingletons();
 

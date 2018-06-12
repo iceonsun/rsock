@@ -12,7 +12,7 @@
 #include "../util/rsutil.h"
 #include "../callbacks/NetConnKeepAlive.h"
 #include "../src/util/KeyGenerator.h"
-#include "../src/conf/ConfManager.h"
+#include "../src/singletons/ConfManager.h"
 #include "../bean/RConfig.h"
 
 using namespace std::placeholders;

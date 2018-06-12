@@ -8,7 +8,7 @@
 #include <string>
 
 #include "../util/ICloseable.h"
-#include "../util/Singleton.h"
+#include "Singleton.h"
 
 struct RConfig;
 

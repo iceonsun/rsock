@@ -9,7 +9,7 @@
 #include <map>
 #include "uv.h"
 #include "../util/ICloseable.h"
-#include "../util/Singleton.h"
+#include "Singleton.h"
 
 class IService;
 

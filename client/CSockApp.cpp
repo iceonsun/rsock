@@ -15,6 +15,8 @@
 #include "../bean/RConfig.h"
 #include "../src/util/KeyGenerator.h"
 #include "CConnErrHandler.h"
+#include "../src/singletons/RouteManager.h"
+#include "../src/singletons/ConfManager.h"
 
 CSockApp::CSockApp() : ISockApp(false) {}
 
@@ -22,6 +24,7 @@ int CSockApp::Init() {
     if (!mErrorHandler) {
         mErrorHandler = new CConnErrHandler(this);
     }
+    RouteManager::GetInstance()->AddTargetFront(ConfManager::GetInstance()->Conf().param.targetIp);
     return ISockApp::Init();
 }
 

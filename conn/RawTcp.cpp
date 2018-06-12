@@ -15,7 +15,7 @@
 #include "../src/sync/ISyncConn.h"
 #include "../cap/CapUtil.h"
 #include "../src/service/RouteService.h"
-#include "../src/service/ServiceManager.h"
+#include "../src/singletons/ServiceManager.h"
 #include "../src/service/ServiceUtil.h"
 
 // RawConn has key of nullptr to expose errors as fast as it can if any.

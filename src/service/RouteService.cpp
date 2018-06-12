@@ -5,10 +5,11 @@
 #include <plog/Log.h>
 #include "RouteService.h"
 #include "IRouteObserver.h"
-#include "../../util/RouteUtil.h"
+#include "../singletons/RouteManager.h"
 #include "ServiceUtil.h"
-#include "../conf/ConfManager.h"
-#include "../util/HandlerUtil.h"
+#include "../singletons/ConfManager.h"
+#include "../singletons/HandlerUtil.h"
+#include "../util/RouteUtil.h"
 
 RouteService::RouteService() {
     auto cb = std::bind(&RouteService::handleMessage, this, std::placeholders::_1);
@@ -39,18 +40,18 @@ void RouteService::CheckNetworkStatusNow() {
 
     std::string dev;
     std::string ip;
-    int nret = RouteUtil::GetWanInfo(dev, ip);
-    auto conf = ConfManager::GetInstance();
+    int nret = RouteManager::GetInstance()->GetWanInfo(dev, ip);
+    auto confManager = ConfManager::GetInstance();
     if (nret || dev.empty() || ip.empty()) {
         LOGE << "failed to get wan information";
-        conf->SetDev("");
-        conf->SetIp("");
+        confManager->SetDev("");
+        confManager->SetIp("");
         NotifyOffline();
     } else {
-        std::string oldDev = conf->GetDev();
-        std::string oldIp = conf->GetIp();
+        std::string oldDev = confManager->GetDev();
+        std::string oldIp = confManager->GetIp();
         if (!RouteUtil::SameNetwork(oldDev, oldIp, dev, ip)) {
-            conf->UpdateDevInfo(dev, ip);  // update happen before notifications
+            confManager->UpdateDevInfo(dev, ip);  // update happen before notifications
             LOGD << "New network: wan information, dev: " << dev << ", ip: " << ip;
             NotifyOnline(dev, ip);
         } else {
