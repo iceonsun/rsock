@@ -28,7 +28,7 @@ bool TcpAckPool::AddInfoFromPeer(const TcpInfo &infoFromPeer, uint8_t flags) {
     LOGD << "Add tcpInfo: " << infoFromPeer.ToStr();
     mInfoPool[infoFromPeer] = rsk_now_ms() + EXPIRE_INTERVAL_MS; // just overwrite if exists.
     lk.unlock();    // unlock manullay, or use mCondVar.notify_all(). see std::conditional_variable::notify_one
-    mCondVar.notify_one();
+    mCondVar.notify_all();
     return true;
 }
 

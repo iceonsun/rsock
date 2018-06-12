@@ -55,7 +55,11 @@ INetConn *ClientNetManager::DialTcpSync(const ConnInfo &info) {
         return nullptr;
     }
 
-    return createINetConn(tcp);
+    auto c = createINetConn(tcp);
+    if (!c) {
+        uv_close((uv_handle_t *) tcp, close_cb);
+    }
+    return c;
 }
 
 INetConn *ClientNetManager::createINetConn(uv_tcp_t *tcp) {
@@ -69,7 +73,7 @@ INetConn *ClientNetManager::createINetConn(uv_tcp_t *tcp) {
     }
 
     mTcpAckPool->RemoveInfo(tcpInfo);
-    closeTcp(tcp);
+//    closeTcp(tcp);
     return nullptr;
 }
 
@@ -129,7 +133,7 @@ void ClientNetManager::onTcpConnect(uv_connect_t *req, int status) {
                 TcpInfo tcpInfo;
                 int nret = GetTcpInfo(tcpInfo, tcp);
                 auto cb = it->cb;
-                if (nret || tcpInfo.dp == 0 || tcpInfo.dst == 0) {
+                if (!c || nret || tcpInfo.dp == 0 || tcpInfo.dst == 0) {
                     LOGD << "failed to get information of tcp";
                     tcpInfo = it->info;
                     uv_close((uv_handle_t *) tcp, close_cb);
