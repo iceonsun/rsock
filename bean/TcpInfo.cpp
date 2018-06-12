@@ -65,6 +65,6 @@ void TcpInfo::Reverse() {
 std::string TcpInfo::ToIntStr() const {
     std::ostringstream out;
     out << "src: " << src << ", sp: " << sp << ", dst: " << dst << ", dp: " << dp << ", seq: " << seq << ", ack: "
-        << ack << ", flag: " << flag;
+        << ack << ", flag: " << (uint32_t)flag;
     return out.str();
 }

@@ -50,7 +50,7 @@ void ServerNetManager::OnNewConnection(uv_tcp_t *tcp) {
 }
 
 uv_tcp_t *ServerNetManager::GetTcp(TcpInfo &info) {
-    LOGV << "original info: " << info;
+    LOGV << "original info: " << info.ToIntStr();
     auto it = mPool.find(info);
     if (it != mPool.end()) {
         auto tcp = it->second.conn;
