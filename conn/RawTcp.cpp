@@ -118,9 +118,6 @@ int RawTcp::Output(ssize_t nread, const rbuf_t &rbuf) {
             n = SendRawTcp(mTcpNet, info->src, info->sp, info->dst, info->dp, info->seq, info->ack,
                            reinterpret_cast<const uint8_t *>(rbuf.base), nread, mIpId++, mTcpTag, mIp4TcpTag,
                            info->flag);
-            if (n < 0) {
-                LOGV << "info: " << info->ToStr();
-            }
         }
 
         if (!mTcpNet || n < 0) {

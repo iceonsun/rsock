@@ -50,7 +50,7 @@ void ServerNetManager::OnNewConnection(uv_tcp_t *tcp) {
 }
 
 uv_tcp_t *ServerNetManager::GetTcp(TcpInfo &info) {
-    LOGV << "original info: " << info.ToIntStr();
+    LOGV << "original info: " << info.ToStr();
     auto it = mPool.find(info);
     if (it != mPool.end()) {
         auto tcp = it->second.conn;
@@ -61,15 +61,6 @@ uv_tcp_t *ServerNetManager::GetTcp(TcpInfo &info) {
         } else {
             LOGE << "AckPool has no record in pool: " << info.ToStr();
             closeTcp(tcp);
-        }
-    } else {
-        LOGE << "TcpPool has no tcp: " << info.ToStr();
-        LOGE << "IntStr: " << info.ToIntStr();
-        TcpCmpFn cmp;
-        for (auto &e: mPool) {
-            LOGE << "subinfo: " << e.first.ToIntStr();
-            LOGE << "equals?" << TcpCmpFn::Equals(e.first, info);
-            LOGE << "equals2? " << cmp(e.first, info) << ", " << cmp(info, e.first);
         }
     }
     int n = mTcpAckPool->RemoveInfo(info);
@@ -90,7 +81,7 @@ void ServerNetManager::OnFlush(uint64_t timestamp) {
         if (e.conn) {
             if (timestamp >= e.expireMs) {    // expire remove conn.
                 GetTcpInfo(info, e.conn);
-                LOGV << "expired. closing the tcp and remove it from pool: " << info.ToStr();
+                LOGD << "expired. closing the tcp and remove it from pool: " << info.ToStr();
                 closeTcp(e.conn);
                 e.conn = nullptr;
                 it = mPool.erase(it);
@@ -110,8 +101,6 @@ void ServerNetManager::add2Pool(uv_tcp_t *tcp) {
     TcpInfo tcpInfo;
     int nret = GetTcpInfo(tcpInfo, tcp);
     if (!nret) {
-//        bool ok = mTcpAckPool->ContainsInfo(tcpInfo, BLOCK_WAIT_MS);
-//        if (ok) {
         LOGV << tcpInfo.ToStr() << " added to pool";
         auto it = mPool.find(tcpInfo);
         if (it != mPool.end()) {
@@ -120,9 +109,6 @@ void ServerNetManager::add2Pool(uv_tcp_t *tcp) {
         uint64_t expireMs = rsk_now_ms() + POOL_PERSIST_MS;
         mPool.emplace(tcpInfo, ConnHelper(tcp, expireMs));
         return;
-//        } else {
-//            LOGE << "AckPool has no record in pool: " << tcpInfo.ToStr();
-//        }
     } else {
         LOGE << "GetTcpInfo failed: " << nret << ", " << uv_strerror(nret);
     }

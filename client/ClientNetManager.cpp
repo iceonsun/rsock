@@ -73,7 +73,7 @@ INetConn *ClientNetManager::createINetConn(uv_tcp_t *tcp) {
     }
 
     mTcpAckPool->RemoveInfo(tcpInfo);
-//    closeTcp(tcp);
+//    closeTcp(tcp);    // should be handled by caller
     return nullptr;
 }
 

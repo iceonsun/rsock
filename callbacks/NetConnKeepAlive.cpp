@@ -105,11 +105,13 @@ void NetConnKeepAlive::removeInvalidRequest() {
             RemoveRequest(item.first);
         }
     }
-
 }
 
 void NetConnKeepAlive::OnFlush(uint64_t timestamp) {
     removeInvalidRequest();
+    if (!mRouteObserver->Online()) {
+        return;
+    }
 
     auto conns = mAppGroup->NetGroup()->GetAllConns();
     for (auto &e: conns) {

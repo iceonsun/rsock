@@ -26,8 +26,6 @@ struct TcpInfo : ConnInfo {
 
     std::string ToStr() const override;
 
-    std::string ToIntStr() const;
-
     void Reverse() override;
 
     bool HasCloseFlag() {

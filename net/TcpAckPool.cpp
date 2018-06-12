@@ -23,7 +23,7 @@ bool TcpAckPool::AddInfoFromPeer(const TcpInfo &infoFromPeer, uint8_t flags) {
     std::unique_lock<std::mutex> lk(mMutex);
     auto it = mInfoPool.find(infoFromPeer);
     if (it != mInfoPool.end()) {
-        LOGD << "Overwrite info, original: " << it->first.ToStr();
+        LOGW << "Overwrite info, original: " << it->first.ToStr();
     }
     LOGD << "Add tcpInfo: " << infoFromPeer.ToStr();
     mInfoPool[infoFromPeer] = rsk_now_ms() + EXPIRE_INTERVAL_MS; // just overwrite if exists.
@@ -38,9 +38,7 @@ ssize_t TcpAckPool::RemoveInfo(const TcpInfo &tcpInfo) {
 }
 
 ssize_t TcpAckPool::locklessRemove(const TcpInfo &tcpInfo) {
-    auto n = mInfoPool.erase(tcpInfo);
-    LOGV_IF(n > 0) << "RemoveInfo: " << tcpInfo.ToStr();
-    return n;
+    return mInfoPool.erase(tcpInfo);
 }
 
 
@@ -67,12 +65,6 @@ bool TcpAckPool::Wait2TransferInfo(TcpInfo &info, const std::chrono::millisecond
         status = mCondVar.wait_for(lk, milliSec);
     }
 
-//    while (!(ok = getInfoIfExists(info)) && (status == std::cv_status::no_timeout)) {
-//        status = mCondVar.wait_for(lk, milliSec);
-//    }
-    for (auto &e: mInfoPool) {
-        LOGV << "ackpool element: " << e.first.ToStr();
-    }
     LOGV << "cond_var timeout";
     return false;
 }

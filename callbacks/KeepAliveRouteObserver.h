@@ -9,7 +9,7 @@
 
 class INetConnKeepAlive;
 
-class KeepAliveRouteObserver: public IRouteObserver  {
+class KeepAliveRouteObserver : public IRouteObserver {
 public:
     explicit KeepAliveRouteObserver(INetConnKeepAlive *keepAlive);
 
@@ -21,8 +21,11 @@ public:
 
     void OnNetDisconnected() override;
 
+    bool Online() const;
+
 private:
     INetConnKeepAlive *mKeepAlive = nullptr;
+    bool mAlive = true;
 };
 
 

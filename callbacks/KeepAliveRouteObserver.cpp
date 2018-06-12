@@ -14,11 +14,13 @@ KeepAliveRouteObserver::KeepAliveRouteObserver(INetConnKeepAlive *keepAlive) {
 
 void KeepAliveRouteObserver::OnNetConnected(const std::string &ifName, const std::string &ip) {
     LOGD << "Online, remove all pending request";
+    mAlive = true;
     mKeepAlive->RemoveAllRequest();
 }
 
 void KeepAliveRouteObserver::OnNetDisconnected() {
     LOGD << "Offline, remove all pending request";
+    mAlive = false;
     mKeepAlive->RemoveAllRequest();
 }
 
@@ -28,4 +30,8 @@ int KeepAliveRouteObserver::Init() {
 
 int KeepAliveRouteObserver::Close() {
     return ServiceUtil::GetService<RouteService *>(ServiceManager::ROUTE_SERVICE)->UnRegisterObserver(this);
+}
+
+bool KeepAliveRouteObserver::Online() const {
+    return mAlive;
 }
