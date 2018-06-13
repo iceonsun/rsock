@@ -119,7 +119,7 @@ void NetConnKeepAlive::OnFlush(uint64_t timestamp) {
         // wait until the conn is not new: it has sent some bytes before
         // This check mainly solve the bug: if keepalive packet reaches server before data does, the server will send rst,
         // and this conn will be closed and no more connected.
-        if (!conn->IsNew()) {
+        if (canSendRequest(conn, timestamp)) {
             auto it = mReqMap.find(conn->IntKey());
             if (it != mReqMap.end()) {  // has record, increment number of trials
                 it->second++;
@@ -163,4 +163,16 @@ uint64_t NetConnKeepAlive::IntervalMs() const {
 int NetConnKeepAlive::RemoveAllRequest() {
     mReqMap.clear();
     return 0;
+}
+
+bool NetConnKeepAlive::canSendRequest(INetConn *conn, uint64_t timestampMs) const {
+    if (conn && !conn->IsNew()) {
+        if (timestampMs > conn->EstablishedTimeStampMs()) { // use compare first, in case overflow
+            int df = timestampMs - conn->EstablishedTimeStampMs();
+            if (df >= REQUEST_DELAY) {
+                return true;
+            }
+        }
+    }
+    return false;
 }

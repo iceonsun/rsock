@@ -54,6 +54,10 @@ uv_tcp_t *ServerNetManager::GetTcp(TcpInfo &info) {
     auto it = mPool.find(info);
     if (it != mPool.end()) {
         auto tcp = it->second.conn;
+        if (!tcp) {
+            LOGD << "tcp temporarily null, just return";
+            return nullptr;
+        }
         mPool.erase(it);
         bool ok = mTcpAckPool->Wait2TransferInfo(info, BLOCK_WAIT_MS);
         if (ok) {
@@ -62,6 +66,8 @@ uv_tcp_t *ServerNetManager::GetTcp(TcpInfo &info) {
             LOGE << "AckPool has no record in pool: " << info.ToStr();
             closeTcp(tcp);
         }
+    } else {
+        LOGD << "TcpPool has no info: " << info.ToStr();
     }
     int n = mTcpAckPool->RemoveInfo(info);
     LOGD << "Remove the tcpInfo " << ((n > 0) ? "succeeded" : "failed");

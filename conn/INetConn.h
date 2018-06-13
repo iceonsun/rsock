@@ -41,6 +41,11 @@ public:
 
     static const std::string BuildPrintableStr(const ConnInfo &info, IntKeyType key);
 
+    /*
+     * return when is the connection established
+     */
+    uint64_t EstablishedTimeStampMs() const;
+
     bool IsNew() const;
 
     IntKeyType IntKey() const;
@@ -54,6 +59,7 @@ private:
     bool mNew = true;
     bool mAlive = true;
     int mErrCode = ERR_NO_ERR;
+    const uint64_t mEstablishedTimeStampMs = 0xffffffff;
 };
 
 #endif //RSOCK_INETCONN_H

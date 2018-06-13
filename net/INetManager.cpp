@@ -36,7 +36,9 @@ IBtmConn *INetManager::BindUdp(const ConnInfo &info) {
 }
 
 void INetManager::closeTcp(uv_tcp_t *tcp) {
-    uv_close((uv_handle_t *) tcp, close_cb);
+    if (tcp) {
+        uv_close((uv_handle_t *) tcp, close_cb);
+    }
 }
 
 bool INetManager::Wait2GetInfo(TcpInfo &info) {

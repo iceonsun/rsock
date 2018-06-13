@@ -51,6 +51,8 @@ private:
     // in case some invalid request is still in the pool. remove them
     void removeInvalidRequest();
 
+    bool canSendRequest(INetConn *conn, uint64_t timestampMs) const;
+
 private:
     const int MAX_RETRY = 3;
     const uint32_t FLUSH_INTERVAL = 0;  // shoud be same with RConfig.keepAlive
@@ -58,6 +60,7 @@ private:
     IAppGroup *mAppGroup = nullptr;
     std::map<IntKeyType, int> mReqMap;
     IReset *mReset = nullptr;
+    static const int REQUEST_DELAY = 15000;    // 15s
 };
 
 
