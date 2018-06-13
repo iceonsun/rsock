@@ -122,18 +122,6 @@ digitalocean NY vps. 1G RAM
 
 ##### Client test environment 1. digitalocean Singaport vps.
 
-rsock(tcp only). It's around 700KB
-
-![](doc/img/rsock_do_sg.png)
-
-rsock(udp only). It's around 1MB
-
-![](doc/img/rsock_do_sg_udp.png)
-
-rsock(tcp and udp). It's around 900KB
-
-![](doc/img/rsock_do_sg_udp_tcp.png)
-
 rsock(tcp only, 11 ports). 1.25M
 
 ![](doc/img/rsock_do_sg_11tcp.png)
@@ -153,17 +141,6 @@ kcptun. The fastest, around 1.5MB.
 
 ##### Client test environment 1. China telecom with 100Mb downloading and 10Mb upload speed.
 
-rsock(tcp only, 2 ports). Around 630KB.
-
-![](doc/img/rsock_telecom.png)
-
-rsock(udp only, 2 ports). Around 1MB
-
-![](doc/img/rsock_udp_telcom.png)
-
-rsock(udp and tcp, 2 ports each). Around 700k
-
-![](doc/img/rsock_udp_tcp_telcom.png)
 
 rsock(tcp only, 11 ports). 1.4M
 
@@ -181,8 +158,7 @@ kcptun. extremely fast. Around 2MB.
 
 ![](doc/img/kcptun_telecom.png)
 
-note: It's **not** more ports rsock use, the faster it is. It's mainly determined by your bandwith. There is no major difference between 10 ports and 5 in test.
-
+note: There is no evidence that more ports rsock use, the faster it is. It's mainly determined by your bandwith.
 #### Conclusion
 
 rsock only has 70%-90% speed of kcptun.
