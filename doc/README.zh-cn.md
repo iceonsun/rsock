@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/iceonsun/rsock.svg?branch=master)](https://travis-ci.org/iceonsun/rsock) [![Build status](https://ci.appveyor.com/api/projects/status/cqtcqeg2n2k0eivl?svg=true)](https://ci.appveyor.com/project/iceonsun/rsock)  [![Downloads][1]][2]
+[![Build Status](https://travis-ci.org/iceonsun/rsock.svg?branch=master)](https://travis-ci.org/iceonsun/rsock) [![Build status](https://ci.appveyor.com/api/projects/status/cqtcqeg2n2k0eivl?svg=true)](https://ci.appveyor.com/project/iceonsun/rsock)
 
 ---
 
@@ -117,18 +117,6 @@ digitalocean纽约机房。1G RAM
 
 ##### 客户测试环境1：digitalocean新加坡机房。墙外<->墙外
 
-rsock(tcp only, 2个端口)的下载速度. 稳定在700KB左右
-
-![](img/rsock_do_sg.png)
-
-rsock(udp only，2个端口)的下载速度。稳定在1M左右
-
-![](img/rsock_do_sg_udp.png)
-
-rsock(tcp and udp，各2个端口)的下载速度。稳定在900K左右
-
-![](img/rsock_do_sg_udp_tcp.png)
-
 rsock(tcp only, 11个端口）的下载速度. 1.25M
 
 ![](img/rsock_do_sg_11tcp.png)
@@ -147,18 +135,6 @@ kcptun. kcptun速度最快。1600KB
 
 
 #####  客户测试环境1：国内某电信宽带。100Mb下行10Mb下行。墙内<->墙外
-
-rsock(tcp only，2个端口)的下载速度. 速度稳定在630KB左右。
-
-![](img/rsock_telecom.png)
-
-rsock(udp only，2个端口)的下载速度。稳定在1MB左右
-
-![](img/rsock_udp_telcom.png)
-
-rsock(udp and tcp，各2个端口)的下载速度. 在700KB左右
-
-![](img/rsock_udp_tcp_telcom.png)
 
 rsock(tcp only, 11个端口）的下载速度，稳定在1.4M左右。
 
@@ -236,5 +212,3 @@ kcptun的下载速度. 速度在2M左右。
 
 ![](img/ethdonation.jpeg)
 
-[1]: https://img.shields.io/github/downloads/iceonsun/rsock/total.svg?maxAge=1800
-[2]: https://github.com/iceonsun/rsock/releases
