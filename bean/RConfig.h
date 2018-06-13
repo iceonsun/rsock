@@ -50,7 +50,7 @@ struct RConfig {
 #ifdef RSOCK_IS_SERVER_
         int keepAliveIntervalSec = 4;  // default 4s, 3 times
 #else
-        int keepAliveIntervalSec = 2;  // default 2s, 3 times
+        int keepAliveIntervalSec = 4;  // default 2s, 3 times
 #endif
 
         const std::string version = RSOCK_BUILD_TIME;

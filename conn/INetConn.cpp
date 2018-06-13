@@ -9,7 +9,8 @@
 #include "../util/rsutil.h"
 #include "../src/util/KeyGenerator.h"
 
-INetConn::INetConn(IntKeyType key) : IConn(KeyGenerator::StrForIntKey(key)), mIntKey(key) {
+INetConn::INetConn(IntKeyType key) : IConn(KeyGenerator::StrForIntKey(key)), mIntKey(key),
+                                     mEstablishedTimeStampMs(rsk_now_ms()) {
 }
 
 //INetConn::INetConn(const std::string &key) : IConn(key) {
@@ -84,6 +85,10 @@ bool INetConn::IsNew() const {
 }
 
 bool INetConn::Alive() {
-    return IConn::Alive() && mAlive;
+    return mAlive;
+}
+
+uint64_t INetConn::EstablishedTimeStampMs() const {
+    return mEstablishedTimeStampMs;
 }
 
