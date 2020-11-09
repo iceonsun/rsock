@@ -203,26 +203,6 @@ If servers run normally, try to restart kcptun client(turn shadowsocks on/off, t
 1. Add other fake conn. e.g. ICMP, DNS.
 
 
-### Donation
-
-Donation is very welcome.
-
-Ethereum
-
-11451A1Y4e8vtK3Jb7DoW8BTqj1afuWSn8
-
-or qrcode
-
-![](doc/img/btdonation.jpeg)
-
-bitcoin
-
-0x648419aE3D49271BB7cC31F2a61bC4c517Ea6578
-
-or qrcode
-
-![](doc/img/ethdonation.jpeg)
-
 [1]: https://img.shields.io/github/downloads/iceonsun/rsock/total.svg?maxAge=1800
 [2]: https://github.com/iceonsun/rsock/releases
 
